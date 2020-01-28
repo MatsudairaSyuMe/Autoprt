@@ -1,0 +1,1401 @@
+package com.systex.sysgateii.gateway.prtCmd.Impl;
+
+import java.io.IOException;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.systex.sysgateii.gateway.autoPrtSvr.Client.PrtCli;
+import com.systex.sysgateii.gateway.prtCmd.Printer;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+public class CS4625Impl implements Printer {
+	private static Logger log = LoggerFactory.getLogger(CS4625Impl.class);
+	private byte ESQ = (byte) 0x1b;
+	private byte ENQ = (byte) 0x05;
+	private byte ACK = (byte) 0x06;
+	private byte STX = (byte) 0x02;
+	private byte ETX = (byte) 0x03;
+	private byte NAK = (byte) 0x15;
+	private byte CR = (byte) 0x0d;
+	private byte LF = (byte) 0x0a;
+	private byte MI_DATA = (byte) 0x30;
+	private byte MI_STAT = (byte) 0x31;
+	private byte MI_INIT = (byte) 0x32;
+	private byte CC = (byte) 0x1b;
+	private byte FS = (byte) 0X1C;
+	private byte CC_MS_READ = (byte) 0x7b;
+	private byte EF_MS_WRITE = (byte) 0x57;
+	private byte PR_MS_WRITE = (byte) 0X87;
+	private byte MS_WRITE_START = (byte) 0x2B;
+	private byte MS_WRITE_END = (byte) 0x2C;
+	// private byte MS_WRITE_END = (byte) 0x3F;
+	private byte MS_PR2800_WRITE_END = (byte) 0x3B;
+	private byte CC_OPEN_INSERTER = (byte) 0x75;
+	private byte CC_CLOSE_INSERTER = (byte) 0x73;
+	private byte CPI10 = (byte) 0x50;
+	private byte CPI12 = (byte) 0x4D;
+	private byte LPI = (byte) 0x2F;
+	private byte CPI18 = (byte) 0x69;
+	private byte STD = (byte) 0x76;
+	private byte HEL = (byte) 0x77;
+	private byte HVEL = (byte) 0x7E;
+	private byte UPPER_MLF = (byte) 0x2C;
+	private byte VEL = (byte) 0x5A; // 0x5A //0x8A
+	private byte MLF = (byte) 0x2D;
+	private byte CANCEL = (byte) 0x18;
+
+	private String TRAIN_MSG = "　　　　　　　　　　訓 練 用 本 單 作 廢\n";
+
+	// private byte CC_UPPER_CLOSE_INSERTER = (byte) 0x72;
+	// private byte CC_UPPER_OPEN_INSERTER = (byte) 0x74;
+	// private byte CC_UPPER_SELECT_INSERTER = (byte) 0x6C;
+	// private byte CC_LOWER_SELECT_INSERTER = (byte) 0x6D;
+
+	private byte[] S4625_PEJT = { ESQ, (byte) 0x4f };
+	private byte[] S4625_PENQ = { ESQ, (byte) 'j' };
+	private byte[] S4625_PERRCODE_REQ = { ESQ, 'k' };
+	// private byte[] S4625_PACK = {ACK,(byte)0};
+	private byte[] S4625_PENLARGE_OD = { (byte) 0x0D };
+	private byte[] S4625_PENLARGE_OA = { (byte) 0x0a};
+	private byte[] S4625_PREVERSE_LINEFEED = { ESQ, (byte) '7' };
+	// private byte[]
+	// S4625_PINIT_PRT={ESQ,(byte)'4',ESQ,(byte)'h',(byte)'0',(byte)0};
+	// 20060713 , pr2(-e) 有時會印出之前傳票資料, 故在 initialize printer 時, send del , 清除buffer
+	// 20060721, pr2中文自會mess suspect ,
+	// private byte[]
+	// S4625_PINIT_PRT={(byte)0x7f,ESQ,(byte)'4',ESQ,(byte)'h',(byte)'0',(byte)0};
+	// private byte[]
+	// S4625_PINIT_PRT={ESQ,(byte)'4',ESQ,(byte)'h',(byte)'0',(byte)0};
+	// uprivate byte[]
+	// S4625_PINIT_PRT={ESQ,(byte)'[',(byte)'5',(byte)'1',(byte)'4',(byte)0};
+	private byte[] S4625_PINIT_PRT = { ESQ, (byte) '[', (byte) '0', (byte) '0', (byte) '0' };
+	// FS,'J','0','0','4','2',FS,'K','0','1','4','7','0','5','2','2',0};
+
+	private byte[] S4625_PSI = { ESQ, (byte) '[', (byte) '5', (byte) '1', (byte) '8'};
+	private byte[] S4625_PSO = { ESQ, (byte) '[', (byte) '0', (byte) '0', (byte) '0' };
+	private byte[] S4625_PNON_PRINT_AREA = { ESQ, (byte) 0x78 };
+
+	private byte[] S4625_PINIT = { ESQ, (byte) '0' };
+	private byte[] S4625_PRESET = { ESQ, (byte) 'l' };
+	private byte[] S4625_PMS_READ = { ESQ, (byte) ']', ESQ, (byte) 'j'};
+	private byte[] S4625_PMS_WRITE = { ESQ, (byte) 0x5c, ESQ, (byte) 'j'};
+	private byte[] S4625_PSTAT = { ESQ, (byte) 'j' };
+	private byte[] S4625_PSTD = { ESQ, (byte) '4', ESQ, (byte) 'h', (byte) '0' };
+	private byte[] S4625_PHEL = { ESQ, (byte) '3'};
+	private byte[] S4625_PHVEL = { ESQ, (byte) '3', ESQ, (byte) 'h', (byte) '1'};
+	private byte[] S4625_PVEL = { ESQ, (byte) 'h', (byte) '1'};
+	// private byte[]
+	// S4625_PFINE={STX,(byte)5,MI_DATA,ESQ,(byte)0x49,(byte)0,(byte)0,ETX,(byte)0,(byte)0};
+//	typedef int (WINAPI *INTPROC)(char *);		// 定義pointer of Function
+	// 20040129 7,STX,3,'0',ESQ,'l',ETX,0 上口
+//	         11,STX,7,'0',ESQ,'m',ESQ,'I',00H,0AH,ETX,0 下口
+	// unsigned char
+	// S4625_UPTHRTOPEN[7]={STX,(byte)3,(byte)'0',ESQ,(byte)'l',ETX,(byte)0};
+	// unsigned char
+	// S4625_DNTHRTOPEN[7]={STX,(byte)3,(byte)'0',ESQ,(byte)'m',ETX,(byte)0};
+
+	// unsigned char
+	// S4625_PEJT_UPPER[8]={STX,(byte)3,MI_DATA,CC,CC_UPPER_OPEN_INSERTER,ETX,
+//				    (3+MI_DATA+CC+CC_UPPER_OPEN_INSERTER+ETX),(byte)0};
+	// Read BarCode
+	private byte[] S4625_BAR_CODE = { ESQ, (byte) 'W', (byte) 'A' };
+	private byte[] S4625_SET_SIGNAL = { ESQ, (byte) 'e', (byte) 0, (byte) 0};
+	// Set Signal
+	private byte[] S4625_OFF_SIGNAL = { ESQ, (byte) 'f', (byte) 0, (byte) 0};
+	private byte[] S4625_SET_BLINK = { ESQ, (byte) 'g', (byte) 0, (byte) 0, (byte) 0, (byte) 0};
+	// Turn Page
+	private byte[] S4625_TURN_PAGE = { ESQ, (byte) 'W', (byte) 'B'};
+	private byte[] S4625_REVS_PAGE = { ESQ, (byte) 'W', (byte) 'C' };
+	private byte[] S4625_DET_PASS = { ESQ, (byte) 'Y', (byte) ESQ, (byte) 'j' };
+	private byte[] S4625_CANCEL = { CANCEL};
+	private byte[] inBuff = new byte[128];
+	private byte[] curmsdata;
+	private byte[] curbarcodedata;
+
+	private boolean sendINIT = false;
+	private byte[] init = new byte[6 + 1];
+	private String prName = ""; // max char [80];
+	private PrtCli pc = null;
+	private String brws = "";
+	private String wsno = "";
+	private String type = "";
+	private String autoturnpage = "";
+	private String outptrn1 = "%5.5s";
+	private String outptrn2 = "%4.4s";
+	private String outptrn3 = "%c";
+
+//  State Value
+	public static final int ResetPrinterInit_START    = 0;
+	public static final int ResetPrinterInit          = 1;
+	public static final int ResetPrinterInit_FINISH   = 2;
+	public static final int OpenPrinter_START         = 3;
+	public static final int OpenPrinter               = 4;
+	public static final int OpenPrinter_START_2       = 5;
+	public static final int OpenPrinter_2             = 6;
+	public static final int OpenPrinter_FINISH        = 7;
+
+	public static final int SetSignal                 = 8;
+	public static final int SetSignal_START_2         = 9;
+	public static final int SetSignal_2               = 10;
+	public static final int SetSignal_START_3         = 11;
+	public static final int SetSignal_3               = 12;
+	public static final int SetSignal_START_4         = 13;
+	public static final int SetSignal_4               = 14;
+	public static final int SetSignal_FINISH          = 15;
+	public static final int DetectPaper               = 16;
+	public static final int DetectPaper_START         = 17;
+	public static final int DetectPaper_FINISH        = 18;
+	public static final int SetCPI                    = 19;
+	public static final int SetCPI_START              = 20;
+	public static final int SetCPI_FINISH             = 21;
+	public static final int SetLPI                    = 22;
+	public static final int SetLPI_START              = 23;
+	public static final int SetLPI_FINISH             = 24;
+	public static final int MS_Read                   = 25;
+	public static final int MS_Read_START             = 26;
+	public static final int MS_ReadRecvData           = 27;
+	public static final int MS_Read_START_2           = 28;
+	public static final int MS_Read_2                 = 29;
+	public static final int MS_Read_FINISH            = 30;
+	public static final int ReadBarcode               = 31;
+	public static final int ReadBarcode_START         = 32;
+	public static final int ReadBarcode_START_2       = 33;
+	public static final int ReadBarcodeRecvData       = 34;
+	public static final int ReadBarcode_FINISH        = 35;
+
+	public static final int CheckStatus_START         = 100;
+	public static final int CheckStatus               = 101;
+	public static final int CheckStatusRecvData       = 102;
+	public static final int CheckStatus_FINISH        = 103;
+
+	public static final int PorgeStatus_START         = 200;
+	public static final int PorgeStatus               = 201;
+	public static final int PorgeStatusRecvData       = 202;
+	public static final int PorgeStatus_FINISH        = 203;
+
+	private int curState = ResetPrinterInit_START;
+	private int curChkState = CheckStatus_START;
+	private int curPurState = PorgeStatus_START;
+	private int iCnt = 0;
+	private int detectTimeout = 0;
+	private long detectStartTimeout = 0;
+
+	private AtomicBoolean isShouldShutDown = new AtomicBoolean(false);
+
+	public CS4625Impl(final PrtCli pc, final String brws, final String type, final String autoturnpage) {
+		this.pc = pc;
+		this.brws = brws;
+		this.wsno = this.brws.substring(2);
+		this.type = type;
+		this.autoturnpage = autoturnpage;
+	}
+
+	@Override
+	public boolean OpenPrinter(boolean conOpen) {
+		// TODO Auto-generated method stub
+//		if (LockPrinter() > 0)
+//			return false;
+		log.debug("OpenPrinter before {} curState={}", conOpen, curState);
+		byte[] data = null;
+
+		if (conOpen)
+			this.curState = ResetPrinterInit_START;
+		if (this.curState < OpenPrinter_START) {
+			if (!ResetPrinterInit()) {
+				return false;
+			} else {
+				log.debug("1 ===<><>{} chkChkState {} {}", this.curState, this.curChkState, data);
+				this.curState = OpenPrinter_START;
+				Send_hData(S4625_PRESET);
+			}
+		}
+		if (this.curState == OpenPrinter_START || this.curState == OpenPrinter) {
+			if (this.curState == OpenPrinter_START) {
+				this.curChkState = CheckStatus_START;
+				this.curState = OpenPrinter;
+			}
+			data = CheckStatus();
+			log.debug("2 ===<><>{} chkChkState {} {}", this.curState, this.curChkState, data);
+//			if (CheckDis(data) != 0) {
+//				this.curState = ResetPrinterInit_START;
+//				return false;
+//			}
+			if (!CheckError(data)) {
+//				pc.close();
+//				this.curState = ResetPrinterInit_START;
+				return false;
+			} else {
+				this.curState = OpenPrinter_START_2;
+				Send_hData(S4625_PINIT_PRT);
+			}
+		}
+		if (this.curState == OpenPrinter_START_2 || this.curState == OpenPrinter_2) {
+			if (this.curState == OpenPrinter_START_2) {
+				this.curState = OpenPrinter_2;
+				this.curChkState = CheckStatus_START;
+			}
+			data = CheckStatus();
+			log.debug("3 ===<><>{} chkChkState {} {}", this.curState, this.curChkState, data);
+//			if (CheckDis(data) != 0) {
+//				this.curState = ResetPrinterInit_START;
+//				return false;
+//			}
+			if (!CheckError(data)) {
+//				this.curState = ResetPrinterInit_START;
+//				pc.close();
+				return false;
+			} else {
+				this.curState = OpenPrinter_FINISH;
+				log.debug("4 ===<><>{} chkChkState {}", this.curState, this.curChkState);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	@Override
+	public boolean ClosePrinter() {
+		// TODO Auto-generated method stub
+		this.curState = ResetPrinterInit_START;
+		return true;
+	}
+
+	@Override
+	public boolean CloseMsr() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public int Send_hDataBuf(byte[] buff, int length) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public int PurgeBuffer() {
+		// TODO Auto-generated method stub
+//		byte[] data = null;
+		log.debug("PurgeBuffer curState={} curPurState={}", this.curState, this.curPurState);
+		this.curPurState = PorgeStatus_FINISH;
+		return 0;
+	}
+
+	@Override
+	public int Send_hData(byte[] buff) {
+		// TODO Auto-generated method stub
+		if (buff == null)
+			return -3;
+		try {
+			pc.sendBytes(buff);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return -1;
+		}
+		return 0;
+	}
+
+	@Override
+	public byte[] Rcv_Data() {
+		// TODO Auto-generated method stub
+		int retry = 0;
+		byte[] rtn = null;
+		if (getIsShouldShutDown().get())
+			return "DIS".getBytes();
+		do {
+//			log.debug("pc.clientMessageBuf={}", pc.clientMessageBuf.readableBytes());
+			if (pc.clientMessageBuf != null && pc.clientMessageBuf.readableBytes() > 2) {
+				int size = pc.clientMessageBuf.readableBytes();
+				byte[] buf = new byte[size];
+				pc.clientMessageBuf.getBytes(pc.clientMessageBuf.readerIndex(), buf);
+				if ( buf[0]== (byte)0x1b && buf[1] == (byte)'s' ) { //data from S4680 , msread,error status etc
+					for (int i = 2; i < size; i++)
+						if (buf[i] == (byte)0x1c) {
+							rtn = new byte[i + 1];
+							log.debug("Rcv_Data rtn.length={}", rtn.length);
+							pc.clientMessageBuf.readBytes(rtn, 0, rtn.length);
+							return rtn;
+						}
+				} else if (buf[0]== (byte)0x1b) {
+					rtn = new byte[3];
+					log.debug("Rcv_Data get 3 bytes");
+					pc.clientMessageBuf.readBytes(rtn, 0, rtn.length);
+					return rtn;
+				}
+			}
+			Sleep(100);
+		} while (++retry < 10);
+		if (getIsShouldShutDown().get())
+			return "DIS".getBytes();
+		if (pc.clientMessageBuf == null || !pc.clientMessageBuf.isReadable())
+			rtn = null;
+		return rtn;
+	}
+
+	@Override
+	public byte[] CheckStatus() {
+		// TODO Auto-generated method stub
+		byte[] data = null;
+		log.debug("CheckStatus curState={} curChkState={}", this.curState, this.curChkState);
+		if (this.curChkState == CheckStatus_START) {
+			this.curChkState = CheckStatus;
+			log.debug("CheckStatus curState={} curChkState={}", this.curState, this.curChkState);
+			if (Send_hData(S4625_PSTAT) != 0)
+				return (data);
+		}
+		if (this.curChkState == CheckStatus) {
+			this.curChkState = CheckStatusRecvData;
+			Sleep(50);
+			this.iCnt = 0;
+			data = Rcv_Data(3);
+		} else if (this.curChkState == CheckStatusRecvData) {
+			Sleep(100);
+			this.iCnt++;
+			data = Rcv_Data(3);
+			if (data == null && iCnt > 3) {
+				log.debug("{} {} {} {} 95補摺機無回應！", iCnt, brws, "", "");
+				this.curChkState = CheckStatus_FINISH;
+				pc.close();
+			} else if (data != null && !new String(data).equals("DIS"))
+				this.curChkState = CheckStatus_FINISH;
+		}
+		return data;
+	}
+
+	@Override
+	public byte[] Rcv_Data(int rcv_len) {
+		// TODO Auto-generated method stub
+		int retry = 0;
+		byte[] rtn = null;
+		if (getIsShouldShutDown().get())
+			return "DIS".getBytes();
+		do {
+//			log.debug("pc.clientMessage={}", pc.clientMessage);
+			if (pc.clientMessageBuf != null && pc.clientMessageBuf.isReadable()) {
+				if (rcv_len <= pc.clientMessageBuf.readableBytes()) {
+					rtn = new byte[rcv_len];
+					pc.clientMessageBuf.readBytes(rtn);
+					return rtn;
+				}
+			}
+			Sleep(100);
+		} while (++retry < 10);
+		if (getIsShouldShutDown().get())
+			return "DIS".getBytes();
+		;
+
+		if (pc.clientMessageBuf == null || !pc.clientMessageBuf.isReadable())
+			rtn = null;
+		return rtn;
+	}
+
+	@Override
+	public boolean Prt_Text(byte[] buff) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean ChkAddFont(int fontno) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean AddFont(int fontno) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public byte[] Prt_hCCode(byte[] buff, int length) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void EndOfJob() {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public boolean GetPaper() {
+		// TODO Auto-generated method stub
+		byte[] Pdata = {ESQ,(byte)'l',ESQ,(byte)'L',(byte)'0',(byte)'0',(byte)'0'};
+		Send_hData(Pdata);
+
+		return true;
+	}
+
+	@Override
+	public void TestCCode() {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public boolean Eject() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean EjectNoWait() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public byte[] MS_Read(boolean start, String brws) {
+		// TODO Auto-generated method stub
+		byte[] data = null;
+
+		if (start)
+			this.curState = MS_Read_START;
+		log.debug("MS_Read curState={} curChkState={}", this.curState, this.curChkState);
+		if (this.curState == MS_Read_START) {
+			this.curState = MS_Read;
+			log.debug("MS_Read curState={} curChkState={}", this.curState, this.curChkState);
+			if (Send_hData(S4625_PMS_READ) != 0)
+				return (data);
+		}
+		if (this.curState == MS_Read) {
+			this.curState = MS_ReadRecvData;
+			Sleep(1500);
+			this.iCnt = 0;
+			this.curmsdata = null;
+			data = Rcv_Data();
+		} else if (this.curState == MS_ReadRecvData) {
+			Sleep(200);
+			this.iCnt++;
+			data = Rcv_Data();
+			if (data == null && iCnt > 40) {
+				log.debug("{} {} {} {} 94補摺機狀態錯誤！(MSR-2)", iCnt, brws, "", "");
+				this.curState = ResetPrinterInit_START;
+				ResetPrinterInit();
+				pc.close();
+			} else if (data != null && !new String(data).equals("DIS")) {
+				if (data != null && data.length == 38) {
+					byte[] tmpb = new byte[35];
+					System.arraycopy(data, 2, tmpb, 0, 35);
+					this.curmsdata = tmpb;
+					System.gc();
+				} else if (data == null && iCnt > 40) {
+					log.debug("{} {} {} {} 94補摺機狀態錯誤！(MSR-2)", iCnt, brws, "", "");
+					this.curState = ResetPrinterInit_START;
+					ResetPrinterInit();
+					pc.close();
+				}
+				this.curState = MS_Read_START_2;
+				log.debug("MS_Read 1 ===<><>{} chkChkState {} curmsdata={}", this.curState, this.curChkState, this.curmsdata);
+			}
+		}
+		if (this.curState == MS_Read_START_2 || this.curState == MS_Read_2) {
+			if (this.curState == MS_Read_START_2) {
+				this.curState = MS_Read_2;
+				this.curChkState = CheckStatus_START;
+			}
+			data = CheckStatus();
+			log.debug("MS_Read 2 ===<><>{} chkChkState {}", this.curState, this.curChkState);
+			if (!CheckError(data)) {
+				return null;
+			} else {
+				this.curState = MS_Read_FINISH;
+				log.debug("MS_Read 3 ===<><>{} chkChkState {}", this.curState, this.curChkState);
+				return this.curmsdata;
+			}
+		}
+
+		log.debug("{} {} {} {} final data.length={}", iCnt, brws, "", "", data.length);
+		return curmsdata;
+	}
+
+	@Override
+	public byte[] INQ() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public boolean DetectPaper(boolean startDetect, int iTimeout) {
+		// TODO Auto-generated method stub
+		long currentTime = 0;
+		if (startDetect) {
+			this.curState = DetectPaper_START;
+			if (iTimeout > 0) {
+				this.detectTimeout = iTimeout;
+				this.detectStartTimeout = System.currentTimeMillis();
+			} else {
+				this.detectTimeout = 0;
+				this.detectStartTimeout = 0;
+			}
+		}
+		log.debug("{} {} {} DetectPaper curState={} iCnt={}", brws, "", "", this.curState, this.iCnt);
+		if (this.curState == DetectPaper_START) {
+			GetPaper();
+			log.debug("{} {} {} DetectPaper GetPaper curState={}", brws, "", "", this.curState);
+		}
+		byte[] data = null;
+		if (this.curState == DetectPaper_START || this.curState == DetectPaper) {
+			if (this.curState == DetectPaper_START) {
+				this.curState = DetectPaper;
+				this.curChkState = CheckStatus_START;
+			}
+			data = CheckStatus();
+			if (this.detectTimeout > 0) {
+				currentTime = System.currentTimeMillis();
+				if (((currentTime - this.detectStartTimeout) / 1000) > this.detectTimeout) {
+					log.debug("{} {} {} 96超過時間尚未重新插入存摺！", brws, "", "");
+					this.curState = DetectPaper_FINISH;
+					return false;
+				}
+			}
+//			if (CheckDis(data) == -2) 
+//				return false;
+			if (!CheckError(data)) {
+				if (!pc.connectStatus()) {
+					log.debug("{} {} {} channel break", brws, "", "");
+					return false;
+				}
+			} else {
+				//20060714 V116 , In p201/p101/p80 case , if read msr but the pr2-(e) replies '1' --> paper jame
+				// and Driver send ESC '0' to reset printer , but in vain.
+				// So after Open printer , if meed some errors like '1' -- paper jam , '8' -- command error, 'a' -- hw error ,
+				// show the related msg to warn teller to take some action.
+				// S4265
+				// ESC 'r' '2' --> DOCUMENT EMPTY nopaper
+				//         'P' --> paper in
+				//         '8' --> command error
+				//         '1' --> paper jam
+				//         '4' --> paper in chasis
+				//         'q' --> msr error
+				//         'r' --> blank msr
+				//         'X' --> print area out of paper
+				//         'a' --> Receive Error
+				//         0x90 --> hw error
+				//         0x80 --> S4265 can not operate
+				//         0xd0 --> S4265 , status not in initial config
+
+				if (data[2] == (byte)'P') {
+					log.debug("{} {} {} 01偵測到存摺插入！", brws, "", "");
+					this.curState = DetectPaper_FINISH;
+					return true;
+				} else if (data[2] == (byte)'A') {
+					this.curChkState = CheckStatus_START;
+					log.debug("{} {} {} get 'A' curState={} change to curChkState={} ", brws, wsno, "",this.curState,  this.curChkState);
+					this.iCnt = 0;
+				} else {
+					switch (data[2]) {
+					case (byte) '1': // 20060619 paper jam
+						log.debug("{} {} {} 94請重試一下,否則有卡紙現象", brws, wsno, "");
+						this.curChkState = CheckStatus_START;
+						this.iCnt = 0;
+						break;
+					case (byte) '8':
+						log.debug("{} {} {} 94指令錯誤", brws, wsno, "");
+						break;
+					case (byte) 'q':
+						log.debug("{} {} {} 94寫磁條錯檢查磁頭", brws, wsno, "");
+						break;
+					case (byte) 'r':
+						log.debug("{} {} {} 94空白磁條,請重建磁條", brws, wsno, "");
+						break;
+					case (byte) 'X':
+						log.debug("{} {} {} 94傳票稍短,超出可列印範圍", brws, wsno, "");
+						break;
+					case (byte) 'a':
+						log.debug("{} {} {} 94紙張插歪 或 錯誤資料格式", brws, wsno, "");
+						break;
+					case (byte) 0x90:
+						log.debug("{} {} {} 94硬體媒介故障", brws, wsno, "");
+						break;
+					case (byte) 0x80:
+						log.debug("{} {} {} 94補摺機無法運作", brws, wsno, "");
+						break;
+					default:
+						log.debug("{} {} {} 94硬體故障", brws, wsno, "");
+						break;
+					}
+				}
+			}
+		}
+		return false;
+	}
+	
+
+	@Override
+	public boolean ResetPrinter() {
+		// TODO Auto-generated method stub
+		log.debug("ResetPrinter ===<><>{}", this.curState);
+		if (Send_hData(S4625_PRESET) != 0)
+			return false;
+		return true;
+	}
+
+	@Override
+	public boolean ResetPrinterInit() {
+		// TODO Auto-generated method stub
+		log.debug("{} {} {} ResetPrinterInit curState={}", brws, "", "", this.curState);
+		if (this.curState == ResetPrinterInit_START) {
+			log.debug("{} {} {} 00補摺機重置中...", brws, "", "");
+			if (Send_hData(S4625_PINIT) != 0)
+				return false;
+		}
+		byte[] data = null;
+		if (this.curState == ResetPrinterInit_START || this.curState == ResetPrinterInit) {
+			if (this.curState == ResetPrinterInit_START) {
+				this.curState = ResetPrinterInit;
+				this.curChkState = CheckStatus_START;
+			}
+			data = CheckStatus();
+			log.debug("1 ===<><>{} chkChkState {} {}", this.curState, this.curChkState, data);
+			if (CheckDis(data) == -2) 
+				return false;
+
+			if (!CheckErrorReset(data)) {
+				return false;
+			} else {
+				log.debug("2 ===<><>{} chkChkState {} {}", this.curState, this.curChkState, data);
+				this.curState = ResetPrinterInit_FINISH;
+			}
+		}
+		log.debug("5 ===<><>{} chkChkState {}", this.curState, this.curChkState);
+		if (curState == ResetPrinterInit_FINISH) {
+			log.debug("{} {} {} 00補摺機重置完成！", brws, "", "");
+			return true;
+		} else
+			return false;
+	}
+
+	@Override
+	public int apatoi(byte[] szBuf, int iLen) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public void LogData(byte[] str, int type, int len) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public boolean SetCPI(boolean start, int cpi) {
+		// TODO Auto-generated method stub
+		byte[] Pdata = {ESQ, (byte)0x0};
+		if (start)
+			this.curState = SetCPI_START;
+		log.debug("{} {} {} SetCPI curState={}", brws, "", "", this.curState);
+		if (this.curState == SetCPI_START) {
+			log.debug("{} {} {} SetCPI {}...", brws, "", "", cpi);
+			switch (cpi)
+			{
+			case 5:
+				Pdata[1] = (byte)0x3c;
+				break;
+			case 6:
+				Pdata[1] = (byte)0x3d;
+				break;
+			default:
+				Pdata[1] = (byte)0x36;
+				break;
+			}
+
+			if (Send_hData(Pdata) != 0)
+				return false;
+		}
+		byte[] data = null;
+		if (this.curState == SetCPI_START || this.curState == SetCPI) {
+			if (this.curState == SetCPI_START) {
+				this.curState = SetCPI;
+				this.curChkState = CheckStatus_START;
+			}
+			data = CheckStatus();
+			log.debug("1 ===<><>{} SetCPI {} {} iCnt={}", this.curState, this.curChkState, data, this.iCnt);
+			if (CheckDis(data) != 0) {
+				if (!pc.connectStatus()) {
+					log.debug("{} {} {} 94補摺機斷線！", brws, "", "");
+					return false;
+				}
+				return false;
+			}else {
+				log.debug("2 ===<><>{} SetCPI {} {}", this.curState, this.curChkState, data);
+				this.curState = SetCPI_FINISH;
+			}
+		}
+		log.debug("3 ===<><>{} SetCPI {}", this.curState, this.curChkState);
+		if (curState == SetCPI_FINISH) {
+			log.debug("{} {} {} SetCPI fiinish！", brws, "", "");
+			return true;
+		} else
+			return false;
+	}
+
+	@Override
+	public boolean SetLPI(boolean start, int lpi) {
+		// TODO Auto-generated method stub
+		/*
+		LF1     DB      4,ESQ,'&30'             ;1/4 吋
+		LF2     DB      4,ESQ,'&24'             ;1/5 吋
+		LF3     DB      4,ESQ,'&20'             ;1/6 吋
+		LF4     DB      4,ESQ,'&15'             ;1/8 吋
+		LF5     DB      4,ESQ,'&12'             ;1/10 吋
+		LF6     DB      4,ESQ,'&10'             ;1/12 吋
+		*/
+
+		byte[] Pdata = {ESQ, (byte)'&',(byte)0x0,(byte)0x0 };
+		if (start)
+			this.curState = SetLPI_START;
+		log.debug("{} {} {} SetLPI curState={}", brws, "", "", this.curState);
+		if (this.curState == SetLPI_START) {
+			log.debug("{} {} {} SetLPI {}...", brws, "", "", lpi);
+			switch (lpi)
+			{
+			case 3:
+				Pdata[2]=(byte)0x34;
+				Pdata[3]=(byte)0x30;
+				break;
+			case 4:
+				Pdata[2]=(byte)0x33;
+				Pdata[3]=(byte)0x30;
+				break;
+			case 5:
+				Pdata[2]=(byte)0x32;
+				Pdata[3]=(byte)0x34;
+				break;
+			case 6:
+				Pdata[2]=(byte)0x32;
+				Pdata[3]=(byte)0x30;
+				break;
+			case 8:
+				Pdata[2]=(byte)0x31;
+				Pdata[3]=(byte)0x35;
+				break;
+			case 10:
+				Pdata[2]=(byte)0x31;
+				Pdata[3]=(byte)0x32;
+				break;
+			case 12:
+				Pdata[2]=(byte)0x31;
+				Pdata[3]=(byte)0x30;
+				break;
+			default:
+				Pdata[2]=(byte)0x32;
+				Pdata[3]=(byte)0x30;
+				break;
+			}
+
+			if (Send_hData(Pdata) != 0)
+				return false;
+		}
+		byte[] data = null;
+		if (this.curState == SetLPI_START || this.curState == SetLPI) {
+			if (this.curState == SetLPI_START) {
+				this.curState = SetLPI;
+				this.curChkState = CheckStatus_START;
+			}
+			data = CheckStatus();
+			log.debug("1 ===<><>{} SetLPI {} {} iCnt={}", this.curState, this.curChkState, data, this.iCnt);
+			if (CheckDis(data) != 0) {
+				if (!pc.connectStatus()) {
+					log.debug("{} {} {} 94補摺機斷線！", brws, "", "");
+					return false;
+				}
+				return false;
+			}else {
+				log.debug("2 ===<><>{} SetLPI {} {}", this.curState, this.curChkState, data);
+				this.curState = SetLPI_FINISH;
+			}
+		}
+		log.debug("3 ===<><>{} SetLPI {}", this.curState, this.curChkState);
+		if (curState == SetLPI_FINISH) {
+			log.debug("{} {} {} SetLPI fiinish！", brws, "", "");
+			return true;
+		} else
+			return false;
+	}
+
+	@Override
+	public boolean SetEnlarge(int type) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean SkipnLine(int nLine) {
+		// TODO Auto-generated method stub
+		if (nLine == 0)
+			return true;
+		if (nLine < 0) {
+			nLine = nLine * -1;
+			for(int i = 0;i < nLine; i++)
+				Send_hData(S4625_PREVERSE_LINEFEED);
+		} else {
+			byte[] pData = {ESQ, (byte)0x49, 0x0, 0x0, 0x0};
+			String sptrn = String.format("%03d",nLine);
+			int i = 0;
+			for (final byte b: sptrn.getBytes())
+				pData[2 + i++] = b;
+			Send_hData(pData);
+		}
+		return true;
+	}
+
+	@Override
+	public boolean MoveFine(byte[] value) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public byte[] PrtCCode(byte[] buff) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public char C2H(char buf1, char buf2) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public boolean MS_Write(String brws, String account, byte[] buff) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean Parsing(boolean start, byte[] str) {
+		// TODO Auto-generated method stub
+		return true;
+	}
+
+	@Override
+	public int DeParam(byte[] str) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public byte[] cstrchr(byte[] str, byte c) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public int change_big5_ser(byte first, byte second) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public int Prt_Big5(byte high, byte low) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public int search_24(int sernum, byte[] pattern) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public int LockPrinter() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public int ReleasePrinter() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public boolean SetInkColor(int color) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean SetTrain() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean ChkExtFont(int fontno) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean AddExtFont(byte high, byte low) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean CheckPaper() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean CheckError(byte[] data) {
+		if (data == null || data.length == 0)
+			return false;
+		// TODO Auto-generated method stub
+		// S4265
+		// ESC 'r' '2' --> DOCUMENT EMPTY nopaper
+		// 'P' --> paper in
+		// '8' --> command error
+		// '1' --> paper jam
+		// '4' --> paper in chasis
+		// '6' --> ???
+		// 'q' --> msr error
+		// 'r' --> blank msr
+		// 'X' --> Warning , print area out of paper
+		// 'a' --> Hard error conditions
+		// 'b' --> Receive Error
+		// 'A' --> Warning waiting passbook insert
+		// 0x90 --> hw error
+		// 0x80 --> S4265 can not operate
+		// 0xd0 --> S4265 , status not in initial config
+		switch (data[2]) {
+		case (byte) '2':
+		case (byte) '4':
+		case (byte) 'P':
+		case (byte) 'A':
+		case (byte) 0xd0:
+			return true;
+		case (byte) '1': // 20060619 paper jam
+			Send_hData(S4625_PERRCODE_REQ);
+			Sleep(50);
+			data = Rcv_Data(5);
+			// 20091002 , show error code
+			log.debug("{} {} {} 95硬體錯誤代碼1[{}]", brws, "", "", String.format(outptrn1, data));
+
+			ResetPrinter();
+			this.curState = ResetPrinterInit_START;
+			ResetPrinterInit();
+			return false;
+		case (byte) 'a': // 20060801 hardware error ,ESCra , this may need resetInit()
+		case (byte) 'b':
+			// 20170116 , fix
+			// ResetPrinterInit();
+			ResetPrinter();
+			this.curState = ResetPrinterInit_START;
+			ResetPrinterInit();
+			return false;
+		case (byte) '8':
+			// command error,
+			Send_hData(S4625_PERRCODE_REQ);
+			Sleep(50);
+			data = Rcv_Data(5);
+			// 20091002 , show error code
+			log.debug("{} {} {} 95硬體錯誤代碼2[{}]", brws, "", "", String.format(outptrn1, data));
+
+			ResetPrinter();
+			return false;
+		case (byte) 'X': // Warning , paper lower
+			Send_hData(S4625_PERRCODE_REQ);
+			Sleep(50);
+			data = Rcv_Data(5);
+			// 20091002 , show error code
+			log.debug("{} {} {} 95硬體錯誤代碼3[{}]", brws, "", "", String.format(outptrn1, data));
+
+			ResetPrinter();
+			return true;
+		case (byte) 'q': // read/write error of MS
+		case (byte) 'r': // read error of MS
+			this.curState = CheckStatus_START;
+			data = CheckStatus();
+			Send_hData(S4625_PERRCODE_REQ);
+			Sleep(50);
+			data = Rcv_Data(5);
+			// 20091002 , show error code
+			log.debug("{} {} {} 95硬體錯誤代碼4[{}]", brws, "", "", String.format(outptrn1, data));
+
+			ResetPrinter();
+			this.curState = ResetPrinterInit_START;
+			ResetPrinterInit();
+			return false;
+		case (byte) 0x21:
+		case (byte) 0x22:
+			Send_hData(S4625_PERRCODE_REQ);
+			Sleep(50);
+			data = Rcv_Data(5);
+			// 20091002 , show error code
+			log.debug("{} {} {} 95硬體錯誤代碼5{}]", brws, "", "", String.format(outptrn1, data));
+
+			ResetPrinter();
+			this.curState = ResetPrinterInit_START;
+			ResetPrinterInit();
+			return false;
+		case 0x00:
+			log.debug("[{}]:S4625 : Error Reset[0x00]", String.format(outptrn2, wsno));
+
+			return false;
+		default:
+			log.debug("[{}]:S4625 : Error Reset[{}]", String.format(outptrn2, wsno), String.format(outptrn3, data[2]));
+			ResetPrinter();
+			return false;
+		}
+	}
+
+	@Override
+	public boolean CheckErrorReset(byte[] data) {
+		// TODO Auto-generated method stub
+		if (data == null || data.length == 0)
+			return false;
+		// S4265
+		// ESC 'r' '2' --> DOCUMENT EMPTY nopaper
+		// 'P' --> paper in
+		// '8' --> command error
+		// '1' --> paper jam
+		// '4' --> paper in chasis
+		// '6' --> ???
+		// 'q' --> msr error
+		// 'r' --> blank msr
+		// 'X' --> Warning , print area out of paper
+		// 'a' --> Hard error conditions
+		// 'b' --> Receive Error
+		// 'A' --> Warning waiting passbook insert
+		// 0x90 --> hw error
+		// 0x80 --> S4265 can not operate
+		// 0xd0 --> S4265 , status not in initial config
+		switch (data[2]) {
+		case (byte) '2':
+		case (byte) '4':
+		case (byte) 'P':
+		case (byte) 'A':
+		case (byte) 0xd0:
+			return true;
+		case (byte) '1': // 20060619 paper jam
+			Send_hData(S4625_PERRCODE_REQ);
+			Sleep(50);
+			data = Rcv_Data(5);
+			log.debug("{} {} {} 95硬體錯誤代碼Reset-1[{}]", brws, "", "", String.format(outptrn1, data));
+			return false;
+		case (byte) 'a': // 20060801 hardware error ,ESCra , this may need resetInit()
+		case (byte) 'b':
+			return false;
+		case (byte) '8':
+			// command error,
+			Send_hData(S4625_PERRCODE_REQ);
+			Sleep(50);
+			data = Rcv_Data(5);
+			log.debug("{} {} {} 95硬體錯誤代碼Reset-2[{}]", brws, "", "", String.format(outptrn1, data));
+			return false;
+		case (byte) 'X': // Warning , paper lower
+			Send_hData(S4625_PERRCODE_REQ);
+			Sleep(50);
+			data = Rcv_Data(5);
+			log.debug("{} {} {} 95硬體錯誤代碼Reset-3[{}]", brws, "", "", String.format(outptrn1, data));
+			return true;
+		case (byte) 'q': // read/write error of MS
+		case (byte) 'r': // read error of MS
+			Send_hData(S4625_PERRCODE_REQ);
+			Sleep(50);
+			data = Rcv_Data(5);
+			log.debug("{} {} {} 95硬體錯誤代碼Reset-4[{}]", brws, "", "", String.format(outptrn1, data));
+			return false;
+		case (byte) 0x21:
+		case (byte) 0x22:
+			Send_hData(S4625_PERRCODE_REQ);
+			Sleep(50);
+			data = Rcv_Data(5);
+			log.debug("{} {} {} 95硬體錯誤代碼Reset-5[{}]", brws, "", "", String.format(outptrn1, data));
+			return false;
+		case (byte) 0x00:
+			log.debug("[{}]:S4625 : Error Reset[0x00]", String.format(outptrn2, wsno));
+			return false;
+		default:
+			log.debug("[{}]:S4625 : Error Reset[{}]", String.format(outptrn2, wsno), String.format(outptrn3, data[2]));
+			return false;
+		}
+	}
+
+	@Override
+	public boolean Prt_Transverse(byte high, byte low) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean SetTran(byte[] buff) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public int my_pow(int x, int y) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public void SendHalf(byte c) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public int WebBranchSystem(byte[] pszCmd) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	/*********************************************************
+	*  ReadBarcode() : Get the passbook's barcode data       *
+	*  function      : 讀取條碼(頁次)內容                    *
+	*  parameter 1   : 1- HITACH_BARCODE                     *
+	*                  2- STD25_BARCODE(台銀)                *
+	*  return_code   : <= 0 - FALSE                          *
+	*                  >  0 - PAGE NUMBER          2008.01.22*
+	*********************************************************/
+	@Override
+	public short ReadBarcode(boolean first, short type) {
+		// TODO Auto-generated method stub
+		byte[] data = null;
+		if (first) {
+			this.curState = ReadBarcode;
+			this.curChkState = CheckStatus_START;
+			log.debug("ReadBarcode 1 ===<><>{} curChkState {}", this.curState, this.curChkState);
+		}
+		if (this.curState == ReadBarcode || this.curState == ReadBarcode_START) {
+			log.debug("ReadBarcode 2 ===<><>{} curChkState {}", this.curState, this.curChkState);
+			if (this.curState == ReadBarcode)
+				this.curState = ReadBarcode_START;
+			data = CheckStatus();
+			if (data == null) {
+//				log.debug("{} {} {} 94補摺機無回應", brws, "", "");
+				return 0;
+			}
+			if (data[2] != (byte)'4' && data[2] != (byte)'P' && data[2] != (byte)'2') {
+				if (new String(data).equals("DIS")) {
+					log.debug("{} {} {} 94補摺機斷線", brws, "", "");
+					this.curChkState = CheckStatus_FINISH;
+					return 0;
+				}
+				if (!CheckError(data)) {
+					log.debug("{} {} {} 95補摺機硬體錯誤！(SIG)", brws, "", "");
+					this.curChkState = CheckStatus_FINISH;
+					ResetPrinter();
+					return 0;
+				}
+			} else {
+				this.curChkState = CheckStatus_FINISH;
+				this.curState = ReadBarcode_START_2;
+				Send_hData(S4625_BAR_CODE);
+			}
+		}
+		if (this.curState == ReadBarcode_START_2) {
+			this.curState = ReadBarcodeRecvData;
+			Sleep(1500);
+			this.iCnt = 0;
+			this.curbarcodedata = null;
+			data = Rcv_Data();
+		} else if (this.curState == ReadBarcodeRecvData) {
+			Sleep(200);
+			this.iCnt++;
+//			if (data != null && !new String(data).equals("DIS")) {
+			while (null != (data = Rcv_Data()) && !new String(data).equals("DIS")) {
+//				log.debug("ReadBarcode 2.2 ===<><> data={} s={}", data, (byte)'s');
+
+				if ( data[1] == 'r' && data[2] == (byte)'P') {
+					log.debug("ReadBarcode 3 ===<><>{} chkChkState {}", this.curState, this.curChkState);
+				} else if (data[1] == (byte)'s') {
+					if (data[2] == (byte)0x7f) { // barcode error , blank paper etc
+						log.debug("{} {} {} {} 94補摺機狀態錯誤！(讀空白頁)", iCnt, brws, "", "");
+						this.curState = ResetPrinterInit_START;
+						return -1;
+//						ResetPrinterInit();
+//						pc.close();
+					} else {
+						this.curbarcodedata = new byte[3];
+						System.arraycopy(data, 3, this.curbarcodedata, 0, 3);
+						this.curState = ReadBarcode_FINISH;
+//						log.debug("ReadBarcode 4 ===<><>{} chkChkState {} {}", this.curState, this.curChkState, (short)(this.curbarcodedata[0] - 0x30));
+						return (short)(this.curbarcodedata[0] - 0x30);
+					}
+				} else if (iCnt > 40) {
+					log.debug("{} {} {} {} 94補摺機狀態錯誤！(MSR-2)", iCnt, brws, "", "");
+					this.curState = ResetPrinterInit_START;
+					ResetPrinterInit();
+					pc.close();
+				}
+				log.debug("ReadBarcode 4 ===<><>{} chkChkState {}", this.curState, this.curChkState);
+				this.iCnt++;
+			}
+		}
+
+		log.debug("ReadBarcode {} {} {} {} final data.length={}", iCnt, brws, "", "", data != null ? data.length : 0);
+		return 0;
+	}
+
+	/****************************************************************************
+	*	SetSignal() : Set Priner Signal 設定顯示燈號                *
+	*                 ex:(L1|L3,L4|L5|L6)                    *
+	*   parameter 1 : light : 某一燈號亮燈(L0 ~ L6)                 *
+	*   parameter 2 : blink : 某一燈號閃爍(L0 ~ L6)                 *
+	*                                                                           *
+	* # SetSignal[5]=Light   SetSignal[6]=Blink              *
+	* # L0:0x10(16/0010000)  請翻到最近一頁/                           *
+	* #                      請插入存摺後，稍待                                *
+	* # L1:0x01( 1/0000001)  請取出存摺						        *
+	* # L2:0x40(64/1000000)  請重新插入存摺					        *
+	* # L3:0x08( 8/0001000)  請洽服務台換摺					        *
+	* # L4:0x20(32/0100000)  異常狀態，請洽服務台			            *
+	* # L5:0x04( 4/0000100)  無補登資料						        *
+	* # L6:0x02( 2/0000010)  暫停服務              2008.01.18          *
+	*****************************************************************************/
+	@Override
+	public boolean SetSignal(boolean firstSet, boolean sendReqFirst, byte light1, byte light2, byte blink1, byte blink2) {
+		// TODO Auto-generated method stub
+		if (firstSet) {
+			if (sendReqFirst) {
+				this.curState = SetSignal;
+				this.curChkState = CheckStatus_START;
+			} else
+				this.curState = SetSignal_START_2;
+		}
+//		this.curState = SETSIGNAL;
+		byte[] data = null;
+		if (this.curState == SetSignal) {
+			data = CheckStatus();
+			log.debug("SetSignal 1 ===<><>{} {}", this.curState, data);
+			if (this.curChkState == CheckStatus_FINISH) {
+				if (data == null) {
+					log.debug("{} {} {} 94補摺機無回應", brws, "", "");
+					return false;
+					} else if (new String(data).equals("DIS")) {
+						log.debug("{} {} {} 94補摺機斷線", brws, "", "");
+						return false;
+					}
+				if (!CheckError(data)) {
+					log.debug("{} {} {} 95補摺機硬體錯誤！(SIG)", brws, "", "");
+					return false;
+				} else
+					this.curState = SetSignal_START_2;
+			}
+		}
+		if (this.curState == SetSignal_START_2 || this.curState == SetSignal_2) {
+			log.debug("SetSignal 2 ===<><>{} curChkState {}", this.curState, this.curChkState);
+			if (this.curState == SetSignal_START_2) {
+				// Lamp OFF
+				S4625_OFF_SIGNAL[2] = (byte)0;
+				S4625_OFF_SIGNAL[3] = (byte)0xff;
+				if ( Send_hData(S4625_OFF_SIGNAL) < 0 ) {
+					log.debug("[{}]:S4625 : SetSignal() -- OFF Signal Failed!!", String.format(outptrn2, wsno));
+					return false;
+				}
+				this.curState = SetSignal_2;
+				this.curChkState = CheckStatus_START;
+			}
+			data = CheckStatus();
+			if (CheckDis(data) != 0) 
+				return false;
+			if (!CheckError(data)) {
+				log.debug("{} {} {} 95補摺機硬體錯誤！(SIG)", brws, "", "");
+				return false;
+			} else 
+				this.curState = SetSignal_START_3;
+		}
+		if (this.curState == SetSignal_START_3 || this.curState == SetSignal_3) {
+			log.debug("SetSignal 3 ===<><>{} curChkState {}", this.curState, this.curChkState);
+			if (this.curState == SetSignal_START_3) {
+				Sleep(100);
+				S4625_SET_SIGNAL[2] = light1;
+				S4625_SET_SIGNAL[3] = light1;
+				if ( Send_hData(S4625_SET_SIGNAL) < 0 ) {
+					log.debug("[{}]:S4625 : SetSignal() -- OFF Signal Failed!!", String.format(outptrn2, wsno));
+					return false;
+				}
+				Sleep(100);
+				this.curState = SetSignal_3;
+				this.curChkState = CheckStatus_START;
+			}
+			data = CheckStatus();
+			if (CheckDis(data) != 0) 
+				return false;
+			if (!CheckError(data)) {
+				log.debug("{} {} {} 95補摺機硬體錯誤！(SIG)", brws, "", "");
+				return false;
+			} else 
+				this.curState = SetSignal_START_4;
+		}
+		if (this.curState == SetSignal_START_4 || this.curState == SetSignal_4) {
+			log.debug("SetSignal 4 ===<><>{} curChkState {}", this.curState, this.curChkState);
+			if (this.curState == SetSignal_START_4) {
+				if ((int)blink1 != 0 || (int)blink2 != 0) {
+					S4625_SET_BLINK[2] = blink1;
+					S4625_SET_BLINK[3] = blink2;
+					if ( Send_hData(S4625_SET_BLINK) < 0 ) {
+						log.debug("[{}]:S4625 : SetSignal() -- OFF Signal Failed!!", String.format(outptrn2, wsno));
+						return false;
+					}
+					Sleep(100);
+				}
+				this.curState = SetSignal_4;
+				this.curChkState = CheckStatus_START;
+			}
+			data = CheckStatus();
+			if (CheckDis(data) != 0) 
+				return false;
+			if (!CheckError(data)) {
+				log.debug("{} {} {} 95補摺機硬體錯誤！(SIG)", brws, "", "");
+				return false;
+			} else 
+				this.curState = SetSignal_FINISH;
+		}
+		log.debug("SetSignal 5 ===<><>{} curChkState {}", this.curState, this.curChkState);
+
+		return true;
+	}
+
+	@Override
+	public boolean AutoTurnPage(String brws, String account, short type) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean SetAutoInfo(Map<String, String> tid) {
+		// TODO Auto-generated method stub
+		return true;
+	}
+
+	@Override
+	public int CheckDis(byte[] data) {
+		// TODO Auto-generated method stub
+		if (data == null || data.length == 0)
+			return -1;
+		if (new String(data).contains("DIS")) {
+			log.debug("{} {} {} 94補摺機斷線！", brws, "", "");
+			return -2;
+		}
+		return 0;
+	}
+
+	private void Sleep(int s) {
+		try {
+			TimeUnit.MILLISECONDS.sleep(s);
+		} catch (InterruptedException e1) { // TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+	}
+
+	@Override
+	public AtomicBoolean getIsShouldShutDown() {
+		return isShouldShutDown;
+	}
+}
