@@ -126,17 +126,18 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	public static final int CHKBARCODE = 10; // Get Passbook's Page Type=2
 	public static final int SETSIGAFTERCHKBARCODE = 11; // Show Signal after get Passbook's Page Type=2
 	public static final int PROCTLM = 12; // compose TITA and send tita & Receive TOTA and check error
-	public static final int FORMATPRTDATA = 13; //// Format print data
-	public static final int FORMATPRTDATAERROR = 14; // 61存摺資料補登失敗！Show Signal
-	public static final int WRITEMSR = 15; //// Write MSR
-	public static final int WRITEMSRERR = 16; //// Write MSR ERROR 71存摺磁條寫入有問題！
-	public static final int READMSRERRAFTERWRITEMSRERR = 17; // 11磁條讀取失敗(1)！
-	public static final int READMSRSUCAFTERWRITEMSRERR = 18; // 12存摺磁條讀取成功(1)！
-	public static final int COMPMSRSUCAFTERWRITEMSRERR = 19; // 12存摺磁條比對正確(1)！
-	public static final int COMPMSRERRAFTERWRITEMSRERR = 20; // 12存摺磁條比對失敗(1)！
-	public static final int WRITEMSRERRSHOWSIG = 21; // 71存摺磁條寫入失敗！ Show Signal
-	public static final int PASSBOOKREGCOMPSUC = 22; // 72存摺資料補登成功！
-	public static final int DELPASSBOOKREGCOMPERR = 23; // 73存摺資料補登刪除失敗！Show Signal
+	public static final int SNDANDRCVTLM = 13; //send tita & Receive TOTA and check error
+	public static final int FORMATPRTDATA = 14; //// Format print data
+	public static final int FORMATPRTDATAERROR = 15; // 61存摺資料補登失敗！Show Signal
+	public static final int WRITEMSR = 16; //// Write MSR
+	public static final int WRITEMSRERR = 17; //// Write MSR ERROR 71存摺磁條寫入有問題！
+	public static final int READMSRERRAFTERWRITEMSRERR = 18; // 11磁條讀取失敗(1)！
+	public static final int READMSRSUCAFTERWRITEMSRERR = 19; // 12存摺磁條讀取成功(1)！
+	public static final int COMPMSRSUCAFTERWRITEMSRERR = 20; // 12存摺磁條比對正確(1)！
+	public static final int COMPMSRERRAFTERWRITEMSRERR = 21; // 12存摺磁條比對失敗(1)！
+	public static final int WRITEMSRERRSHOWSIG = 22; // 71存摺磁條寫入失敗！ Show Signal
+	public static final int PASSBOOKREGCOMPSUC = 23; // 72存摺資料補登成功！
+	public static final int DELPASSBOOKREGCOMPERR = 24; // 73存摺資料補登刪除失敗！Show Signal
 	public static final int NOTFINISH = 24; // iEnd != 0 continue printing
 	public static final int NOTFINISHATP = 25; // iEnd != 0 continue printing, Auto turn page
 	public static final int NOTFINISHHTP = 26; // iEnd != 0 continue printing, Handy turn page, Show Reentry signal.
@@ -160,10 +161,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	private String total_con = ""; // total NB count
 	private String org_mbal = ""; // original MSR's balance
 	private int iCount = 0;
-	private int iLine = 0;
 	private int iCon = 0;
 	private String dCount = "";
-	private int begin = 0;
+	private int iLine = 0;
+	private int pbavCnt = 999;
 	byte[] fepdd = new byte[2];
 	TITATel tl = null;
 //	private String cbkseq = "";
@@ -229,13 +230,6 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		}
 	}
 
-	/*
-	 * public void send(String msg) throws IOException { if (channel_ != null &&
-	 * channel_.isActive()) { // this.clientMessage = null; ByteBuf buf =
-	 * channel_.alloc().buffer().writeBytes(msg.getBytes());
-	 * channel_.writeAndFlush(buf); } else { throw new
-	 * IOException("Can't send message to inactive connection"); } }
-	 */
 	public void sendBytes(byte[] msg) throws IOException {
 		if (channel_ != null && channel_.isActive()) {
 			ByteBuf buf = channel_.alloc().buffer().writeBytes(msg);
@@ -651,12 +645,23 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		return rtn;
 	}
 
+	/*******************************************************************
+	*	Send_Recv() : Send TX to Host /                *
+	*                Receive Data from Host           *
+	*   function    : 傳送INQ/UPD交易上中心/接收中心資料    *
+	*   parameter 1 : AP type -- 1:PB / 2:FC / 3:GL   *
+	*   parameter 2 : data function -- 1:INQ / 2:DEL  *
+	*   parameter 3 : total NB count                  *
+	*   parameter 4 : original MSR's balance          *
+	*   return_code : = 0 - NORMAL                    *
+	*                 < 0 - ERROR                     *
+	********************************************************************/
 	private byte[] composeTelegram(int ifig, int ifun, String con, String mbal) {
 		byte[] rtn = null;
 		if (ifun == TXP.INQ) {
 			tl = new TITATel();
 			boolean tlrtn = tl.initTitaLabel((byte) '0');
-			log.debug("tl.initTitaLabel rtn={}", rtn);
+			log.debug("tl.initTitaLabel rtn={}", tlrtn);
 		}
 		try {
 			tl.setValue("brno", "983");
@@ -695,7 +700,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	private byte[] DataINQ(int iVal, int ifig, String dCount, String con) {
 		byte[] rtn = null;
 		P0080TEXT p0080text = null;
+		int begin = Integer.parseInt(dCount);
 		int totCnt = Integer.parseInt(con);
+		int inqiLine = Integer.parseInt(tx_area.get("cline").trim());
+		log.debug("1--->begin=>{} totCnt={} inqiLine={}", begin, totCnt, inqiLine);
 		try {
 			if (iVal == TXP.SENDTHOST) { // send to host
 				if (ifig == TXP.PBTYPE) {
@@ -705,7 +713,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					tl.setValue("aptype", "P00");
 					tl.setValue("stxno", "80");
 					tl.setValue("dscpt", "S80  ");
-					tl.setValueLtoRfill("actno", "983004149692", (byte) ' ');
+					tl.setValueLtoRfill("actno", tx_area.get("account"), (byte) ' ');
 					if (tl.ChkCrdb(this.msrbal) > 0)
 						tl.setValue("crdb", "1");
 					else
@@ -714,11 +722,12 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					sm = tl.FilterMsr(sm, '-', '0');
 					tl.setValue("txamt", sm);
 					tl.setValue("ver", "02");
-					p0080text.setValueRtoLfill("pbcnt", "999", (byte) '0');
-					p0080text.setValue("bkseq", bkseq);
+					this.pbavCnt = 999;
+					p0080text.setValueRtoLfill("pbcnt", String.format("%d", this.pbavCnt), (byte) '0');
+					p0080text.setValue("bkseq", this.bkseq);
 					// 要求筆數(若該頁剩餘筆數 < 6，則為"剩餘筆數")
-					if ((iLine - 1 + begin) + 6 > 24) {
-						int reqcnt = 24 - (iLine - 1 + begin);
+					if ((inqiLine - 1 + begin) + 6 > 24) {
+						int reqcnt = 24 - (inqiLine - 1 + begin);
 						log.debug("TxFlow : DataINQ() -- reqcnt ={}", reqcnt);
 						p0080text.setValueRtoLfill("reqcnt", Integer.toString(reqcnt), (byte) '0');
 					} else {
@@ -728,6 +737,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 						else
 							p0080text.setValueRtoLfill("reqcnt", Integer.toString(6), (byte) '0');
 					}
+					//未登摺之第幾筆
+					log.debug("--->begin=>{}", begin);
 					if (begin == 0)
 						p0080text.setValueRtoLfill("begin", Integer.toString(1), (byte) '0');
 					else
@@ -835,6 +846,82 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 
 		return rtn;
 	}
+	
+	/*******************************************************************
+	*	Send_Recv() : Send TX to Host /                *
+	*                Receive Data from Host           *
+	*   function    : 傳送INQ/UPD交易上中心/接收中心資料    *
+	*   parameter 1 : AP type -- 1:PB / 2:FC / 3:GL   *
+	*   parameter 2 : data function -- 1:INQ / 2:DEL  *
+	*   parameter 3 : total NB count                  *
+	*   parameter 4 : original MSR's balance          *
+	*   return_code : = 0 - NORMAL                    *
+	*                 < 0 - ERROR                     *
+	********************************************************************/
+	private int Send_Recv(int iflg,int ifun,String con, String mbal) {
+		int rtn = 0;
+		byte[] sndmsg = null;
+		if (ifun == TXP.INQ) {
+			tl = new TITATel();
+			boolean tlrtn = tl.initTitaLabel((byte) '0');
+			log.debug("tl.initTitaLabel rtn={}", tlrtn);
+		}
+		try {
+			tl.setValue("brno", "983");
+			tl.setValue("wsno", "0403");
+			try {
+				this.setSeqNo = Integer.parseInt(FileUtils.readFileToString(this.seqNoFile, Charset.defaultCharset())) + 1;
+				if (this.setSeqNo > 99999)
+					this.setSeqNo = 0;
+				FileUtils.writeStringToFile(this.seqNoFile, Integer.toString(this.setSeqNo), Charset.defaultCharset());
+			} catch (Exception e) {
+				log.warn("WORNING!!! update new seq number string {} error {}",this.setSeqNo, e.getMessage());
+			}
+			tl.setValueRtoLfill("txseq", String.format("%d", this.setSeqNo), (byte) '0');
+			tl.setValue("trancd", "CB");
+			tl.setValue("wstype", "0");
+			tl.setValue("tlrno", "00");
+			tl.setValueLtoRfill("txtype", " ", (byte) ' ');
+			tl.setValue("spcd", "0");
+			tl.setValue("nbcd", "0");
+			tl.setValue("hcode", "0");
+			tl.setValue("trnmod", "0");
+			tl.setValue("sbtmod", "0");
+			tl.setValue("curcd", "00");
+			tl.setValue("pseudo", "1");
+			if (!new String(this.fepdd).equals("  "))
+				tl.setValue("fepdd", this.fepdd);
+			if (ifun == TXP.INQ) {
+				if (this.iCount == 0)
+					log.debug("{} {} {} 03中心存摺補登資料讀取中...", brws, catagory, account);
+				//Send Inquiry Request
+				sndmsg = DataINQ(TXP.SENDTHOST, iflg, this.dCount, con);
+				if (sndmsg == null || sndmsg.length == 0) {
+					rtn = -1;
+				}
+			} else {
+				
+			}
+			if (!dispatcher.isTITA_TOTA_START() && !alreadySendTelegram) {
+				alreadySendTelegram = dispatcher.sendTelegram(sndmsg);
+			} else if (dispatcher.isTITA_TOTA_START() && alreadySendTelegram) {
+				byte[] rtelem = dispatcher.getResultTelegram();
+				if (rtelem != null) {
+					log.debug(
+							"{} {} {} :AutoPrnCls : process telegram isTITA_TOTA_START={} alreadySendTelegram={} get {}",
+							brws, catagory, account, dispatcher.isTITA_TOTA_START(), alreadySendTelegram,
+							new String(rtelem));
+					this.alreadySendTelegram = false;
+				}
+			}
+
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			log.error("telegram compose error on tita label: {}", e.getMessage());
+		}
+		return rtn;
+	}
 
 	private void prtcliFSM(boolean isInit) {
 		if (isInit) {
@@ -843,8 +930,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			this.dispatcher.setTITA_TOTA_START(false);
 			this.iFirst = 0;
 			this.iEnd = 0;
-			this.begin = 0;
-			this.dCount = String.format("%03d", this.begin);
+			this.dCount = "000";
+			this.iCount = Integer.parseInt(this.dCount);
 			this.catagory = "";
 			this.account = "";
 			log.debug("=======================check prtcliFSM init");
@@ -960,8 +1047,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				tx_area.put("keepacc", "");
 				Arrays.fill(fepdd, (byte) ' ');
 				this.iEnd = 0;
-				this.begin = 0;
-				this.dCount = String.format("%03d", this.begin);
+				this.dCount = "000";
+				this.iCount = Integer.parseInt(this.dCount);
 				tx_area.put("iEnd", Integer.toString(this.iEnd));
 				this.curState = CHKBARCODE;
 				log.debug("{} {} {} tx_area {} iFig={} AutoPrnCls : --start check barcode", brws, catagory, account,
@@ -1067,7 +1154,6 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		case PROCTLM:
 			log.debug("{} {} {} :AutoPrnCls : process telegram isTITA_TOTA_START={} alreadySendTelegram={}", brws,
 					catagory, account, dispatcher.isTITA_TOTA_START(), alreadySendTelegram);
-//			try {
 			if (!dispatcher.isTITA_TOTA_START() && !alreadySendTelegram) {
 				byte[] tel = composeTelegram(this.iFig, TXP.INQ, "0", "0");
 				log.debug("{} {} {} 03中心存摺補登資料讀取中...", brws, catagory, account);
@@ -1082,12 +1168,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					this.alreadySendTelegram = false;
 				}
 			}
-//			} catch (UnsupportedEncodingException ue) {
-//				// TODO Auto-generated catch block
-//				ue.printStackTrace();
-//				log.debug("error: {}", ue.getMessage());
-//			}
 			log.debug("after {}=>{}=====check prtcliFSM", before, this.curState);
+			break;
+		case SNDANDRCVTLM:
 			break;
 		default:
 			break;
