@@ -125,19 +125,18 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	public static final int CHKACTNO = 9;// Check ACTNO(BOT or not) , PAGE, maybe line...
 	public static final int CHKBARCODE = 10; // Get Passbook's Page Type=2
 	public static final int SETSIGAFTERCHKBARCODE = 11; // Show Signal after get Passbook's Page Type=2
-	public static final int PROCTLM = 12; // compose TITA and send tita & Receive TOTA and check error
-	public static final int SNDANDRCVTLM = 13; //send tita & Receive TOTA and check error
-	public static final int FORMATPRTDATA = 14; //// Format print data
-	public static final int FORMATPRTDATAERROR = 15; // 61存摺資料補登失敗！Show Signal
-	public static final int WRITEMSR = 16; //// Write MSR
-	public static final int WRITEMSRERR = 17; //// Write MSR ERROR 71存摺磁條寫入有問題！
-	public static final int READMSRERRAFTERWRITEMSRERR = 18; // 11磁條讀取失敗(1)！
-	public static final int READMSRSUCAFTERWRITEMSRERR = 19; // 12存摺磁條讀取成功(1)！
-	public static final int COMPMSRSUCAFTERWRITEMSRERR = 20; // 12存摺磁條比對正確(1)！
-	public static final int COMPMSRERRAFTERWRITEMSRERR = 21; // 12存摺磁條比對失敗(1)！
-	public static final int WRITEMSRERRSHOWSIG = 22; // 71存摺磁條寫入失敗！ Show Signal
-	public static final int PASSBOOKREGCOMPSUC = 23; // 72存摺資料補登成功！
-	public static final int DELPASSBOOKREGCOMPERR = 24; // 73存摺資料補登刪除失敗！Show Signal
+	public static final int SNDANDRCVTLM = 12; // compose TITA and send tita & Receive TOTA and check error
+	public static final int FORMATPRTDATA = 13; //// Format print data
+	public static final int FORMATPRTDATAERROR = 14; // 61存摺資料補登失敗！Show Signal
+	public static final int WRITEMSR = 15; //// Write MSR
+	public static final int WRITEMSRERR = 16; //// Write MSR ERROR 71存摺磁條寫入有問題！
+	public static final int READMSRERRAFTERWRITEMSRERR = 17; // 11磁條讀取失敗(1)！
+	public static final int READMSRSUCAFTERWRITEMSRERR = 18; // 12存摺磁條讀取成功(1)！
+	public static final int COMPMSRSUCAFTERWRITEMSRERR = 19; // 12存摺磁條比對正確(1)！
+	public static final int COMPMSRERRAFTERWRITEMSRERR = 20; // 12存摺磁條比對失敗(1)！
+	public static final int WRITEMSRERRSHOWSIG = 21; // 71存摺磁條寫入失敗！ Show Signal
+	public static final int PASSBOOKREGCOMPSUC = 22; // 72存摺資料補登成功！
+	public static final int DELPASSBOOKREGCOMPERR = 23; // 73存摺資料補登刪除失敗！Show Signal
 	public static final int NOTFINISH = 24; // iEnd != 0 continue printing
 	public static final int NOTFINISHATP = 25; // iEnd != 0 continue printing, Auto turn page
 	public static final int NOTFINISHHTP = 26; // iEnd != 0 continue printing, Handy turn page, Show Reentry signal.
@@ -1061,7 +1060,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 						log.debug("{} {} {} 02檢查存摺頁次正確...正確頁次={} 插入頁次={} 行次={}", brws, catagory, account, npage, rpage,
 								nline);
 						if (SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0010000000")) {
-							this.curState = PROCTLM;
+							this.curState = SNDANDRCVTLM;
 							log.debug("{} {} {} AutoPrnCls : --change process telegram", brws, catagory, account);
 						} else {
 							this.curState = SETSIGAFTERCHKBARCODE;
@@ -1101,7 +1100,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					log.debug("{} {} {} 02檢查存摺頁次正確...正確頁次={} 插入頁次={} 行次={}", brws, catagory, account, npage, rpage,
 							nline);
 					if (SetSignal(firstOpenConn, !firstOpenConn, "0000000000", "0010000000")) {
-						this.curState = PROCTLM;
+						this.curState = SNDANDRCVTLM;
 						log.debug("{} {} {} AutoPrnCls : --change process telegram", brws, catagory, account);
 					} else {
 						this.curState = SETSIGAFTERCHKBARCODE;
@@ -1129,7 +1128,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			log.debug("{} {} {} :AutoPrnCls : process setsignal after checkbcode", brws, catagory, account);
 			if (npage == rpage) {
 				if (SetSignal(!firstOpenConn, !firstOpenConn, "0000000000", "0010000000")) {
-					this.curState = PROCTLM;
+					this.curState = SNDANDRCVTLM;
 					log.debug("{} {} {} AutoPrnCls : --change process telegram", brws, catagory, account);
 				} else {
 					this.curState = SETSIGAFTERCHKBARCODE;
@@ -1151,7 +1150,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			}
 			log.debug("after {}=>{}=====check prtcliFSM", before, this.curState);
 			break;
-		case PROCTLM:
+		case SNDANDRCVTLM:
 			log.debug("{} {} {} :AutoPrnCls : process telegram isTITA_TOTA_START={} alreadySendTelegram={}", brws,
 					catagory, account, dispatcher.isTITA_TOTA_START(), alreadySendTelegram);
 			if (!dispatcher.isTITA_TOTA_START() && !alreadySendTelegram) {
@@ -1169,8 +1168,6 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				}
 			}
 			log.debug("after {}=>{}=====check prtcliFSM", before, this.curState);
-			break;
-		case SNDANDRCVTLM:
 			break;
 		default:
 			break;
