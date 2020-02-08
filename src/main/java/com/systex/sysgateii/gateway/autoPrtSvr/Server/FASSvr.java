@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -198,6 +199,7 @@ public class FASSvr implements MessageListener<byte[]>, Runnable {
 						}
 						rtn = new byte[telmbyteary.length - TXP.CONTROL_BUFFER_SIZE];
 						System.arraycopy(telmbyteary, TXP.CONTROL_BUFFER_SIZE, rtn, 0, telmbyteary.length - TXP.CONTROL_BUFFER_SIZE);
+						rtn = remove03(rtn);
 						log.debug("get rtn len= {}", rtn.length);
 						this.setTITA_TOTA_START(false);
 //						break;
@@ -219,6 +221,14 @@ public class FASSvr implements MessageListener<byte[]>, Runnable {
 			}
 		}
 		return rtn;
+	}
+	
+	private byte[] remove03(byte[] source) {
+		if (source[source.length - 1] == 0x03) {
+			source = ArrayUtils.subarray(source, 0, source.length - 1);
+			log.debug("remove03");
+		}
+		return source;
 	}
 
 	public boolean isTITA_TOTA_START() {

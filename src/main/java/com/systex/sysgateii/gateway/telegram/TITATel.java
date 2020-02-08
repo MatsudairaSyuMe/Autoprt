@@ -73,7 +73,7 @@ public class TITATel {
     private String  trancd = "trancd";
     private String  fwstype = "fwstype"; 
     private String  wstype = "wstype";
-    private String  tlrno = "tlrno";
+    private String  titalrno = "titalrno";
     private String  aptype = "aptype";
     private String  apcode = "apcode";
     private String  stxno  = "stxno";     
@@ -168,7 +168,7 @@ public class TITATel {
         trancd,
         fwstype,
         wstype,
-        tlrno,
+        titalrno,
         aptype,
         apcode,
         stxno,
@@ -250,7 +250,7 @@ public class TITATel {
     private byte[] titalabelary = null;
 
     public TITATel() {
-        System.out.println("titalabel_lens of items=" + titalabel_lens.length);
+        log.debug("titalabel_lens items=" + titalabel_lens.length);
         int id = 0;
         for (int l: titalabel_lens) {
             Field f = new Field();
@@ -316,7 +316,7 @@ public class TITATel {
         System.arraycopy(text, 0, titamsg, label.length, text.length);
         return titamsg;
     }
-
+    
     public static void main(String[] args) throws Exception {
         int iLine = 0;
         int begin = 0;
@@ -331,39 +331,39 @@ public class TITATel {
         iLine = Integer.parseInt(cline.trim());
         begin = Integer.parseInt("000".trim());
         Arrays.fill(fepdd, (byte)' ');
-        TITATel tl = new TITATel();
-        rtn = tl.initTitaLabel((byte)'0');
-        log.debug("tl.initTitaLabel rtn={}",rtn);
+        TITATel tital = new TITATel();
+        rtn = tital.initTitaLabel((byte)'0');
+        log.debug("tital.initTitaLabel rtn={}",rtn);
         P0080TEXT p0080text = new P0080TEXT();
         p0080titatextrtn = p0080text.initP0080TitaTEXT((byte)'0');
-        tl.setValue("brno", "983");
-        tl.setValue("wsno", "0403");
-        tl.setValue("txseq", "12345");
-        tl.setValue("trancd", "CB");
-        tl.setValue("wstype", "0");
-        tl.setValue("tlrno", "00");
-        tl.setValueLtoRfill("txtype", " ", (byte)' ');
-        tl.setValue("spcd", "0");
-        tl.setValue("nbcd", "0");
-        tl.setValue("hcode", "0");
-        tl.setValue("trnmod", "0");
-        tl.setValue("sbtmod", "0");
-        tl.setValue("curcd", "00");
-        tl.setValue("pseudo", "1");
+        tital.setValue("brno", "983");
+        tital.setValue("wsno", "0403");
+        tital.setValue("txseq", "12345");
+        tital.setValue("trancd", "CB");
+        tital.setValue("wstype", "0");
+        tital.setValue("titalrno", "00");
+        tital.setValueLtoRfill("txtype", " ", (byte)' ');
+        tital.setValue("spcd", "0");
+        tital.setValue("nbcd", "0");
+        tital.setValue("hcode", "0");
+        tital.setValue("trnmod", "0");
+        tital.setValue("sbtmod", "0");
+        tital.setValue("curcd", "00");
+        tital.setValue("pseudo", "1");
         if (!new String(fepdd).equals("  "))
-            tl.setValue("fepdd", fepdd);
-        tl.setValue("aptype", "P00");
-        tl.setValue("stxno", "80");
-        tl.setValue("dscpt", "S80  ");
-        tl.setValueLtoRfill("actno", "983004149692", (byte)' ');
-        if (tl.ChkCrdb(marbal) > 0)
-            tl.setValue("crdb", "1");
+            tital.setValue("fepdd", fepdd);
+        tital.setValue("aptype", "P00");
+        tital.setValue("stxno", "80");
+        tital.setValue("dscpt", "S80  ");
+        tital.setValueLtoRfill("actno", "983004149692", (byte)' ');
+        if (tital.ChkCrdb(marbal) > 0)
+            tital.setValue("crdb", "1");
         else
-            tl.setValue("crdb", "0");
+            tital.setValue("crdb", "0");
         String sm = marbal.substring(1);
-        sm = tl.FilterMsr(sm, '-', '0');
-        tl.setValue("txamt",sm);
-        tl.setValue("ver","02");
+        sm = tital.FilterMsr(sm, '-', '0');
+        tital.setValue("txamt",sm);
+        tital.setValue("ver","02");
         p0080text.setValueRtoLfill("pbcnt", "999", (byte)'0');
         p0080text.setValue("bkseq", bkseq);
         //要求筆數(若該頁剩餘筆數 < 6，則為"剩餘筆數")
@@ -385,7 +385,7 @@ public class TITATel {
         else
             p0080text.setValueRtoLfill("begin", Integer.toString(begin + 1), (byte)'0');
 
-        byte[] p0080tita = tl.mkTITAmsg(tl.getTitalabel(), p0080text.getP0080Titatext());
+        byte[] p0080tita = tital.mkTITAmsg(tital.getTitalabel(), p0080text.getP0080Titatext());
         log.debug("4--->[{}] len={}",new String(p0080tita), p0080tita.length);
 
     }

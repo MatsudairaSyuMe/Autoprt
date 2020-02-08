@@ -29,6 +29,7 @@ import com.systex.sysgateii.gateway.prtCmd.Printer;
 import com.systex.sysgateii.gateway.prtCmd.Impl.CS4625Impl;
 import com.systex.sysgateii.gateway.telegram.P0080TEXT;
 import com.systex.sysgateii.gateway.telegram.TITATel;
+import com.systex.sysgateii.gateway.telegram.TOTATel;
 import com.systex.sysgateii.gateway.util.ipAddrPars;
 
 import io.netty.bootstrap.Bootstrap;
@@ -169,7 +170,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	private int iLine = 0;
 	private int pbavCnt = 999;
 	byte[] fepdd = new byte[2];
-	TITATel tl = null;
+	TITATel tital = null;
+	TOTATel total = null;
 //	private String cbkseq = "";
 	private static final boolean firstOpenConn = true;
 	private String account = "";
@@ -179,6 +181,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	private boolean alreadySendTelegram = false;
 	private byte[] sndmsg = null;
 	private byte[] rtelem = null;
+	private String msgid = "";
 	ConcurrentHashMap<String, String> tx_area = new ConcurrentHashMap<String, String>();
 
 	List<ActorStatusListener> actorStatusListeners = new ArrayList<ActorStatusListener>();
@@ -529,7 +532,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	}
 
 	// end for ChannelDuplexHandler function
-
+    //sleep function using milliseconds unit as parameter 
 	private void Sleep(int s) {
 		try {
 			TimeUnit.MILLISECONDS.sleep(s);
@@ -650,122 +653,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		return rtn;
 	}
 
-	/*******************************************************************
-	*	Send_Recv() : Send TX to Host /                *
-	*                Receive Data from Host           *
-	*   function    : 傳送INQ/UPD交易上中心/接收中心資料    *
-	*   parameter 1 : AP type -- 1:PB / 2:FC / 3:GL   *
-	*   parameter 2 : data function -- 1:INQ / 2:DEL  *
-	*   parameter 3 : total NB count                  *
-	*   parameter 4 : original MSR's balance          *
-	*   return_code : = 0 - NORMAL                    *
-	*                 < 0 - ERROR                     *
-	********************************************************************/
-	private byte[] composeTelegram(int ifig, int ifun, String con, String mbal) {
-		byte[] rtn = null;
-		if (ifun == TXP.INQ) {
-			tl = new TITATel();
-			boolean tlrtn = tl.initTitaLabel((byte) '0');
-			log.debug("tl.initTitaLabel rtn={}", tlrtn);
-		}
-		try {
-			tl.setValue("brno", "983");
-			tl.setValue("wsno", "0403");
-			try {
-				this.setSeqNo = Integer.parseInt(FileUtils.readFileToString(this.seqNoFile, Charset.defaultCharset())) + 1;
-				if (this.setSeqNo > 99999)
-					this.setSeqNo = 0;
-				FileUtils.writeStringToFile(this.seqNoFile, Integer.toString(this.setSeqNo), Charset.defaultCharset());
-			} catch (Exception e) {
-				log.warn("WORNING!!! update new seq number string {} error {}",this.setSeqNo, e.getMessage());
-			}
-			tl.setValueRtoLfill("txseq", String.format("%d", this.setSeqNo), (byte) '0');
-			tl.setValue("trancd", "CB");
-			tl.setValue("wstype", "0");
-			tl.setValue("tlrno", "00");
-			tl.setValueLtoRfill("txtype", " ", (byte) ' ');
-			tl.setValue("spcd", "0");
-			tl.setValue("nbcd", "0");
-			tl.setValue("hcode", "0");
-			tl.setValue("trnmod", "0");
-			tl.setValue("sbtmod", "0");
-			tl.setValue("curcd", "00");
-			tl.setValue("pseudo", "1");
-			if (!new String(this.fepdd).equals("  "))
-				tl.setValue("fepdd", this.fepdd);
-			rtn = DataINQ(TXP.SENDTHOST, ifig, this.dCount, con);
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			log.error("telegram compose error on tita label: {}", e.getMessage());
-		}
-		return rtn;
-	}
-
 	private byte[] DataINQ(int iVal, int ifig, String dCount, String con) {
-		byte[] rtn = null;
-		P0080TEXT p0080text = null;
-		int begin = Integer.parseInt(dCount);
-		int totCnt = Integer.parseInt(con);
-		int inqiLine = Integer.parseInt(tx_area.get("cline").trim());
-		log.debug("1--->begin=>{} totCnt={} inqiLine={}", begin, totCnt, inqiLine);
-		try {
-			if (iVal == TXP.SENDTHOST) { // send to host
-				if (ifig == TXP.PBTYPE) {
-					p0080text = new P0080TEXT();
-					boolean p0080titatextrtn = p0080text.initP0080TitaTEXT((byte) '0');
-					log.debug("p0080titatextrtn.initP0080TitaTEXT p0080titatextrtn={}", p0080titatextrtn);
-					tl.setValue("aptype", "P00");
-					tl.setValue("stxno", "80");
-					tl.setValue("dscpt", "S80  ");
-					tl.setValueLtoRfill("actno", tx_area.get("account"), (byte) ' ');
-					if (tl.ChkCrdb(this.msrbal) > 0)
-						tl.setValue("crdb", "1");
-					else
-						tl.setValue("crdb", "0");
-					String sm = this.msrbal.substring(1);
-					sm = tl.FilterMsr(sm, '-', '0');
-					tl.setValue("txamt", sm);
-					tl.setValue("ver", "02");
-					this.pbavCnt = 999;
-					p0080text.setValueRtoLfill("pbcnt", String.format("%d", this.pbavCnt), (byte) '0');
-					p0080text.setValue("bkseq", this.bkseq);
-					// 要求筆數(若該頁剩餘筆數 < 6，則為"剩餘筆數")
-					if ((inqiLine - 1 + begin) + 6 > 24) {
-						int reqcnt = 24 - (inqiLine - 1 + begin);
-						log.debug("TxFlow : DataINQ() -- reqcnt ={}", reqcnt);
-						p0080text.setValueRtoLfill("reqcnt", Integer.toString(reqcnt), (byte) '0');
-					} else {
-						// 若剩餘要求之未登摺筆數 < 6，則為"剩餘之未登摺筆數"，否則為6
-						if (totCnt > 0 && begin + 6 > totCnt)
-							p0080text.setValueRtoLfill("reqcnt", Integer.toString(totCnt - begin), (byte) '0');
-						else
-							p0080text.setValueRtoLfill("reqcnt", Integer.toString(6), (byte) '0');
-					}
-					//未登摺之第幾筆
-					log.debug("--->begin=>{}", begin);
-					if (begin == 0)
-						p0080text.setValueRtoLfill("begin", Integer.toString(1), (byte) '0');
-					else
-						p0080text.setValueRtoLfill("begin", Integer.toString(begin + 1), (byte) '0');
-					rtn = tl.mkTITAmsg(tl.getTitalabel(), p0080text.getP0080Titatext());
-				} else if (iFig == TXP.FCTYPE) {
-				} else if (iFig ==TXP.GLTYPE) {
-				}
-			} else { //iVal == RECVFHOST
-				if (iFig == TXP.PBTYPE) {
-				} else if (iFig == TXP.FCTYPE) {
-				} else if (iFig == TXP.GLTYPE) {
-				}
-			}
-			log.debug("4--->[{}] len={}", new String(rtn), rtn.length);
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			log.error("telegram  DataINQ error on tita label: {}", e.getMessage());
-		}
-
-		return rtn;
+		return DataINQ(iVal, ifig, dCount, con, null);
 	}
 
 	private boolean MS_Check(byte[] cussrc) {
@@ -852,6 +741,112 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		return rtn;
 	}
 	
+	private byte[] DataINQ(int iVal, int ifig, String dCount, String con, byte[] opttotatext) {
+		// optotatext only used while iVal == TXP.RECVFHOST mode
+		byte[] rtn = null;
+		P0080TEXT p0080text = null;
+		int begin = Integer.parseInt(dCount);
+		int totCnt = Integer.parseInt(con);
+		int inqiLine = Integer.parseInt(tx_area.get("cline").trim());
+		log.debug("1--->begin=>{} totCnt={} inqiLine={}", begin, totCnt, inqiLine);
+		if (opttotatext != null && opttotatext.length > 0)
+			log.debug("1.1--->opttotatext.length=>{}", opttotatext.length);
+		try {
+			if (iVal == TXP.SENDTHOST) { // send to host
+				if (ifig == TXP.PBTYPE) {
+					p0080text = new P0080TEXT();
+					boolean p0080titatextrtn = p0080text.initP0080TitaTEXT((byte) '0');
+					log.debug("p0080titatextrtn.initP0080TitaTEXT p0080titatextrtn={}", p0080titatextrtn);
+					tital.setValue("aptype", "P00");
+					tital.setValue("stxno", "80");
+					tital.setValue("dscpt", "S80  ");
+					tital.setValueLtoRfill("actno", tx_area.get("account"), (byte) ' ');
+					if (tital.ChkCrdb(this.msrbal) > 0)
+						tital.setValue("crdb", "1");
+					else
+						tital.setValue("crdb", "0");
+					String sm = this.msrbal.substring(1);
+					sm = tital.FilterMsr(sm, '-', '0');
+					tital.setValue("txamt", sm);
+					tital.setValue("ver", "02");
+					this.pbavCnt = 999;
+//					this.pbavCnt = 1;
+					p0080text.setValueRtoLfill("pbcnt", String.format("%d", this.pbavCnt), (byte) '0');
+					p0080text.setValue("bkseq", this.bkseq);
+					// 要求筆數(若該頁剩餘筆數 < 6，則為"剩餘筆數")
+					if ((inqiLine - 1 + begin) + 6 > 24) {
+						int reqcnt = 24 - (inqiLine - 1 + begin);
+						log.debug("TxFlow : DataINQ() -- reqcnt 1 ={}", Integer.toString(reqcnt));
+						p0080text.setValueRtoLfill("reqcnt", Integer.toString(reqcnt), (byte) '0');
+					} else {
+						// 若剩餘要求之未登摺筆數 < 6，則為"剩餘之未登摺筆數"，否則為6
+						if (totCnt > 0 && begin + 6 > totCnt) {
+							log.debug("TxFlow : DataINQ() -- reqcnt 2 ={}", Integer.toString(totCnt - begin));
+							p0080text.setValueRtoLfill("reqcnt", Integer.toString(totCnt - begin), (byte) '0');
+						} else {
+							log.debug("TxFlow : DataINQ() -- reqcnt 3 =6");
+							p0080text.setValueRtoLfill("reqcnt", Integer.toString(6), (byte) '0');
+						}
+					}
+					//未登摺之第幾筆
+					log.debug("--->begin=>{}", begin);
+					if (begin == 0)
+						p0080text.setValueRtoLfill("begin", Integer.toString(1), (byte) '0');
+					else
+						p0080text.setValueRtoLfill("begin", Integer.toString(begin + 1), (byte) '0');
+					rtn = tital.mkTITAmsg(tital.getTitalabel(), p0080text.getP0080Titatext());
+				} else if (iFig == TXP.FCTYPE) {
+				} else if (iFig ==TXP.GLTYPE) {
+				}
+			} else { //iVal == RECVFHOST
+				if (iFig == TXP.PBTYPE) {
+					p0080text = new P0080TEXT();
+					byte[] texthead = Arrays.copyOfRange(opttotatext, 0, p0080text.getP0080TotaheadtextLen());
+					p0080text.copyTotaHead(texthead);
+					con = new String(p0080text.getHeadValue("nbcnt"));
+					log.debug("P0080totahead rtn={} tota.nbcnt={} tota.nbdelcnt={}",
+							new String(texthead), con,
+							new String(p0080text.getHeadValue("nbdelcnt")));
+					if (Integer.parseInt(con) > this.pbavCnt) {
+						//if (全部未登摺之資料筆數 > 存摺總剩餘可列印之資料筆數) Eject!
+						SetSignal(firstOpenConn, !firstOpenConn, "0000000000","0000000001");
+						Sleep(1000);
+						log.debug("{} {} {} 54全部未登摺之資料筆數[{}] > 存摺總剩餘可列印之資料筆數[{}]！", brws, catagory, account, con, this.pbavCnt);
+						rtn = new byte[0];
+					} else {
+						int nCnt = Integer.parseInt(new String(p0080text.getHeadValue("nbdelcnt")));
+						int iCnt = Integer.parseInt(dCount);
+						log.debug("{} {} {} :TxFlow : DataINQ() -- iCnt=[{}] nCnt=[{}]", brws, catagory, account, iCnt, nCnt);
+						if (opttotatext.length > texthead.length) {
+							int j = 0;
+							byte[] text = Arrays.copyOfRange(opttotatext, p0080text.getP0080TotaheadtextLen(), opttotatext.length);
+							log.debug("{} {} {} :TxFlow : DataINQ() -- iCnt=[{}] nCnt=[{}] text.length={}", brws, catagory, account, iCnt, nCnt, text.length);
+							if (text.length % p0080text.getP0080TotatextLen() == 0)
+								j = text.length / p0080text.getP0080TotatextLen();
+							log.debug("{} {} {} :TxFlow : DataINQ() -- iCnt=[{}] nCnt=[{}] text.length={} j={}", brws, catagory, account, iCnt, nCnt, text.length, j);
+							if (j == nCnt) {
+								p0080text.copyTotaText(text, j);
+								log.debug("{} {} {} :TxFlow : DataINQ() -- iCnt=[{}] nCnt=[{}] noc={}", brws, catagory, account, iCnt, nCnt, j);
+								rtn = text;
+							} else
+								rtn = new byte[0];
+						} else
+							rtn = new byte[0];
+					}
+				} else if (iFig == TXP.FCTYPE) {
+				} else if (iFig == TXP.GLTYPE) {
+				}
+			}
+			log.debug("4--->[{}] len={}", new String(rtn), rtn.length);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			log.error("telegram  DataINQ error on tita label: {}", e.getMessage());
+		}
+
+		return rtn;
+	}
+
 	/*******************************************************************
 	*	Send_Recv() : Send TX to Host /                *
 	*                Receive Data from Host           *
@@ -870,13 +865,13 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			con = "000";
 			this.iCon = Integer.parseInt(con.trim());
 			if (ifun == TXP.INQ) {
-				tl = new TITATel();
-				boolean tlrtn = tl.initTitaLabel((byte) '0');
-				log.debug("tl.initTitaLabel rtn={}", tlrtn);
+				tital = new TITATel();
+				boolean titalrtn = tital.initTitaLabel((byte) '0');
+				log.debug("tital.initTitaLabel rtn={}", titalrtn);
 			}
 			try {
-				tl.setValue("brno", "983");
-				tl.setValue("wsno", "0403");
+				tital.setValue("brno", "983");
+				tital.setValue("wsno", "0403");
 				try {
 					this.setSeqNo = Integer.parseInt(FileUtils.readFileToString(this.seqNoFile, Charset.defaultCharset())) + 1;
 					if (this.setSeqNo > 99999)
@@ -885,20 +880,20 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				} catch (Exception e) {
 					log.warn("WORNING!!! update new seq number string {} error {}",this.setSeqNo, e.getMessage());
 				}
-				tl.setValueRtoLfill("txseq", String.format("%d", this.setSeqNo), (byte) '0');
-				tl.setValue("trancd", "CB");
-				tl.setValue("wstype", "0");
-				tl.setValue("tlrno", "00");
-				tl.setValueLtoRfill("txtype", " ", (byte) ' ');
-				tl.setValue("spcd", "0");
-				tl.setValue("nbcd", "0");
-				tl.setValue("hcode", "0");
-				tl.setValue("trnmod", "0");
-				tl.setValue("sbtmod", "0");
-				tl.setValue("curcd", "00");
-				tl.setValue("pseudo", "1");
+				tital.setValueRtoLfill("txseq", String.format("%d", this.setSeqNo), (byte) '0');
+				tital.setValue("trancd", "CB");
+				tital.setValue("wstype", "0");
+				tital.setValue("titalrno", "00");
+				tital.setValueLtoRfill("txtype", " ", (byte) ' ');
+				tital.setValue("spcd", "0");
+				tital.setValue("nbcd", "0");
+				tital.setValue("hcode", "0");
+				tital.setValue("trnmod", "0");
+				tital.setValue("sbtmod", "0");
+				tital.setValue("curcd", "00");
+				tital.setValue("pseudo", "1");
 				if (!new String(this.fepdd).equals("  "))
-					tl.setValue("fepdd", this.fepdd);
+					tital.setValue("fepdd", this.fepdd);
 				if (ifun == TXP.INQ) {
 					if (this.iCount == 0)
 						log.debug("{} {} {} 03中心存摺補登資料讀取中...", brws, catagory, account);
@@ -941,11 +936,100 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				this.rtelem = dispatcher.getResultTelegram();
 				if (this.rtelem != null) {
 					log.debug(
-						"{} {} {} :AutoPrnCls : process telegram isTITA_TOTA_START={} alreadySendTelegram={} get {}",
-						brws, catagory, account, dispatcher.isTITA_TOTA_START(), alreadySendTelegram,
-						new String(rtelem));
-					this.alreadySendTelegram = false;
+						"{} {} {} :AutoPrnCls : process telegram isTITA_TOTA_START={} alreadySendTelegram={} get {} [{}]",
+						brws, catagory, account, dispatcher.isTITA_TOTA_START(), alreadySendTelegram,rtelem.length,
+						new String(this.rtelem));
+					total = new TOTATel();
+					boolean totalrtn = total.copyTotaLabel(Arrays.copyOfRange(rtelem, 0, total.getTotalLabelLen()));
+					log.debug("total.initTotaLabel rtn={} getTotalLabelLen={} {}", totalrtn, total.getTotalLabelLen(), this.rtelem.length);
+					
+					byte[] totatext = Arrays.copyOfRange(rtelem, total.getTotalLabelLen(), this.rtelem.length);
+//					log.debug("totatext {} len={}", Arrays.toString(totatext), totatext.length);
+					log.debug("totatext len={}", totatext.length);
+					try {
+						String mt = new String(total.getValue("mtype"));
+						String cMsg = "";
+						if (mt.equals("E") || mt.equals("A") || mt.equals("X")) {
+							if (total.getValue("mtype").equals("A"))
+								msgid = "E" + new String(total.getValue("msgno"));
+							for (int i = 0; i < totatext.length; i++)
+								if (totatext[i] == 0x7 || totatext[i] == 0x4 || totatext[i] == 0x3)
+									totatext[i] = 0x20;
+							cMsg = "-" + new String(totatext).trim();
+							log.debug("cMsg=[{}]", cMsg);
+							int mno = Integer.parseInt(new String(total.getValue("msgno")));
+							// 20100913 , E622:本次日不符 send C0099
+							if (mno == 622) {
+								return 622;
+							}
+							//"A665" & "X665" 無補登摺資料、"A104" 該戶無未登摺資料
+							if (mno == 665 || mno == 104) {
+								if (SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000100")) {
+									log.debug("{} {} {} 52 {} {} {}", brws, catagory, account, mt, mno, cMsg);
+								} else {
+									log.debug("{} {} {} {} {} {} AutoPrnCls : --change ", brws, catagory, account, mt, mno, cMsg);
+								}
+							}
+							// E194 , 補登資料超過可印行數, 應至服務台換摺
+							else if (mno == 194) {
+								if (SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000001000")) {
+									log.debug("{} {} {} 52 {} {} {}", brws, catagory, account, mt, mno, cMsg);
+								} else {
+									log.debug("{} {} {} {} {} {} AutoPrnCls : --change ", brws, catagory, account, mt, mno, cMsg);
+								}
+							} else {
+								if (SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000001")) {
+									log.debug("{} {} {} 52 {} {} {}", brws, catagory, account, mt, mno, cMsg);
+								} else {
+									log.debug("{} {} {} {} {} {} AutoPrnCls : --change ", brws, catagory, account, mt, mno, cMsg);
+								}								
+							}
+							if (ifun == 1)
+								log.debug("[{}]:TxFlow : Send_Recv() -- INQ Data Failed ! msgid={}{}", brws, mt, mno);
+							else
+								log.debug("[{}]:TxFlow : Send_Recv() -- DEL Data Failed ! msgid={}{}",brws, mt, mno);
+							return (-2);
+						}
+						if (ifun == TXP.INQ) {
+							//Receive Inquiry Data
+							// 20080923 , Check return value
+							sndmsg = DataINQ(TXP.RECVFHOST, iflg, this.dCount, con, totatext);
+							if (sndmsg == null || sndmsg.length == 0) {
+								if (SetSignal(firstOpenConn, firstOpenConn, "0000000000","0000000001")) {
+									log.debug("{} {} {} 34接收資料錯誤！", brws, catagory, account);
+								} else {
+									log.debug("{} {} {} AutoPrnCls : --change ", brws, catagory, account);
+								}
+								return (-1);
+							}
+							iCount = Integer.parseInt(this.dCount);
+							iCon = Integer.parseInt(con);
+							if ((iLine - 1 + iCount) >= 24)
+							{
+								log.debug("{} {} {} 55存摺補登資料接收成功！", brws, catagory, account);
+							}
+
+						} else {
+							//Receive Delete Result
+						}
+					} catch (Exception e) {
+						e.getStackTrace();
+						log.error("ERROR while get total label mtype {}" + e.getMessage());
+					}
+				} else {
+					log.debug("{} {} {} 51資料接收失敗！", brws, catagory, account);					
+					log.debug("21存摺頁次錯誤！[{}]", rpage);
+					if (SetSignal(firstOpenConn, firstOpenConn, "0000000000","0000000001")) {
+						log.debug(
+								"{} {} {} AutoPrnCls : --ckeep cheak barcode after Set Signal after check barcode",
+								brws, catagory, account);
+					} else {
+						log.debug("{} {} {} AutoPrnCls : --keep cheak barcode after Set Signal after check barcode",
+								brws, catagory, account);
+					}
+					rtn = -1;
 				}
+				this.alreadySendTelegram = false;
 			}
 		}
 		return rtn;
