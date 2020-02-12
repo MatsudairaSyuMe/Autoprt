@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.Collection;
 /**
  * P0080TEXT
  * MatsudairaSyume
@@ -183,6 +184,14 @@ public class P0080TEXT {
 		System.arraycopy(setbV, 0, p0080titatextary, f.offset, f.len);
 	}
 
+	public void setTotaTextValue(String fieldN, byte[] setbV, int oc) throws Exception {
+		Field f = p0080totatext.get(p0080totatextname.get(fieldN));
+		System.arraycopy(setbV, 0, p0080totatextary, (oc * this.p0080totatext_len) + f.offset, f.len);
+		byte[] mdytext = this.p0080totatextlist.get(oc);
+		System.arraycopy(setbV, 0, mdytext, f.offset, f.len);
+		this.p0080totatextlist.set(oc, mdytext);
+	}
+
 	private List<Field> p0080titatext = new ArrayList<Field>();
 	private Map<String, Integer> p0080titatextname = new HashMap<String, Integer>();
 	private int p0080titatext_len = 0;
@@ -195,6 +204,7 @@ public class P0080TEXT {
 	private int p0080totatext_len = 0;
 	private byte[] p0080totaheadtextary = null;
 	private byte[] p0080totatextary = null;
+	private ArrayList<byte[]> p0080totatextlist = null;
 
 	public P0080TEXT() {
 		log.debug("p0080titatext_lens items=" + p0080titatext_lens.length);
@@ -290,8 +300,7 @@ public class P0080TEXT {
 	}
 	public boolean copyTotaHead(byte[] srcValue) {
 		if (this.p0080totaheadtext_len > 0 && srcValue != null && srcValue.length > 0) {
-			if (this.p0080totaheadtextary == null || this.p0080totaheadtextary.length == 0)
-				this.p0080totaheadtextary = new byte[this.p0080totaheadtext_len];
+			this.p0080totaheadtextary = new byte[this.p0080totaheadtext_len];
 			System.arraycopy(srcValue, 0, this.p0080totaheadtextary, 0, this.p0080totaheadtext_len);
 			return true;
 		} else
@@ -300,9 +309,11 @@ public class P0080TEXT {
 
 	public boolean copyTotaText(byte[] srcValue, int ocn) {
 		if (this.p0080totatext_len > 0 && srcValue != null && srcValue.length > 0 && ocn > 0) {
-			if (this.p0080totatextary == null || this.p0080totatextary.length == 0)
-				this.p0080totatextary = new byte[this.p0080totatext_len * ocn];
+			this.p0080totatextary = new byte[this.p0080totatext_len * ocn];
 			System.arraycopy(srcValue, 0, this.p0080totatextary, 0, this.p0080totatext_len * ocn);
+			this.p0080totatextlist = new ArrayList<byte[]>();
+			for (int i = 0;i < ocn; i++)
+				this.p0080totatextlist.add(Arrays.copyOfRange(this.p0080totatextary, i * this.p0080totatext_len, (i * this.p0080totatext_len) + this.p0080totatext_len));
 			return true;
 		} else
 			return false;
@@ -312,13 +323,16 @@ public class P0080TEXT {
 		if (this.p0080totatext_len > 0 && srcValue != null && srcValue.length > 0) {
 			if (this.p0080totatextary == null || this.p0080totatextary.length == 0) {
 					this.p0080totatextary = new byte[this.p0080totatext_len];
-					System.arraycopy(srcValue, 0, this.p0080totaheadtextary, 0, this.p0080totaheadtext_len);
+					System.arraycopy(srcValue, 0, this.p0080totaheadtextary, 0, this.p0080totatext_len);
 			} else {
-				byte[] newary = new byte[this.p0080totaheadtextary.length + this.p0080totatext_len];
-				System.arraycopy(this.p0080totaheadtextary, 0, newary, 0, this.p0080totaheadtextary.length);
-				System.arraycopy(srcValue, 0, newary, this.p0080totaheadtextary.length, this.p0080totatext_len);
-				this.p0080totaheadtextary = newary;
+				byte[] newary = new byte[this.p0080totatextary.length + this.p0080totatext_len];
+				System.arraycopy(this.p0080totatextary, 0, newary, 0, this.p0080totatextary.length);
+				System.arraycopy(srcValue, 0, newary, this.p0080totatextary.length, this.p0080totatext_len);
+				this.p0080totatextary = newary;
 			}
+			if (this.p0080totatextlist == null)
+				this.p0080totatextlist = new ArrayList<byte[]>();
+			this.p0080totatextlist.add(srcValue);
 			return true;
 		} else
 			return false;
@@ -332,12 +346,28 @@ public class P0080TEXT {
 		return rtn;
 	}
 
-	public byte[] getTextValue(String fieldN, int oc) throws Exception {
+	public byte[] getTotaTextValue(String fieldN, int oc) throws Exception {
 		byte[] rtn = null;
-		Field f = p0080totaheadtext.get(p0080totaheadtextname.get(fieldN));
+		Field f = p0080totatext.get(p0080totatextname.get(fieldN));
 		rtn = new byte[f.len];
-		System.arraycopy(p0080totaheadtextary, (oc * this.p0080totatext_len) + f.offset, rtn, 0, f.len);
+		System.arraycopy(p0080totatextary, (oc * this.p0080totatext_len) + f.offset, rtn, 0, f.len);
 		return rtn;
+	}
+
+	public byte[] getTotaTextValueSrc(String fieldN, byte[] totasrc) throws Exception {
+		byte[] rtn = null;
+		Field f = p0080totatext.get(p0080totatextname.get(fieldN));
+		rtn = new byte[f.len];
+		System.arraycopy(totasrc, f.offset, rtn, 0, f.len);
+		return rtn;
+	}
+
+	public ArrayList<byte[]> getTotaTextLists() throws Exception {
+		return this.p0080totatextlist;
+	}
+
+	public byte[] getTotaTexOc(int oc) throws Exception {
+		return this.p0080totatextlist.get(oc);
 	}
 
 	public static void main(String[] args) throws Exception {
