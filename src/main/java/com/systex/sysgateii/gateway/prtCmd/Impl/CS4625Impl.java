@@ -1,6 +1,7 @@
 package com.systex.sysgateii.gateway.prtCmd.Impl;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -165,6 +166,13 @@ public class CS4625Impl implements Printer {
 	public static final int ReadBarcode_START_2       = 33;
 	public static final int ReadBarcodeRecvData       = 34;
 	public static final int ReadBarcode_FINISH        = 35;
+	public static final int Prt_Text                  = 36;
+	public static final int Prt_Text_START            = 37;
+	public static final int Prt_Text_START_FINISH     = 38;
+	public static final int Eject                     = 39;
+	public static final int Eject_START               = 40;
+	public static final int Eject_FINISH              = 41;
+
 
 	public static final int CheckStatus_START         = 100;
 	public static final int CheckStatus               = 101;
@@ -184,6 +192,11 @@ public class CS4625Impl implements Printer {
 	private long detectStartTimeout = 0;
 
 	private AtomicBoolean isShouldShutDown = new AtomicBoolean(false);
+	private AtomicBoolean notSetCLPI = new AtomicBoolean(false);
+	private AtomicBoolean m_bColorRed = new AtomicBoolean(false);
+	private AtomicBoolean p_fun_flag = new AtomicBoolean(false);
+	private int nCPI = 0;
+	private int nLPI = 0;
 
 	public CS4625Impl(final PrtCli pc, final String brws, final String type, final String autoturnpage) {
 		this.pc = pc;
@@ -191,6 +204,11 @@ public class CS4625Impl implements Printer {
 		this.wsno = this.brws.substring(2);
 		this.type = type;
 		this.autoturnpage = autoturnpage;
+		this.notSetCLPI.set(false);
+		this.nCPI = 0;
+		this.nLPI = 0;
+		this.m_bColorRed.set(false);
+		this.p_fun_flag.set(false);
 	}
 
 	@Override
@@ -396,7 +414,239 @@ public class CS4625Impl implements Printer {
 	@Override
 	public boolean Prt_Text(byte[] buff) {
 		// TODO Auto-generated method stub
-		return false;
+		int i = 0, wlen = 0;
+		if (buff == null || buff.length == 0)
+			return (false);
+		int len = buff.length;
+		byte bcc = 0x0;
+		byte chrtmp = 0x0;
+		byte chrtmp1 = 0x0;
+		boolean dblword = false; // chinese character
+		byte[] data = null;
+		boolean bPrinterNoFont = false;
+
+		byte[] linefeed = null;
+		int j, offset = 0;
+		boolean bLineFeed;
+		boolean bHalf = false;
+		byte[] hBuf = new byte[200];
+
+		// filter space 91.10.09
+		bLineFeed = false;
+
+		for (j = len - 1; j >= 0; j--) {
+			if (buff[j] != (byte)0x0a && buff[j] != (byte)0x0d)
+				break;
+			else
+				bLineFeed = true;
+		}
+/*		if (bLineFeed) {
+			linefeed = new byte[len - j - 1];
+			System.arraycopy(buff, j + 1, linefeed, 0, len - j - 1);
+			offset = j;
+			linefeed = new byte[offset + 1];
+			System.arraycopy(buff, 0, linefeed, 0, offset + 1);
+			buff = linefeed;
+		}*/
+		len = buff.length;
+		if (this.notSetCLPI.get() == true)
+		{
+			if (nCPI != 0)
+				SetCPI(true, nCPI);
+			else if (nLPI != 0)
+				SetLPI(true, nLPI);
+			notSetCLPI.set(false);
+		}
+		boolean bBeginRedSession=m_bColorRed.get();
+		boolean bBeginSISession=false;
+		this.curState = Prt_Text_START;
+		while (i < len ) {
+			chrtmp = buff[i];
+			chrtmp1 = buff[i+1];
+			if ((this.p_fun_flag.get() == true) && (int)(chrtmp & 0xff) >= (int)(0x80 & 0xff) )
+			{
+				if (ChkAddFont((((int)chrtmp<<8)+((int)(chrtmp1 & 0xff)))) == true)
+				{
+					AddFont((((int)chrtmp<<8)+((int)(chrtmp1 & 0xff))));
+					i+=2;
+					continue;
+				}
+				if (ChkExtFont((((int)chrtmp<<8)+((int)(chrtmp1 & 0xff)))) == true)
+				{
+					AddExtFont(chrtmp,chrtmp1);
+					i+=2;
+					continue;
+				}
+			}
+//			log.debug("Prt_Text i={} len={}", i, len);
+/*			if ( len > 1 ) {
+				if ( buff[i] == (byte)0x0a &&
+					 buff[i-1] != (byte)0x0d )
+				{
+					Send_hData(S4625_PNON_PRINT_AREA);
+					Send_hData(S4625_PENLARGE_OD);
+					//20060906 if addfont is the last char and follows a 0x0a , then slip won't catch newline
+					if ( i == ( len -  1 ) )
+						Send_hData(S4625_PENLARGE_OA);
+					//Sleep(250);
+//					PurgeBuffer();
+					//see what happen in r8
+					if (this.curState == Prt_Text_START || this.curState == Prt_Text) {
+						if (this.curState == Prt_Text_START) {
+							this.curChkState = CheckStatus_START;
+							this.curState = Prt_Text;
+						}
+						data = CheckStatus();
+						log.debug("2 ===<><>{} Prt_Text chkChkState {} {}", this.curState, this.curChkState, data);
+						if (CheckDis(data) != 0) {
+							this.curState = ResetPrinterInit_START;
+							log.debug("{} {} {} {} 94補摺機狀態錯誤！", iCnt, brws, "", "");
+							return false;
+						}
+						if (!CheckError(data)) {
+							log.debug("{} {} {} {} 94存摺資料補登時發生錯誤！", iCnt, brws, "", "");
+							return false;
+						} else {
+							this.curState = Prt_Text_START;
+						}
+					}
+					i++;
+				}
+			}
+			else {
+				if ( buff[0] == (byte)0x0a ||
+					 buff[0] == (byte)0x0d )
+				{
+					Send_hData(S4625_PNON_PRINT_AREA);
+					Send_hData(S4625_PENLARGE_OD);
+					Send_hData(S4625_PENLARGE_OA);
+					//Sleep(250);
+//					PurgeBuffer();
+					//see what happen in r8
+					//data=CheckStatus();
+					//CheckError(data);
+					i++;
+				}
+			}*/
+			{
+				Arrays.fill(hBuf, (byte)0x0);
+				while (i < len)
+				{
+					if ( bBeginRedSession == true ) {
+						//set to red
+					}
+//					log.debug("3 ===<><>{} Prt_Text chkChkState {} wlen={} i={} len={} {} {} {}", this.curState, this.curChkState,wlen,i,len, (char)buff[i], Byte.toString(buff[i]), Byte.toString(buff[i+1]));
+					hBuf[wlen+3] = buff[i];
+					hBuf[wlen+4] = buff[i+1];
+					chrtmp = buff[i];
+					chrtmp1 = buff[i+1];
+//					log.debug("3 ===<><>Prt_Text chkChkState {} {}", (int)(chrtmp & 0xff), (int)(0x80 & 0xff));
+					if ( (int)(chrtmp & 0xff) >= (int)(0x80 & 0xff))
+					{
+						dblword = true;
+						// check only , BNE 6319 , break
+	/*					if (ChkAddFont(((chrtmp<<8)+(chrtmp1))) == true)
+						{
+							dblword = false;
+							break;
+						}
+						if (ChkExtFont(((chrtmp<<8)+(chrtmp1))) == true)
+						{
+							dblword = false;
+							break;
+						}*/
+						if ( bBeginSISession == false ) {
+							log.debug("4 ===<><>{} Prt_Text enter S4625_PSI chkChkState {} {} wlen={} i={}", this.curState, this.curChkState, wlen, i);
+
+//							memcpy(&hBuf[wlen+3],S4625_PSI,5);
+							System.arraycopy(S4625_PSI, 0, hBuf, wlen+3, 5);
+							bBeginSISession=true;
+							wlen+=5;
+							hBuf[wlen+3] = buff[i];
+							hBuf[wlen+4] = buff[i+1];
+						}
+					}
+					if (dblword == true)
+					{
+						//bcc = bcc + buff[i] + buff[i+1];
+						i+=2;
+						wlen+=2;
+						dblword = false;
+					}
+					else
+					{
+						if ( bBeginSISession == true ) {
+							log.debug("5 ===<><>{} Prt_Text leave S4625_PSO chkChkState {} {} wlen={} i={}", this.curState, this.curChkState, wlen, i);
+//							memcpy(&hBuf[wlen+3],S4625_PSO,5);
+							System.arraycopy(S4625_PSO, 0, hBuf, wlen+3, 5);
+							bBeginSISession=false;
+							wlen+=5;
+							hBuf[wlen+3] = buff[i];
+						}
+//						if (buff[i] < 0x20 && buff[i] != 0x0d && buff[i] != 0x0a)
+						if (((int)(buff[i] & 0xff) < (int)(0x20 & 0xff)) && buff[i] != (byte)0x0d && buff[i] != (byte)0x0a)
+						{
+							buff[i] = 0x20;
+							hBuf[wlen+3] = buff[i];
+						}
+						if ( buff[i] == (byte)0x0d &&
+							 buff[i+1] == (byte)0x0a )
+						{
+//							hBuf[wlen+3] = buff[i];
+							i++;
+//							wlen++;
+//							hBuf[wlen+3] = buff[i];
+//							Send_hData(S4625_PNON_PRINT_AREA);
+							System.arraycopy(S4625_PNON_PRINT_AREA, 0, hBuf, wlen+3, S4625_PNON_PRINT_AREA.length);
+							wlen += S4625_PNON_PRINT_AREA.length;
+//							Send_hData(S4625_PENLARGE_OD);
+							System.arraycopy(S4625_PENLARGE_OD, 0, hBuf, wlen+3, S4625_PENLARGE_OD.length);
+							wlen += S4625_PENLARGE_OD.length;
+//							Send_hData(S4625_PENLARGE_OA);
+							System.arraycopy(S4625_PENLARGE_OA, 0, hBuf, wlen+3, S4625_PENLARGE_OA.length);
+							wlen += S4625_PENLARGE_OA.length;
+
+							log.debug("5.2 ===<><>{} Prt_Text ", this.curState, this.curChkState, wlen, i);
+						}
+						if ( buff[i] == (byte)0x0a &&
+							 buff[i-1] != (byte)0x0d )
+						{
+							log.debug("5.3 ===<><>{} Prt_Text ", this.curState, this.curChkState, wlen, i);
+							break;
+						}
+						if ( buff[i] == (byte)0x0d &&
+							 buff[i-1] != (byte)0x0a )
+						{
+							log.debug("5.4 ===<><>{} Prt_Text ", this.curState, this.curChkState, wlen, i);
+							break;
+						}
+						i++;
+						wlen++;
+					}
+				}
+				log.debug("6 ===<><>{} Prt_Text leave S4625_PSO chkChkState {} {} wlen={} i={}", this.curState, this.curChkState, wlen, i);
+				if ( wlen > 0 ) {
+					hBuf[0]=hBuf[1]=hBuf[2]=' ';
+					if ( bBeginSISession == true ) {
+						log.debug("6.1 ===<><>{} Prt_Text leave S4625_PSO chkChkState {} {} wlen={} i={}", this.curState, this.curChkState, wlen, i);
+//						memcpy(&hBuf[wlen+3],S4625_PSO,5);
+						System.arraycopy(S4625_PSO, 0, hBuf, wlen+3, 5);
+						bBeginSISession=false;
+						wlen+=5;
+					}
+					//20060905 , to compromise the bne at last digit, 0x0a set in upper logic
+					hBuf[wlen+3]=(byte)0x0;
+					//20060905
+//					wlen = 0;
+					byte[] sendhBuf = new byte[wlen];
+					System.arraycopy(hBuf, 3, sendhBuf, 0, sendhBuf.length);
+					//Send_hDataBuf(&hBuf[3]);
+					Send_hData(sendhBuf);
+					log.debug("6.2 ===<><>{} Prt_Text leave S4625_PSO chkChkState {} {} wlen={} i={}", this.curState, this.curChkState, wlen, i);
+				}
+			}
+		}
+		return true;
 	}
 
 	@Override
@@ -439,9 +689,43 @@ public class CS4625Impl implements Printer {
 	}
 
 	@Override
-	public boolean Eject() {
+	public boolean Eject(boolean start) {
 		// TODO Auto-generated method stub
-		return false;
+		log.debug("{} {} {} Eject curState={}", brws, "", "", this.curState);
+		if (start)
+			this.curState = Eject_START;
+
+		if (this.curState == Eject_START) {
+			log.debug("{} {} {} 存摺退出...", brws, "", "");
+			if (Send_hData(S4625_PINIT) != 0)
+				return false;
+		}
+		byte[] data = null;
+		if (this.curState == Eject_START || this.curState == Eject) {
+			if (this.curState == Eject_START) {
+				this.curState = Eject;
+				this.curChkState = CheckStatus_START;
+			}
+			data = CheckStatus();
+			log.debug("1 ===<><>{} chkChkState {} {}", this.curState, this.curChkState, data);
+			if (CheckDis(data) == -2) 
+				return false;
+
+			if (!CheckError(data)) {
+				log.debug("{} {} {}95補摺機硬體錯誤！(EJT)", brws, "", "");
+				return false;
+			} else {
+				log.debug("2 ===<><>{} chkChkState {} {}", this.curState, this.curChkState, data);
+				this.curState = Eject_FINISH;
+			}
+		}
+		log.debug("3 ===<><>{} chkChkState {}", this.curState, this.curChkState);
+		if (curState == Eject_FINISH) {
+			log.debug("{} {} {} 06存摺退出成功！", brws, "", "");
+			return true;
+		} else
+			return false;
+
 	}
 
 	@Override
@@ -865,8 +1149,68 @@ public class CS4625Impl implements Printer {
 	}
 
 	@Override
-	public boolean MS_Write(String brws, String account, byte[] buff) {
+	public boolean MS_Write(boolean sart, String brws, String account, byte[] buff) {
 		// TODO Auto-generated method stub
+		byte[] data = null;
+
+		if (start)
+			this.curState = MS_Read_START;
+		log.debug("MS_Read curState={} curChkState={}", this.curState, this.curChkState);
+		if (this.curState == MS_Read_START) {
+			this.curState = MS_Read;
+			log.debug("MS_Read curState={} curChkState={}", this.curState, this.curChkState);
+			if (Send_hData(S4625_PMS_READ) != 0)
+				return (data);
+		}
+		if (this.curState == MS_Read) {
+			this.curState = MS_ReadRecvData;
+			Sleep(1500);
+			this.iCnt = 0;
+			this.curmsdata = null;
+			data = Rcv_Data();
+		} else if (this.curState == MS_ReadRecvData) {
+			Sleep(200);
+			this.iCnt++;
+			data = Rcv_Data();
+			if (data == null && iCnt > 40) {
+				log.debug("{} {} {} {} 94補摺機狀態錯誤！(MSR-2)", iCnt, brws, "", "");
+				this.curState = ResetPrinterInit_START;
+				ResetPrinterInit();
+				pc.close();
+			} else if (data != null && !new String(data).equals("DIS")) {
+				if (data != null && data.length == 38) {
+					byte[] tmpb = new byte[35];
+					System.arraycopy(data, 2, tmpb, 0, 35);
+					this.curmsdata = tmpb;
+					System.gc();
+				} else if (data == null && iCnt > 40) {
+					log.debug("{} {} {} {} 94補摺機狀態錯誤！(MSR-2)", iCnt, brws, "", "");
+					this.curState = ResetPrinterInit_START;
+					ResetPrinterInit();
+					pc.close();
+				}
+				this.curState = MS_Read_START_2;
+				log.debug("MS_Read 1 ===<><>{} chkChkState {} curmsdata={}", this.curState, this.curChkState, this.curmsdata);
+			}
+		}
+		if (this.curState == MS_Read_START_2 || this.curState == MS_Read_2) {
+			if (this.curState == MS_Read_START_2) {
+				this.curState = MS_Read_2;
+				this.curChkState = CheckStatus_START;
+			}
+			data = CheckStatus();
+			log.debug("MS_Read 2 ===<><>{} chkChkState {}", this.curState, this.curChkState);
+			if (!CheckError(data)) {
+				return null;
+			} else {
+				this.curState = MS_Read_FINISH;
+				log.debug("MS_Read 3 ===<><>{} chkChkState {}", this.curState, this.curChkState);
+				return this.curmsdata;
+			}
+		}
+
+		log.debug("{} {} {} {} final data.length={}", iCnt, brws, "", "", data.length);
+		return curmsdata;
 		return false;
 	}
 

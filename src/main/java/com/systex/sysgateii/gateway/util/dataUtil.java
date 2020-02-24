@@ -1,6 +1,10 @@
 package com.systex.sysgateii.gateway.util;
 
+import java.util.Arrays;
+
 public class dataUtil {
+	private final static String STAR = "**********************";
+
 	public int ArraySearchIndexOf(final byte[] outerArray, final byte[] smallerArray) {
 		for (int i = 0; i < outerArray.length - smallerArray.length + 1; ++i) {
 			boolean found = true;
@@ -37,177 +41,207 @@ public class dataUtil {
 		}
 		return rtn;
 	}
+
 	/*********************************************************
 	*  rfmtdbl()   : 金額格式化                              *
 	*  parameter 1 : input data                              *
 	*  parameter 2 : input data format                       *
-	*  parameter 3 : ouput data buff                         *
-	*  return_code :                  (參考TPCOMM) 2008.01.25*
+	*  return_code : ouput data buff (參考TPCOMM) 2008.01.25*
 	*********************************************************/
-/*	public static byte[] rfmtdbl(double idbl, byte[] ifmt)
-	{
-		int	i;
-		int	Lcommacnt,Ldec,Ldot,obuflen,Lheading,Lminus,LIfmt;
-		int	Ldollarsign,Lstarsign;
-		byte[]	Ltfmt = new byte[30],Lfmt = new byte[30],Lifmt = new byte[40];
-		byte[]	Ltbuf = new byte[50];
-		double   Lidbl;
-		byte[]	p1,p2,p3,p4,p5,p6,p7;
+	public static String rfmtdbl(double idbl, String ifmt) {
+		String STAR = "**********************";
+		boolean Ldollarsign = false;
+		boolean Lstarsign = false;
+		boolean Lminus = false;
+		int outlen = ifmt.length();
+		String Lifmt = "";
+		String Lfmt = "";
+		int obuflen;
+		Lifmt = ifmt.trim();
+		double Lidbl;
 
-		Ldollarsign = 0;
-		Lstarsign = 0;
-		Lminus = 0;
 		Lidbl = idbl;
 
-		if ( Lidbl < 0 )
+		if (Lidbl < 0)
 			Lidbl *= -1;
 
-		strcpy(Lifmt,ifmt);
-		LIfmt = strlen(Lifmt);
-		for(i=0; i < LIfmt; i++)
-		{
-			if ( Lifmt[i] == '$' )
-			{
-				Ldollarsign=1;
-				Lifmt[i] = 'Z';
-			}
-			else if ( Lifmt[i] == '*' )
-			{
-				Lstarsign=1;
-				Lifmt[i] = 'Z';
-			}
-			else if ( Lifmt[i] == '-' )
-			{
-				Lminus=1;
-				Lifmt[i] = 'Z';
+		char ckc[] = Lifmt.toCharArray();
+		for (int i = 0; i < ckc.length; i++) {
+			if (ckc[i] == '$') {
+				Ldollarsign = true;
+				ckc[i] = 'Z';
+			} else if (ckc[i] == '*') {
+				Lstarsign = true;
+				ckc[i] = 'Z';
+			} else if (ckc[i] == '-') {
+				Lminus = true;
+				ckc[i] = 'Z';
 			}
 		}
+		Lfmt = new String(ckc);
+//    System.out.println("<" +Lfmt +">");
+		obuflen = Lifmt.length();
+		String[] pary = Lfmt.trim().split("\\.");
 
-		strcpy(Lfmt,Lifmt);
-		obuflen=strlen(Lifmt);
-
-		p1=strtok(Lfmt,".");
-		if ( p1 == NULL )
-		{
-			memcpy(obuf,STAR,obuflen);
-			return(-1);
+//    System.out.println(String.format("[%s] %b %b %b after search . %d", ifmt, Ldollarsign, Lstarsign, Lminus, pary.length));
+		if (pary.length == 0) {
+//        System.out.println("{" +STAR.substring(0, outlen) + "}");
+			return STAR.substring(0, outlen);
 		}
-		p2=strtok(NULL,".");
+		String p1 = "", p2 = "";
+		p1 = pary[0];
+		if (pary.length == 1 && pary[0].length() == 0)
+			p1 = " ";
+		if (pary.length > 1)
+			p2 = pary[1];
 
-		Ldec=strlen(p1);
-		if ( p2 != NULL )
-			Ldot=strlen(p2);
+		int Ldec = 0;
+		Ldec = p1.length();
+		int Ldot = 0;
+		if (p2.length() != 0)
+			Ldot = p2.length();
 		else
-			Ldot=0;
-
-		Lcommacnt=0;
-		for( i = 0 ; i < Ldec ; i++ )
-		{
-			if ( *(p1+i) == ',' )
+			Ldot = 0;
+		int Lcommacnt = 0;
+		for (char c : p1.toCharArray()) {
+			if (c == ',')
 				Lcommacnt++;
 		}
 
-		if ( Ldot == 0 )
-			sprintf(Ltfmt,"%%%d.%df", Ldec - Lcommacnt , Ldot );
+		String Ltfmt = "";
+		if (Ldot == 0)
+			Ltfmt = String.format("%%%d.%df", Ldec - Lcommacnt, Ldot);
 		else
-			sprintf(Ltfmt,"%%%d.%df", Ldec - Lcommacnt + Ldot +1 , Ldot );
-		sprintf(Ltbuf,Ltfmt,Lidbl);
+			Ltfmt = String.format("%%%d.%df", Ldec - Lcommacnt + Ldot + 1, Ldot);
 
-		p3=strtok(Ltbuf,".");
-		p4=strtok(NULL,".");
+		String Ltbuf = "";
 
-		LIfmt = strlen(p3);
-		if ( LIfmt > Ldec )
-		{
-			memcpy(obuf,STAR,obuflen);
-			return(-1);
+		Ltbuf = String.format(Ltfmt, Lidbl);
+//    System.out.println(String.format("%s %s %s", Ltfmt, Lidbl, Ltbuf));
+
+		pary = Ltbuf.split("\\.");
+
+		if (pary.length == 0) {
+//        System.out.println("{" +STAR.substring(0, outlen) + "}");
+			return STAR.substring(0, outlen);
 		}
+		String p3 = "", p4 = "";
+		p3 = pary[0];
 
-		p5= p3 + strlen(p3) -1;
+		int LIfmt = p3.length();
+		// if (pary.length == 1 && pary[0].length() == 0)
+		// p3 = " ";
+		if (pary.length > 1)
+			p4 = pary[1];
 
-		Lheading=0;
-		p6=p1+Ldec-1;
-		p7=obuf+Ldec;
-		for(i=0; i< Ldec; i++)
-		{
+		if (LIfmt > Ldec) {
+//        System.out.println("{" +STAR.substring(0, outlen) + "}");
+			return STAR.substring(0, outlen);
+		}
+		int p5 = p3.length() - 1; // index of p3
+		char[] p5ary = p3.toCharArray();
+		int p6 = Ldec - 1; // index of p1
+		char[] p6ary = p1.toCharArray();
+		int p7 = Ldec; // index of obuf
+		char[] p7ary = new char[Ldec];
+		for (int j = 0; j < p7ary.length; j++)
+			p7ary[j] = (char) ' ';
+		int i = 0;
+		for (i = 0; i < Ldec; i++) {
+			switch ((char) p6ary[p6]) {
+			case (char) '9':
+//                *(--p7) = *p5;
+				if (p5 < 0)
+					p7ary[--p7] = (char) ' ';
+				else {
+					p7ary[--p7] = p5ary[p5];
 
-			switch( *p6 )
-			{
-				case '9' :
-						*(--p7) = *p5;
-						if ( *p7 == '-' )
-						  *p7 = '0';
-						else
-						if ( *p7 == ' ' )
-						  *p7 = '0';
-						p5--;
-						break;
-				case '-' :
-				case 'Z' :
-						*(--p7) = *p5;
-						if ( *p7 == '+' )
-						  *p7 = ' ';
-						p5--;
-						break;
-				case ',' :
-						if ( *(p6-1) == '9')
-						  *(--p7) = ',';
-						else
-						if ( *p5 == ' ')
-						  *(--p7) = ' ';
-						else
-						  *(--p7) = ',';
-						break;
-				default :
-						*(--p7) = *p5;
-						p5--;
-						break;
+//                if ( *p7 == '-' )
+					// *p7 = '0';
+					// else if ( *p7 == ' ' )
+					// *p7 = '0';
+					if (p7ary[p7] == (char) '-')
+						p7ary[p7] = (char) '0';
+					else if (p7ary[p7] == (char) ' ')
+						p7ary[p7] = (char) '0';
+					p5--;
+				}
+
+				break;
+			case (char) '-':
+			case (char) 'Z':
+				// *(--p7) = *p5;
+				if (p5 < 0)
+					p7ary[--p7] = (char) ' ';
+				else {
+					p7ary[--p7] = p5ary[p5];
+					// if ( *p7 == '+' )
+					// *p7 = ' ';
+					p5--;
+				}
+				if (p7ary[p7] == (char) '+')
+					p7ary[p7] = (char) ' ';
+				break;
+			case (char) ',':
+				// if ( *(p6-1) == '9')
+				// *(--p7) = ',';
+				// else
+				// if ( *p5 == ' ')
+				// *(--p7) = ' ';
+				// else
+				// *(--p7) = ',';
+				if (p6ary[p6 - 1] == (char) '9')
+					p7ary[--p7] = (char) ',';
+				else if ((p5 > -1) && p5ary[p5] == (char) ' ')
+					p7ary[--p7] = (char) ' ';
+				else
+					p7ary[--p7] = (char) ',';
+				break;
+			default:
+				// *(--p7) = *p5;
+				if (p5 < 0) {
+					p7ary[--p7] = (char) ' ';
+				} else {
+					p7ary[--p7] = p5ary[p5];
+					p5--;
+				}
+				break;
 			}
 			p6--;
 		}
 
-		if ( Lminus )
-		{
-			if ( *idbl < 0 )
-			{
-				for(i=1;i<Ldec;i++)
-				{
-					if ( *(obuf+i) != ' ')
-					{
-						*(obuf+i-1) = (*(obuf+i-1) != ' ') ? *(obuf+i-1) : '-';
+		if (Lminus) {
+			if (idbl < 0) {
+				for (i = 1; i < Ldec; i++) {
+					if (p7ary[i] != ' ') {
+						p7ary[i - 1] = (p7ary[i - 1] != (char) ' ') ? p7ary[i - 1] : (char) '-';
 						break;
 					}
 				}
 			}
 		}
-		if ( Ldollarsign )
-		 {
-			for(i=1;i<Ldec;i++)
-			{
-				if ( *(obuf+i) != ' ')
-				{
-					*(obuf+i-1) = '$';
+		if (Ldollarsign) {
+			for (i = 1; i < Ldec; i++) {
+				if (p7ary[i] != ' ') {
+					p7ary[i - 1] = (char) '$';
+					break;
+				}
+			}
+		} else if (Lstarsign) {
+			for (i = 1; i < Ldec; i++) {
+				if (p7ary[i] != ' ') {
+					p7ary[i - 1] = (char) '*';
 					break;
 				}
 			}
 		}
-		else if ( Lstarsign )
-		{
-			for(i=1;i<Ldec;i++)
-			{
-				if ( *(obuf+i) != ' ')
-				{
-					*(obuf+i-1) = '*';
-					break;
-				}
-			}
+		String obuf = new String(p7ary);
+		if (p2.length() > 0) {
+			obuf = obuf + '.' + p4;
 		}
 
-		if ( p2 != NULL )
-		{
-			obuf[Ldec]='.';
-			memcpy(&obuf[Ldec+1],p4,Ldot);
-		}
+//    System.out.println("p7ary=[" + obuf + "]");
+
 		return obuf;
-	}*/
+	}
 }

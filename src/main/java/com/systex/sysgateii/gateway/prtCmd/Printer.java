@@ -84,7 +84,7 @@ public interface Printer {
 	/***********************************************************************
 	*	Eject : Eject the paper						           *
 	************************************************************************/
-	public boolean Eject();
+	public boolean Eject(boolean start);
 
 	public boolean EjectNoWait();
 
@@ -162,7 +162,7 @@ public interface Printer {
 	/************************************************************************
 	*	MS_Write : Write data to passsbook's magentic		*
 	*************************************************************************/
-	public boolean MS_Write(String brws, String account, byte[] buff);
+	public boolean MS_Write(boolean start, String brws, String account, byte[] buff);
 
 	/**********************************************************************
 	*	Parsing : parse the data or control code			  *

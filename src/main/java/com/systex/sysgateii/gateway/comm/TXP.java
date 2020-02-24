@@ -18,4 +18,10 @@ public class TXP {
 	public static final int SENDTHOST = 1;     //Send to Host
 	public static final int RECVFHOST = 2;     //Recv from Host
 	public static final int CONTROL_BUFFER_SIZE = 12;
+	public static final int PB_MAX_PAGE = 8;   //PB存摺 只有8頁
+	public static final String AMOUNT =  "ZZZZZ,ZZZ,Z-9.99";
+	public static final String AMOUNT1 = "ZZZZZZZ,ZZZ,Z-9.99";
+	public static final String AMOUNT2 = "*ZZZZZZ,ZZZ,Z-9.99";
+	public static final String GRAM1  =  "ZZZ,Z-9.99";
+	public static final String GRAM2  = "Z,ZZZ,Z-9.99";
 }

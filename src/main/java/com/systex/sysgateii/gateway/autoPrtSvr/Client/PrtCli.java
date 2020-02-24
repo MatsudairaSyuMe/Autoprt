@@ -33,6 +33,7 @@ import com.systex.sysgateii.gateway.prtCmd.Impl.CS4625Impl;
 import com.systex.sysgateii.gateway.telegram.P0080TEXT;
 import com.systex.sysgateii.gateway.telegram.TITATel;
 import com.systex.sysgateii.gateway.telegram.TOTATel;
+import com.systex.sysgateii.gateway.util.dataUtil;
 import com.systex.sysgateii.gateway.util.ipAddrPars;
 
 import io.netty.bootstrap.Bootstrap;
@@ -137,21 +138,22 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	public static final int STARTPROCTLM = 17; // start to send tita & Receive TOTA and check error
 	
 	public static final int PBDATAFORMAT = 18; //// Format 列印台幣存摺資料格式  print data
-	public static final int FORMATPRTDATA = 19; //// Format print data
-	public static final int FORMATPRTDATAERROR = 20; // 61存摺資料補登失敗！Show Signal
-	public static final int WRITEMSR = 21; //// Write MSR
-	public static final int WRITEMSRERR = 22; //// Write MSR ERROR 71存摺磁條寫入有問題！
-	public static final int READMSRERRAFTERWRITEMSRERR = 23; // 11磁條讀取失敗(1)！
-	public static final int READMSRSUCAFTERWRITEMSRERR = 24; // 12存摺磁條讀取成功(1)！
-	public static final int COMPMSRSUCAFTERWRITEMSRERR = 25; // 12存摺磁條比對正確(1)！
-	public static final int COMPMSRERRAFTERWRITEMSRERR = 26; // 12存摺磁條比對失敗(1)！
-	public static final int WRITEMSRERRSHOWSIG = 27; // 71存摺磁條寫入失敗！ Show Signal
-	public static final int PASSBOOKREGCOMPSUC = 28; // 72存摺資料補登成功！
-	public static final int DELPASSBOOKREGCOMPERR = 29; // 73存摺資料補登刪除失敗！Show Signal
-	public static final int NOTFINISH = 30; // iEnd != 0 continue printing
-	public static final int NOTFINISHATP = 31; // iEnd != 0 continue printing, Auto turn page
-	public static final int NOTFINISHHTP = 32; // iEnd != 0 continue printing, Handy turn page, Show Reentry signal.
-	public static final int FINISH = 33; // iEnd == 0 printing finished,
+	public static final int FCDATAFORMAT = 19; //// Format 列印外匯存摺資料格式  print data
+	public static final int GLDATAFORMAT = 20; //// Format 列印黃金存摺資料格式  print data
+	public static final int FORMATPRTDATAERROR = 21; // 61存摺資料補登失敗！Show Signal
+	public static final int WRITEMSR = 22; //// Write MSR
+	public static final int WRITEMSRERR = 23; //// Write MSR ERROR 71存摺磁條寫入有問題！
+	public static final int READMSRERRAFTERWRITEMSRERR = 24; // 11磁條讀取失敗(1)！
+	public static final int READMSRSUCAFTERWRITEMSRERR = 25; // 12存摺磁條讀取成功(1)！
+	public static final int COMPMSRSUCAFTERWRITEMSRERR = 26; // 12存摺磁條比對正確(1)！
+	public static final int COMPMSRERRAFTERWRITEMSRERR = 27; // 12存摺磁條比對失敗(1)！
+	public static final int WRITEMSRERRSHOWSIG = 28; // 71存摺磁條寫入失敗！ Show Signal
+	public static final int PASSBOOKREGCOMPSUC = 29; // 72存摺資料補登成功！
+	public static final int DELPASSBOOKREGCOMPERR = 30; // 73存摺資料補登刪除失敗！Show Signal
+	public static final int NOTFINISH = 31; // iEnd != 0 continue printing
+	public static final int NOTFINISHATP = 32; // iEnd != 0 continue printing, Auto turn page
+	public static final int NOTFINISHHTP = 33; // iEnd != 0 continue printing, Handy turn page, Show Reentry signal.
+	public static final int FINISH = 34; // iEnd == 0 printing finished,
 											// === 2 超過存摺頁次, 仍然顯示補登完成燈號
 											// go to capture
 	private int curState = SESSIONBREAK;
@@ -755,6 +757,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	}
 	private boolean PbDataFormat() {
 		boolean rtn = true;
+		int tl,total;
+		tl = this.iLine;
+		total = this.iCon;
 		String pbpr_date = String.format("%9s", " ");    //日期 9
 		String pbpr_wsno = String.format("%7s", " ");    //櫃檯機編號 7
 		String pbpr_crdblog = String.format("%36s", " ");   //摘要+支出收入金額 36
@@ -826,9 +831,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					dTxamt = Double.parseDouble(new String(p0080DataFormat.getTotaTextValueSrc("txamt", pb_arr.get(i))).trim()) / 100.0;
 					if (samtbuf.equals("-"))
 						dTxamt *= -1.0;
-					NumberFormat format =  new DecimalFormat("#####,###,##0.00        ");
-					pbpr_crdb = pbpr_crdb + String.format("%25s", format.format(dTxamt));
-					pbpr_crdblog = pbpr_crdblog + String.format("%25s", format.format(dTxamt));
+//					NumberFormat format =  new DecimalFormat("#####,###,##0.00        ");
+//					pbpr_crdblog = pbpr_crdblog + String.format("%25s", format.format(dTxamt));
+					pbpr_crdb = pbpr_crdb + String.format("%25s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "        ");
+					pbpr_crdblog = pbpr_crdblog + String.format("%25s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "        ");
 				} else {
 					//收入
 					String samtbuf = "";
@@ -836,12 +842,16 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					dTxamt = Double.parseDouble(new String(p0080DataFormat.getTotaTextValueSrc("txamt", pb_arr.get(i))).trim()) / 100.0;
 					if (samtbuf.equals("-"))
 						dTxamt *= -1.0;
-					NumberFormat format =  new DecimalFormat("#####,###,##0.00   ");
-					pbpr_crdb = pbpr_crdb + String.format("%19s", format.format(dTxamt));
-					pbpr_crdblog = pbpr_crdblog + String.format("%19s", format.format(dTxamt));
+//					NumberFormat format =  new DecimalFormat("#####,###,##0.00   ");
+//					pbpr_crdb = pbpr_crdb + String.format("%19s", format.format(dTxamt));
+//					pbpr_crdblog = pbpr_crdblog + String.format("%19s", format.format(dTxamt));
+					pbpr_crdb = pbpr_crdb + String.format("%19s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "   ");
+					pbpr_crdblog = pbpr_crdblog + String.format("%19s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "   ");
 				}
 				pr_datalog = pr_data;
-				pr_data = pr_data + String.format("%36s", pbpr_crdb);
+				pbpr_crdb = String.format("%36s", pbpr_crdb);
+				log.debug("pbpr_crdb len={}", pbpr_crdb.length());
+				pr_data = pr_data + pbpr_crdb;
 				pr_datalog = pr_datalog + String.format("%36s", pbpr_crdblog);
 				//處理結存
 				String sbalbuff = "";
@@ -849,20 +859,137 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				dTxamt = Double.parseDouble(new String(p0080DataFormat.getTotaTextValueSrc("pbbal", pb_arr.get(i))).trim()) / 100.0;
 				if (sbalbuff.equals("-"))
 					dTxamt *= -1.0;
-				NumberFormat format =  new DecimalFormat("#####,###,##0.00");
-				pbpr_balance = String.format("%19s", format.format(dTxamt));
+//				NumberFormat format =  new DecimalFormat("*####,###,##0.00");
+//				pbpr_balance = String.format("%19s", format.format(dTxamt));
+				pbpr_balance = dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT2);
 				if (this.type.equals("AUTO20")) {
 					
 				}
-				pr_data = pr_data + pbpr_balance + "\n";
+				byte[] nl = new byte[2];
+				nl[0] = (byte)0x0d;
+				nl[1] = (byte)0x0a;
+				pr_data = pr_data + pbpr_balance + new String(nl);
 				pr_datalog = pr_datalog + pbpr_balance;
 				log.debug("pbpr_date=[{}] pbpr_wsno=[{}] pbpr_dscpt=[{}] pbpr_crdb=[{}] pbpr_balance=[{}] pr_data=[{}]", pbpr_date, pbpr_wsno, pbpr_dscpt, pbpr_crdb, pbpr_balance, pr_data);
 				log.debug("pr_datalog=[{}]", pr_datalog);
+				//Print Data
+				if ( i == 0 )
+				{
+					for (int k=1; k <= (tl-1); k++)
+					{
+						if ( k == 12 && tl >= 13)
+						{
+							// tl 起始行數 > 12
+//							prt.Parsing(firstOpenConn, "SKIP=3".getBytes());
+							prt.SkipnLine(3);
+						}
+						else
+//							prt.Parsing(firstOpenConn, "SKIP=1".getBytes());
+							prt.SkipnLine(1);
+					}
+				}
+				else
+				{
+					if ( (tl+i) == 13 )
+					{
+						// tl 起始行數 < 13
+//						prt.Parsing(firstOpenConn, "SKIP=2".getBytes());
+						prt.SkipnLine(2);
+					}
+					
+				}
+				log.debug("after skip line------------");
+				prt.Prt_Text(pr_data.getBytes());
+				//若印滿 24 筆且尚有補登資料，加印「請翻下頁繼續補登」
+				if ( (tl+i) == 24 && (total > (i+1)) )
+				{
+					// 因為存摺會補到滿, PB 只有8頁, 如果是第8頁則不進行換頁流程
+					// 20180518 , add
+					if (this.npage >= TXP.PB_MAX_PAGE) {
+						this.iEnd = 2;
+						return true;
+					}
+					pr_data = "                                                     請翻下頁繼續補登\n";
+					this.iEnd = 1;
+					log.debug("{} {} {} 162請翻下頁繼續補登...", brws, catagory, account);
+					if (prt.Prt_Text(pr_data.getBytes()) == false)
+						return false;
+				}
+				else
+					this.iEnd = 0;
 			}
 		} catch (Exception e) {
 			log.debug("error--->p0080text convert error", e.getMessage());
 			rtn = false;
+			this.curState = FORMATPRTDATAERROR;
 		}
+		return rtn;
+	}
+	
+	/*********************************************************
+	*  WMSRFormat() : Format the new MSR                     *
+	*  paramater 1  : tx area data                           *
+	*  paramater 2  : AP flag                                *
+	*  return_code  : BOOL - TRUE                            *
+	*                        FALSE                 2008.01.30*
+	*********************************************************/
+	private boolean WMSRFormat()
+	{
+		boolean rtn = false;
+		int l, p, iCnt = 0;
+		byte wline[] = new byte[2];
+		byte wpage[] = new byte[2];
+		Arrays.fill(wline, (byte) 0x0);
+		Arrays.fill(wpage, (byte) 0x0);
+		byte c_Msr[] = tx_area.get("c_Msr").getBytes();
+		System.arraycopy(c_Msr, 30, wline, 0, 2);
+		System.arraycopy(c_Msr, 32, wpage, 0, 2);
+		if (this.iFig == TXP.PBTYPE) {
+			if (p0080DataFormat == null)
+				p0080DataFormat = new P0080TEXT();
+			iCnt = pb_arr.size();
+		}
+		if (this.iFig == TXP.FCTYPE) {
+			iCnt = fc_arr.size();
+		}
+		if (this.iFig == TXP.GLTYPE) {
+			iCnt = gl_arr.size();
+		}
+		l = Integer.parseInt(new String(wline));
+		p = Integer.parseInt(new String(wpage));
+		if ((l - 1) + iCnt == 24) {
+			l = 1;
+			p = p + 1;
+		} else
+			l = l + iCnt;
+		try {
+			switch (this.iFig) {
+			case TXP.PBTYPE:
+				byte[] spbbal = p0080DataFormat.getTotaTextValueSrc("spbbal", pb_arr.get(iCnt - 1));
+				if (new String(spbbal).equals("-"))
+					System.arraycopy(spbbal, 0, c_Msr, 16, 1);
+				else
+					System.arraycopy("0".getBytes(), 0, c_Msr, 16, 1);
+				System.arraycopy(p0080DataFormat.getTotaTextValueSrc("pbbal", pb_arr.get(iCnt - 1)),0, c_Msr, 17, 13);
+				System.arraycopy(String.format("%02d", l).getBytes(), 0, c_Msr, 30, 2);
+				System.arraycopy(String.format("%02d", p).getBytes(), 0, c_Msr, 32, 2);
+				tx_area.put("c_Msr", new String(c_Msr));
+				log.debug("{} {} {} WMSRFormat prepare to write new MSR {}", brws, catagory, account, tx_area.get("c_Msr"));
+				break;
+			case TXP.FCTYPE:
+				break;
+			case TXP.GLTYPE:
+				break;
+			default:
+				rtn = false;
+				break;
+			}
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			log.debug("{} {} {} WMSRFormat exception {}", brws, catagory, account, e.getMessage());
+		}
+
 		return rtn;
 	}
 
@@ -1023,6 +1150,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 								iCnt = iCnt + nCnt;
 								this.dCount = String.format("%03d", iCnt);
 								log.debug("{} {} {} :TxFlow : after DataINQ() -- dCount=[{}]", brws, catagory, account, this.dCount);
+								//Print Data
 							} else
 								rtn = new byte[0];
 						} else
@@ -1529,19 +1657,45 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			log.debug("{} {} {} 06存摺資料補登中...", brws, catagory, account);
 			switch (this.iFig) {
 			case TXP.PBTYPE:
-				PbDataFormat();
+				if (PbDataFormat()) {
+					this.curState = WRITEMSR;
+//					this.curState = SESSIONBREAK;
+//					close();
+				}
 				break;
 			case TXP.FCTYPE:
 				break;
 			case TXP.GLTYPE:
 				break;
 			}
+			log.debug("{} {} {} AutoPrnCls : 補登...", brws, catagory, account);
 			log.debug("after {}=>{}=====check prtcliFSM", before, this.curState);
 			break;
 		case PBDATAFORMAT:
 			log.debug("PBDATAFORMAT pb_arr.size=>{}=====check prtcliFSM", pb_arr.size());
-			PbDataFormat();
+			if (PbDataFormat()) {
+				this.curState = WRITEMSR;
+//				this.curState = SESSIONBREAK;
+//				close();
+			}
+			log.debug("{} {} {} AutoPrnCls : 補登...", brws, catagory, account);
 			log.debug("after {}=>{}=====check prtcliFSM", before, this.curState);
+		case FORMATPRTDATAERROR:
+			log.debug("{} {} {} ORMATPRTDATAERROR :AutoPrnCls : XXDataFormat() -- Print Data Error!", brws, catagory, account);
+			log.debug("{} {} {} 61存摺資料補登失敗！", brws, catagory, account);
+			SetSignal(firstOpenConn, firstOpenConn, "0000000000","0000000001");
+			prt.Eject(firstOpenConn);
+			Sleep(2 * 1000);
+			this.iEnd = 0;
+			this.iFirst = 0;
+			this.curState = OPENPRINTER;
+			log.debug("after {}=>{}=====check prtcliFSM", before, this.curState);
+			break;
+		case WRITEMSR:
+			log.debug("{} {} {} :AutoPrnCls : process WRITEMSR", brws, catagory, account);
+			WMSRFormat();
+			log.debug("after {}=>{}=====check prtcliFSM", before, this.curState);
+			break;
 		default:
 			break;
 		}
