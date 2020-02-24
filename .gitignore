@@ -10,3 +10,4 @@ SEQNO
 .gradle
 .project
 .settings
+.attach_pid*
