@@ -352,7 +352,8 @@ public class TITATel {
         tital.setValue("pseudo", "1");
         if (!new String(fepdd).equals("  "))
             tital.setValue("fepdd", fepdd);
-        tital.setValue("aptype", "P00");
+        tital.setValue("aptype", "P");
+        tital.setValue("apcode", "00");
         tital.setValue("stxno", "80");
         tital.setValue("dscpt", "S80  ");
         tital.setValueLtoRfill("actno", "983004149692", (byte)' ');

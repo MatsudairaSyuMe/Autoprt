@@ -31,6 +31,7 @@ import com.systex.sysgateii.gateway.listener.ActorStatusListener;
 import com.systex.sysgateii.gateway.prtCmd.Printer;
 import com.systex.sysgateii.gateway.prtCmd.Impl.CS4625Impl;
 import com.systex.sysgateii.gateway.telegram.P0080TEXT;
+import com.systex.sysgateii.gateway.telegram.P85TEXT;
 import com.systex.sysgateii.gateway.telegram.TITATel;
 import com.systex.sysgateii.gateway.telegram.TOTATel;
 import com.systex.sysgateii.gateway.util.dataUtil;
@@ -142,18 +143,20 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	public static final int GLDATAFORMAT = 20; //// Format 列印黃金存摺資料格式  print data
 	public static final int FORMATPRTDATAERROR = 21; // 61存摺資料補登失敗！Show Signal
 	public static final int WRITEMSR = 22; //// Write MSR
-	public static final int WRITEMSRERR = 23; //// Write MSR ERROR 71存摺磁條寫入有問題！
-	public static final int READMSRERRAFTERWRITEMSRERR = 24; // 11磁條讀取失敗(1)！
-	public static final int READMSRSUCAFTERWRITEMSRERR = 25; // 12存摺磁條讀取成功(1)！
-	public static final int COMPMSRSUCAFTERWRITEMSRERR = 26; // 12存摺磁條比對正確(1)！
-	public static final int COMPMSRERRAFTERWRITEMSRERR = 27; // 12存摺磁條比對失敗(1)！
-	public static final int WRITEMSRERRSHOWSIG = 28; // 71存摺磁條寫入失敗！ Show Signal
-	public static final int PASSBOOKREGCOMPSUC = 29; // 72存摺資料補登成功！
-	public static final int DELPASSBOOKREGCOMPERR = 30; // 73存摺資料補登刪除失敗！Show Signal
-	public static final int NOTFINISH = 31; // iEnd != 0 continue printing
-	public static final int NOTFINISHATP = 32; // iEnd != 0 continue printing, Auto turn page
-	public static final int NOTFINISHHTP = 33; // iEnd != 0 continue printing, Handy turn page, Show Reentry signal.
-	public static final int FINISH = 34; // iEnd == 0 printing finished,
+	public static final int WRITEMSRWAITCONFIRM = 23;  //// Write MSR ware confirm
+	public static final int WRITEMSRERR = 24; //// Write MSR ERROR 71存摺磁條寫入有問題！
+	public static final int READMSRERRAFTERWRITEMSRERR = 25; // 11磁條讀取失敗(1)！
+	public static final int READMSRSUCAFTERWRITEMSRERR = 26; // 12存摺磁條讀取成功(1)！
+	public static final int COMPMSRSUCAFTERWRITEMSRERR = 27; // 12存摺磁條比對正確(1)！
+	public static final int COMPMSRERRAFTERWRITEMSRERR = 28; // 12存摺磁條比對失敗(1)！
+	public static final int WRITEMSRERRSHOWSIG = 29; // 71存摺磁條寫入失敗！ Show Signal
+	public static final int SNDANDRCVDELTLM = 30; // 72存摺資料補登成功！
+	public static final int SNDANDRCVDELTLMCHKEND = 31; // 72存摺資料補登成功, 檢查翻及燈號！
+	public static final int DELPASSBOOKREGCOMPERR = 32; // 73存摺資料補登刪除失敗！Show Signal
+	public static final int NOTFINISH = 33; // iEnd != 0 continue printing
+	public static final int NOTFINISHATP = 34; // iEnd != 0 continue printing, Auto turn page
+	public static final int NOTFINISHHTP = 35; // iEnd != 0 continue printing, Handy turn page, Show Reentry signal.
+	public static final int FINISH = 36; // iEnd == 0 printing finished,
 											// === 2 超過存摺頁次, 仍然顯示補登完成燈號
 											// go to capture
 	private int curState = SESSIONBREAK;
@@ -197,6 +200,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	private List<byte[]> gl_arr = new ArrayList<byte[]>();
 	private P0080TEXT p0080DataFormat = null;
 	private DscptMappingTable descm = null;
+	private boolean Send_Recv_DATAInq = true;
 
 	List<ActorStatusListener> actorStatusListeners = new ArrayList<ActorStatusListener>();
 
@@ -933,7 +937,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	*  return_code  : BOOL - TRUE                            *
 	*                        FALSE                 2008.01.30*
 	*********************************************************/
-	private boolean WMSRFormat()
+	private boolean WMSRFormat(boolean start)
 	{
 		boolean rtn = false;
 		int l, p, iCnt = 0;
@@ -975,6 +979,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				System.arraycopy(String.format("%02d", p).getBytes(), 0, c_Msr, 32, 2);
 				tx_area.put("c_Msr", new String(c_Msr));
 				log.debug("{} {} {} WMSRFormat prepare to write new MSR {}", brws, catagory, account, tx_area.get("c_Msr"));
+				rtn = prt.MS_Write(start, brws, account, c_Msr);
+				log.debug("{} {} {} WMSRFormat after to write new MSR {}", brws, catagory, account, tx_area.get("c_Msr"));
 				break;
 			case TXP.FCTYPE:
 				break;
@@ -1051,6 +1057,73 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			dsptext[dsplen - 1] = 0x20;
 		return dsptext;
 	}
+	private byte[] DataDEL(int iVal, int ifig, String mbal) {
+		byte[] rtn = null;
+		P85TEXT p85text = null;
+		log.debug("1--->ifig={} mbal={}", ifig, mbal);
+		try {
+			if (iVal == TXP.SENDTHOST) { // send to host
+				//***** Compose P85 TITA *****//
+				if (ifig == TXP.PBTYPE)
+				{
+					p85text = new P85TEXT();
+					boolean p85titatextrtn = p85text.initP85TitaTEXT((byte) '0');
+					log.debug("p85titatextrtn.initP85TitaTEXT p0080titatextrtn={}", p85titatextrtn);
+					tital.setValue("aptype", "P");
+					tital.setValue("apcode", "85");
+					tital.setValue("stxno", "00");
+					tital.setValue("ptype", "0");
+					tital.setValue("dscpt", "     ");
+					tital.setValueLtoRfill("actno", tx_area.get("account"), (byte) ' ');
+					if (tital.ChkCrdb(mbal) > 0)
+						tital.setValue("crdb", "1");
+					else
+						tital.setValue("crdb", "0");
+					String sm = this.msrbal.substring(1);
+					sm = tital.FilterMsr(sm, '-', '0');
+					tital.setValue("txamt", sm);
+					tital.setValue("ver", "02");
+					p85text.setValue("bkseq", this.bkseq);
+					if (tital.ChkCrdb(this.msrbal) > 0)    ///check 20200224
+						p85text.setValue("snpbbal", "+");
+					else
+						p85text.setValue("snpbbal", "-");
+					p85text.setValue("npbbal", this.msrbal.substring(1));
+//					String scnt = String.format("%04d", pb_arr.size());
+					p85text.setValue("delcnt", String.format("%04d", pb_arr.size()));
+//					p85text.setValue("fnbdtl", pb_arr.get(pb_arr.size() - 1));
+					rtn = tital.mkTITAmsg(tital.getTitalabel(), p85text.getP85Titatext());
+					log.debug("P85 tita {}", new String(rtn));
+				}
+				//***** Compose Q98 TITA *****//
+				else if (ifig == TXP.FCTYPE)
+				{
+				}
+				//***** Compose Pxx TITA *****//
+				else if (ifig == TXP.GLTYPE)
+				{
+				}
+			} else { //iVal == RECVFHOST
+				//***** Receive P001 TOTA and check error *****//
+				if (ifig == TXP.PBTYPE)
+				{
+				}
+				//***** Receive Q980 TOTA and check error *****//
+				else if (ifig == TXP.FCTYPE)
+				{
+				}
+				//***** Receive P885 TOTA and check error *****//
+				else if (ifig == TXP.GLTYPE)
+				{
+				}
+			}
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			log.error("telegram  DataDEL error on tita label: {}", e.getMessage());
+		}
+		return rtn;
+	}
 
 	private byte[] DataINQ(int iVal, int ifig, String dCount, String con, byte[] opttotatext) {
 		// optotatext only used while iVal == TXP.RECVFHOST mode
@@ -1068,7 +1141,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					p0080text = new P0080TEXT();
 					boolean p0080titatextrtn = p0080text.initP0080TitaTEXT((byte) '0');
 					log.debug("p0080titatextrtn.initP0080TitaTEXT p0080titatextrtn={}", p0080titatextrtn);
-					tital.setValue("aptype", "P00");
+					tital.setValue("aptype", "P");
+					tital.setValue("apcode", "00");
 					tital.setValue("stxno", "80");
 					tital.setValue("dscpt", "S80  ");
 					tital.setValueLtoRfill("actno", tx_area.get("account"), (byte) ' ');
@@ -1092,10 +1166,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					} else {
 						// 若剩餘要求之未登摺筆數 < 6，則為"剩餘之未登摺筆數"，否則為6
 						if (totCnt > 0 && begin + 6 > totCnt) {
-							log.debug("TxFlow : DataINQ() -- reqcnt 2 ={}", Integer.toString(totCnt - begin));
+							log.debug("TxFlow : () -- reqcnt 2 ={}", Integer.toString(totCnt - begin));
 							p0080text.setValueRtoLfill("reqcnt", Integer.toString(totCnt - begin), (byte) '0');
 						} else {
-							log.debug("TxFlow : DataINQ() -- reqcnt 3 =6");
+							log.debug("TxFlow : () -- reqcnt 3 =6");
 							p0080text.setValueRtoLfill("reqcnt", Integer.toString(6), (byte) '0');
 						}
 					}
@@ -1127,14 +1201,14 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					} else {
 						int nCnt = Integer.parseInt(new String(p0080text.getHeadValue("nbdelcnt")));
 						int iCnt = Integer.parseInt(dCount);
-						log.debug("{} {} {} :TxFlow : DataINQ() -- iCnt=[{}] nCnt=[{}]", brws, catagory, account, iCnt, nCnt);
+						log.debug("{} {} {} :TxFlow : () -- iCnt=[{}] nCnt=[{}]", brws, catagory, account, iCnt, nCnt);
 						if (opttotatext.length > texthead.length) {
 							int j = 0;
 							byte[] text = Arrays.copyOfRange(opttotatext, p0080text.getP0080TotaheadtextLen(), opttotatext.length);
-							log.debug("{} {} {} :TxFlow : DataINQ() -- iCnt=[{}] nCnt=[{}] text.length={}", brws, catagory, account, iCnt, nCnt, text.length);
+							log.debug("{} {} {} :TxFlow : () -- iCnt=[{}] nCnt=[{}] text.length={}", brws, catagory, account, iCnt, nCnt, text.length);
 							if (text.length % p0080text.getP0080TotatextLen() == 0)
 								j = text.length / p0080text.getP0080TotatextLen();
-							log.debug("{} {} {} :TxFlow : DataINQ() -- iCnt=[{}] nCnt=[{}] text.length={} j={}", brws, catagory, account, iCnt, nCnt, text.length, j);
+							log.debug("{} {} {} :TxFlow : () -- iCnt=[{}] nCnt=[{}] text.length={} j={}", brws, catagory, account, iCnt, nCnt, text.length, j);
 							if (j == nCnt) {
 								p0080text.copyTotaText(text, j);
 								byte[] plus = {'+'};
@@ -1142,14 +1216,14 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 									double dTxamt = Double.parseDouble(new String(p0080text.getTotaTextValue("txamt", i))) / 100.0;
 									if (dTxamt == 0)
 										p0080text.setTotaTextValue("stxamt", plus, i);
-									log.debug("{} {} {} :TxFlow : after DataINQ() -- i={} txamt={} dTxamt={} stxamt={} text=[{}]", brws, catagory, account, i, new String(p0080text.getTotaTextValue("txamt", i)), dTxamt, new String(p0080text.getTotaTextValue("stxamt", i)), new String(p0080text.getTotaTexOc(i)));
+									log.debug("{} {} {} :TxFlow : after () -- i={} txamt={} dTxamt={} stxamt={} text=[{}]", brws, catagory, account, i, new String(p0080text.getTotaTextValue("txamt", i)), dTxamt, new String(p0080text.getTotaTextValue("stxamt", i)), new String(p0080text.getTotaTexOc(i)));
 								}
 								this.pb_arr.addAll(p0080text.getTotaTextLists());
 								rtn = text;
-								log.debug("{} {} {} :TxFlow : DataINQ() -- pb_arr.size={}", brws, catagory, account, pb_arr.size());
+								log.debug("{} {} {} :TxFlow : () -- pb_arr.size={}", brws, catagory, account, pb_arr.size());
 								iCnt = iCnt + nCnt;
 								this.dCount = String.format("%03d", iCnt);
-								log.debug("{} {} {} :TxFlow : after DataINQ() -- dCount=[{}]", brws, catagory, account, this.dCount);
+								log.debug("{} {} {} :TxFlow : after () -- dCount=[{}]", brws, catagory, account, this.dCount);
 								//Print Data
 							} else
 								rtn = new byte[0];
@@ -1164,7 +1238,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-			log.error("telegram  DataINQ error on tita label: {}", e.getMessage());
+			log.error("telegram   error on tita label: {}", e.getMessage());
 		}
 
 		return rtn;
@@ -1184,7 +1258,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	private int Send_Recv(int iflg, int ifun, String con, String mbal) {
 		int rtn = 0;
 		do {
-			if (this.curState == SNDANDRCVTLM) {
+			if (this.curState == SNDANDRCVTLM || this.curState == SNDANDRCVDELTLM) {
 				this.iLine = Integer.parseInt(tx_area.get("cline").trim());
 				con = "000";
 				this.iCon = Integer.parseInt(con.trim());
@@ -1192,10 +1266,11 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					pb_arr.clear();
 					fc_arr.clear();
 					gl_arr.clear();
-					tital = new TITATel();
-					boolean titalrtn = tital.initTitaLabel((byte) '0');
-					log.debug("tital.initTitaLabel rtn={}", titalrtn);
 				}
+				tital = new TITATel();
+				boolean titalrtn = tital.initTitaLabel((byte) '0');
+				log.debug("tital.initTitaLabel rtn={}", titalrtn);
+
 				try {
 					tital.setValue("brno", "983");
 					tital.setValue("wsno", "0403");
@@ -1233,6 +1308,12 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 							rtn = -1;
 						}
 					} else {
+						log.debug("{} {} {} 04中心存摺已補登資料刪除中...", brws, catagory, account);
+						this.resultmsg = null;
+						resultmsg = DataDEL(TXP.SENDTHOST, iflg, mbal);
+						if (resultmsg == null || resultmsg.length == 0) {
+							rtn = -1;
+						}
 					}
 					this.curState = SETREQSIG;
 					if (SetSignal(firstOpenConn, !firstOpenConn, "0000000000", "0010000000")) {
@@ -1356,6 +1437,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 
 							} else {
 								// Receive Delete Result
+								DataDEL(TXP.RECVFHOST, iflg, "");
+								log.debug("{} {} {} 56存摺已補登資料刪除成功！", brws, catagory, account);
+								this.curState = SNDANDRCVDELTLMCHKEND;
+								break;
 							}
 							this.curState = STARTPROCTLM;
 						} catch (Exception e) {
@@ -1379,7 +1464,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				}
 			}
 		} while (this.iCount < iCon);
-		if (this.curState == STARTPROCTLM && !dispatcher.isTITA_TOTA_START() && alreadySendTelegram)
+		if ((this.curState == STARTPROCTLM || this.curState == SNDANDRCVDELTLMCHKEND) && !dispatcher.isTITA_TOTA_START() && alreadySendTelegram)
 			//relese channel
 			this.alreadySendTelegram = false;
 
@@ -1388,6 +1473,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			fc_arr.clear();
 			gl_arr.clear();
 		}
+		log.debug("{} {} {} this.curState={}", brws, catagory, account, this.curState);
 		return rtn;
 	}
 
@@ -1626,6 +1712,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			log.debug("{} {} {} :AutoPrnCls : process telegram isTITA_TOTA_START={} alreadySendTelegram={}", brws,
 					catagory, account, dispatcher.isTITA_TOTA_START(), alreadySendTelegram);
 			int r = 0;
+			this.Send_Recv_DATAInq = true;
 			if ((r = Send_Recv(this.iFig, TXP.INQ, "0", "0")) != 0) {
 				if (r < 0) {
 					this.curState = SESSIONBREAK;
@@ -1643,13 +1730,24 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					"{} {} {} :AutoPrnCls : process set req signal before send telegram isTITA_TOTA_START={} alreadySendTelegram={}",
 					brws, catagory, account, dispatcher.isTITA_TOTA_START(), alreadySendTelegram);
 			r = 0;
-			if ((r = Send_Recv(this.iFig, TXP.INQ, "0", "0")) != 0) {
-				if (r < 0) {
-					this.curState = SESSIONBREAK;
-					log.debug("{} {} {} 61存摺資料補登失敗！", brws, catagory, account);
+			if (this.Send_Recv_DATAInq) {
+				if ((r = Send_Recv(this.iFig, TXP.INQ, "0", "0")) != 0) {
+					if (r < 0) {
+						this.curState = SESSIONBREAK;
+						log.debug("{} {} {} 61存摺資料補登失敗！", brws, catagory, account);
+					}
+				}
+			} else {
+				if (Send_Recv(this.iFig, TXP.DEL, "", tx_area.get("mbal")) != 0) {
+					if (r < 0) {
+						this.curState = SESSIONBREAK;
+						log.debug("{} {} {} 61存摺資料補登失敗！", brws, catagory, account);
+					}
 				}
 			}
-			log.debug("SENDTLM/RECVTLM r = {} pb_arr.size=>{} isTITA_TOTA_START={} alreadySendTelegram={}=====check prtcliFSM", r, pb_arr.size(), dispatcher.isTITA_TOTA_START(), this.alreadySendTelegram);
+			log.debug(
+					"SENDTLM/RECVTLM r = {} pb_arr.size=>{} isTITA_TOTA_START={} alreadySendTelegram={}=====check prtcliFSM",
+					r, pb_arr.size(), dispatcher.isTITA_TOTA_START(), this.alreadySendTelegram);
 			log.debug("after {}=>{}=====check prtcliFSM", before, this.curState);
 			break;
 		case STARTPROCTLM:
@@ -1693,10 +1791,67 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			break;
 		case WRITEMSR:
 			log.debug("{} {} {} :AutoPrnCls : process WRITEMSR", brws, catagory, account);
-			WMSRFormat();
+			if (WMSRFormat(firstOpenConn)) {
+				this.curState = SNDANDRCVDELTLM;
+			} else
+				this.curState = WRITEMSRWAITCONFIRM;
+			log.debug("{} {} {} :AutoPrnCls : WMSRFormat() -- c_Msr=[{}]",brws, catagory, account, this.tx_area.get("c_Msr"));
 			log.debug("after {}=>{}=====check prtcliFSM", before, this.curState);
 			break;
+		case WRITEMSRWAITCONFIRM:
+			log.debug("{} {} {} :AutoPrnCls : process WRITEMSRWAITCONFIRM", brws, catagory, account);
+			if (WMSRFormat(!firstOpenConn)) {
+				log.debug("{} {} {}72存摺資料補登成功！",brws, catagory, account);
+				this.curState = SNDANDRCVDELTLM;
+			}
+			log.debug("after {}=>{}=====check prtcliFSM", before, this.curState);
+			break;
+		case SNDANDRCVDELTLM:
+			log.debug("{} {} {} :AutoPrnCls : process SNDANDRCVDELTLM isTITA_TOTA_START={} alreadySendTelegram={}", brws,
+					catagory, account, dispatcher.isTITA_TOTA_START(), alreadySendTelegram);
+			r = 0;
+			this.Send_Recv_DATAInq = false;
+			if ((r = Send_Recv(this.iFig, TXP.DEL, "", tx_area.get("mbal"))) != 0) {
+				if (r < 0) {
+					SetSignal(firstOpenConn, firstOpenConn, "0000000000","0000000001");
+					prt.Eject(firstOpenConn);
+					Sleep(2 * 1000);
+					this.iEnd = 0;
+					this.iFirst = 0;
+
+					this.curState = SESSIONBREAK;
+					log.debug("{} {} {} 73存摺資料補登刪除失敗！", brws, catagory, account);
+				}
+			}
+			log.debug("SNDANDRCVDELTLM r = {} pb_arr.size()=>{}=====check prtcliFSM", r, pb_arr.size());
+			log.debug("after {}=>{} r={} =====check prtcliFSM", before, this.curState, r);
+			break;
+		case SNDANDRCVDELTLMCHKEND:
+			log.debug("{} {} {} :AutoPrnCls : process SNDANDRCVDELTLMCHKEND", brws, catagory, account);
+			if (iEnd == 1) {
+				if (!this.autoturnpage.equals("false")){
+					
+				} else {
+					SetSignal(firstOpenConn, firstOpenConn, "0000000000","0101010000");
+					prt.Eject(firstOpenConn);
+					Sleep(2 * 1000);
+				}
+				log.debug("{} {} {}AutoPrnCls : 翻頁...", brws, catagory, account);
+				iFirst = 1;
+			} else {
+				// Show Signal
+				SetSignal(firstOpenConn, firstOpenConn, "0000000000","0001000000");
+				prt.Eject(firstOpenConn);
+				Sleep(2 * 1000);
+				iFirst = 0;
+				if (iEnd == 2)
+					iEnd = 0;
+				log.debug("{} {} {}:AutoPrnCls : 完成!!.", brws, catagory, account);
+			}
+			this.curState = ENTERPASSBOOKSIG;
+			log.debug("after {}=>{} iEnd={} =====check prtcliFSM", before, this.curState, iEnd);
 		default:
+			log.debug("unknow status after {}=>{} iEnd={} =====check prtcliFSM", before, this.curState, iEnd);
 			break;
 		}
 		return;

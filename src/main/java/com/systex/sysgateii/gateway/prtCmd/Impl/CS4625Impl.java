@@ -172,6 +172,11 @@ public class CS4625Impl implements Printer {
 	public static final int Eject                     = 39;
 	public static final int Eject_START               = 40;
 	public static final int Eject_FINISH              = 41;
+	public static final int MS_Write                  = 42;
+	public static final int MS_Write_START            = 43;
+	public static final int MS_Write_START_2          = 44;
+	public static final int MS_WriteRecvData          = 45;
+	public static final int MS_Write_FINISH           = 46;
 
 
 	public static final int CheckStatus_START         = 100;
@@ -1149,69 +1154,158 @@ public class CS4625Impl implements Printer {
 	}
 
 	@Override
-	public boolean MS_Write(boolean sart, String brws, String account, byte[] buff) {
+	public boolean MS_Write(boolean start, String brws, String account, byte[] buff) {
 		// TODO Auto-generated method stub
-		byte[] data = null;
-
-		if (start)
-			this.curState = MS_Read_START;
-		log.debug("MS_Read curState={} curChkState={}", this.curState, this.curChkState);
-		if (this.curState == MS_Read_START) {
-			this.curState = MS_Read;
-			log.debug("MS_Read curState={} curChkState={}", this.curState, this.curChkState);
-			if (Send_hData(S4625_PMS_READ) != 0)
-				return (data);
+		boolean rtn = false;
+		if (start) {
+			if ((buff == null || buff.length == 0)) {
+				log.debug("MS_Write ERROR!!! msr dat null on initial status");
+				return rtn;
+			} else {
+				this.curState = MS_Write_START;
+				this.curmsdata = null;
+				System.gc();
+				int i = 0;
+				for (i = 0; i < buff.length; i++)
+					if (buff[i] == (byte) 0x0)
+						break;
+				if (i == buff.length)
+					i = buff.length - 1;
+				log.debug("i={} buff.length={}", i, buff.length);
+				this.curmsdata = new byte[i + 1 + 3];
+				Arrays.fill(this.curmsdata, (byte) 0x0);
+				this.curmsdata[0] = ESQ;
+				this.curmsdata[1] = (byte) 0x74;
+				for (i = 0; i < (this.curmsdata.length - 3); i++) {
+					switch (buff[i]) {
+					case (byte) 0x20:
+						this.curmsdata[i + 2] = (byte) '0';
+						break;
+					case (byte) '+':
+						this.curmsdata[i + 2] = (byte) '>';
+						break;
+					case (byte) '-':
+						this.curmsdata[i + 2] = (byte) '<';
+						break;
+					default:
+						this.curmsdata[i + 2] = buff[i];
+						break;
+					}
+				}
+				this.curmsdata[this.curmsdata.length - 1] = (byte) 0x1d;
+			}
 		}
-		if (this.curState == MS_Read) {
-			this.curState = MS_ReadRecvData;
+		log.debug("MS_Write curState={} curChkState={} curmsdata={}", this.curState, this.curChkState, this.curmsdata);
+		byte[] data = null;
+		if (this.curState == MS_Write_START || this.curState == MS_Write) {
+			if (this.curState == MS_Write_START) {
+				this.curState = MS_Write;
+				this.curChkState = CheckStatus_START;
+			}
+			data = CheckStatus();
+			log.debug("1 ===<><>{} MS_Write {} {} iCnt={}", this.curState, this.curChkState, data, this.iCnt);
+			if (CheckDis(data) != 0) {
+				this.curChkState = CheckStatus_FINISH;
+				if (!pc.connectStatus()) {
+					log.debug("{} {} {} 94補摺機斷線！", brws, account, "");
+					return false;
+				}
+			}
+			if (data != null && !CheckError(data)) {
+				log.debug("{} {} {}95補摺機硬體錯誤！(EJT)", brws, account, "");
+				this.curChkState = CheckStatus_FINISH;
+				return false;
+			} else {
+				log.debug("2 ===<><>{} chkChkState {} {}", this.curState, this.curChkState, data);
+				this.curChkState = CheckStatus_FINISH;
+				this.curState = MS_Write_START_2;
+			}
+		}
+		if (this.curState == MS_Write_START_2) {
+			this.curChkState = CheckStatus_FINISH;
+			log.debug("{} {} {}07存摺磁條寫入中...", brws, account, "");
+			Send_hData(this.curmsdata);
+
+			// actual ms write
+			Send_hData(S4625_PMS_WRITE);
+
+		}
+		if (this.curState == MS_Write_START_2) {
+			this.curState = MS_WriteRecvData;
 			Sleep(1500);
 			this.iCnt = 0;
-			this.curmsdata = null;
+			data = null;
+			log.debug("3 ===<><>{} chkChkState {} {}", this.curState, this.curChkState, data);
 			data = Rcv_Data();
-		} else if (this.curState == MS_ReadRecvData) {
+		} else if (this.curState == MS_WriteRecvData) {
 			Sleep(200);
 			this.iCnt++;
-			data = Rcv_Data();
-			if (data == null && iCnt > 40) {
-				log.debug("{} {} {} {} 94補摺機狀態錯誤！(MSR-2)", iCnt, brws, "", "");
-				this.curState = ResetPrinterInit_START;
-				ResetPrinterInit();
-				pc.close();
-			} else if (data != null && !new String(data).equals("DIS")) {
-				if (data != null && data.length == 38) {
-					byte[] tmpb = new byte[35];
-					System.arraycopy(data, 2, tmpb, 0, 35);
-					this.curmsdata = tmpb;
-					System.gc();
-				} else if (data == null && iCnt > 40) {
+			log.debug("4 ===<><>{} chkChkState {} {}", this.curState, this.curChkState, data);
+			while (null != (data = Rcv_Data()) && !new String(data).equals("DIS")) {
+				if (data[2] == (byte) 'P') {
+					log.debug("ReadBarcode 5 ===<><>{} chkChkState {}", this.curState, this.curChkState);
+					this.curState = MS_Write_FINISH;
+					rtn = true;
+					break;
+				} else if (data[2] == (byte) 's') {
+					log.debug("{} {} {} {} 94補摺機狀態錯誤！(MSW)", iCnt, brws, account, "");
+					this.curState = ResetPrinterInit_START;
+					ResetPrinterInit();
+					pc.close();
+					break;
+				} else if (data.length >= 3) {
+					switch (data[2]) {
+					case (byte) 'a': // receive error on hardware error
+					case (byte) '9': // MAGNETIC STRIPE READ/write error
+					case (byte) 'r': // MAGNETIC STRIPE READ error
+					case (byte) 'E': // Obstacles with media
+						if (Send_hData(S4625_PERRCODE_REQ) != 0)
+							return false;
+						Sleep(50);
+						data = Rcv_Data(5);
+						log.debug("{} {} {} 94補摺機狀態錯誤！(MSW) ERROR:[{}]", iCnt, brws, account, data);
+						this.curState = ResetPrinterInit_START;
+						ResetPrinterInit();
+						break;
+					case (byte) 'q':
+						if (Send_hData(S4625_PERRCODE_REQ) != 0)
+							return false;
+						Sleep(50);
+						data = Rcv_Data(5);
+						log.debug("{} {} {} 94補摺機狀態錯誤！(MSW) ERROR:[{}]", iCnt, brws, account, data);
+						// 20060706 , if write eorror , retry 3 times
+						/*
+						 * iRetryCnt++; if ( iRetryCnt < 1 ) { unsigned char S4625_PCLEAR[2]={0x7f,0};
+						 * 
+						 * Send_hData(S4625_PRESET); Send_hData(S4625_PCLEAR); goto S4265_MSRW_Retry; }
+						 */
+						this.curState = ResetPrinterInit_START;
+						ResetPrinterInit();
+						return false;
+					case '8':
+						log.debug("{} {} {} 94補摺機指令錯誤！(MSW)", iCnt, brws, account);
+						this.curState = ResetPrinterInit_START;
+						ResetPrinterInit();
+						return false;
+					default:
+						// 20060713 , RECEVIE UNKNOWN ERROR , JUST RESET
+						this.curState = ResetPrinterInit_START;
+						ResetPrinter();
+						return false;
+					}
+				} else if (iCnt > 40) {
 					log.debug("{} {} {} {} 94補摺機狀態錯誤！(MSR-2)", iCnt, brws, "", "");
 					this.curState = ResetPrinterInit_START;
 					ResetPrinterInit();
 					pc.close();
 				}
-				this.curState = MS_Read_START_2;
-				log.debug("MS_Read 1 ===<><>{} chkChkState {} curmsdata={}", this.curState, this.curChkState, this.curmsdata);
-			}
-		}
-		if (this.curState == MS_Read_START_2 || this.curState == MS_Read_2) {
-			if (this.curState == MS_Read_START_2) {
-				this.curState = MS_Read_2;
-				this.curChkState = CheckStatus_START;
-			}
-			data = CheckStatus();
-			log.debug("MS_Read 2 ===<><>{} chkChkState {}", this.curState, this.curChkState);
-			if (!CheckError(data)) {
-				return null;
-			} else {
-				this.curState = MS_Read_FINISH;
-				log.debug("MS_Read 3 ===<><>{} chkChkState {}", this.curState, this.curChkState);
-				return this.curmsdata;
+				log.debug("ReadBarcode 4 ===<><>{} chkChkState {}", this.curState, this.curChkState);
+				this.iCnt++;
 			}
 		}
 
-		log.debug("{} {} {} {} final data.length={}", iCnt, brws, "", "", data.length);
-		return curmsdata;
-		return false;
+		log.debug("{} {} {} {} final data.length={} write msr{}", iCnt, brws, "", "", (data == null) ? 0: data.length, this.curmsdata);
+		return rtn;
 	}
 
 	@Override
