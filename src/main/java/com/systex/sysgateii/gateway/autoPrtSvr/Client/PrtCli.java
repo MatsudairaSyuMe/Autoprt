@@ -1848,7 +1848,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					iEnd = 0;
 				log.debug("{} {} {}:AutoPrnCls : 完成!!.", brws, catagory, account);
 			}
-			this.curState = ENTERPASSBOOKSIG;
+			this.curState = SESSIONBREAK;
+			Sleep(1000);
+			close();
 			log.debug("after {}=>{} iEnd={} =====check prtcliFSM", before, this.curState, iEnd);
 		default:
 			log.debug("unknow status after {}=>{} iEnd={} =====check prtcliFSM", before, this.curState, iEnd);
