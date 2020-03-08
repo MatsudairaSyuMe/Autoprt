@@ -769,16 +769,41 @@ public class CS4625Impl implements Printer {
 				ResetPrinterInit();
 				pc.close();
 			} else if (data != null && !new String(data).equals("DIS")) {
-				if (data != null && data.length == 38) {
-					byte[] tmpb = new byte[35];
-					System.arraycopy(data, 2, tmpb, 0, 35);
+				if (data[1] == (byte)'s') {
+					if (data[2] == (byte)(0x7f & 0xff)) {
+						iCnt = 0;
+						log.debug("{} {} {} {} 94補摺機狀態錯誤！", iCnt, brws, "", "");
+						this.curState = ResetPrinterInit_START;
+						ResetPrinterInit();
+						this.curmsdata = null;
+						pc.close();
+						return null;						
+					} else if (data.length >= 38) {
+						int lastidx = data.length - 1;
+						for (; lastidx > 1; lastidx--)
+							if (data[lastidx] == (byte)0x1c)
+								break;
+						byte[] tmpb = new byte[lastidx - 2];
+					System.arraycopy(data, 2, tmpb, 0, tmpb.length);
 					this.curmsdata = tmpb;
 					System.gc();
-				} else if (data == null && iCnt > 40) {
-					log.debug("{} {} {} {} 94補摺機狀態錯誤！(MSR-2)", iCnt, brws, "", "");
+					} else {
+						iCnt = 0;
+						log.debug("{} {} {} {} 94補摺機狀態錯誤！(MSR-1)", iCnt, brws, "", "");
+						this.curState = ResetPrinterInit_START;
+						ResetPrinterInit();
+						pc.close();
+						this.curmsdata = null;
+						return null;						
+					}
+				} else {
+					iCnt = 0;
+					log.debug("{} {} {} {} 94補摺機狀態錯誤！(MSR-1)", iCnt, brws, "", "");
 					this.curState = ResetPrinterInit_START;
 					ResetPrinterInit();
 					pc.close();
+					this.curmsdata = null;
+					return null;
 				}
 				this.curState = MS_Read_START_2;
 				log.debug("MS_Read 1 ===<><>{} chkChkState {} curmsdata={}", this.curState, this.curChkState, this.curmsdata);

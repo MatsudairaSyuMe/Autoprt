@@ -32,6 +32,7 @@ import com.systex.sysgateii.gateway.prtCmd.Printer;
 import com.systex.sysgateii.gateway.prtCmd.Impl.CS4625Impl;
 import com.systex.sysgateii.gateway.telegram.P0080TEXT;
 import com.systex.sysgateii.gateway.telegram.P85TEXT;
+import com.systex.sysgateii.gateway.telegram.Q0880TEXT;
 import com.systex.sysgateii.gateway.telegram.TITATel;
 import com.systex.sysgateii.gateway.telegram.TOTATel;
 import com.systex.sysgateii.gateway.util.dataUtil;
@@ -169,6 +170,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	private String cpage = ""; // !< 頁次 MSR for PB/FC/GL len 2
 	private String bkseq = ""; // !< 領用序號 MSR for PB len 1, FC len 2
 	private String no = ""; // !< 存摺號碼 MSR for GL len 9
+	private String pbver = ""; //!< MSR for FC 領用序號
 	private int nline = 0;
 	private int npage = 0;
 	private int rpage = 0;
@@ -199,6 +201,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	private List<byte[]> fc_arr = new ArrayList<byte[]>();
 	private List<byte[]> gl_arr = new ArrayList<byte[]>();
 	private P0080TEXT p0080DataFormat = null;
+	private Q0880TEXT q080DataFormat = null;
+	
 	private DscptMappingTable descm = null;
 	private boolean Send_Recv_DATAInq = true;
 
@@ -727,7 +731,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			this.cline = new String(cussrc, TXP.ACTNO_LEN + TXP.ACFILLER_LEN + TXP.MSRBAL_LEN, TXP.LINE_LEN); // !< 行次 MSR for PB/FC/GL len 2
 			this.cpage = new String(cussrc, TXP.ACTNO_LEN + TXP.ACFILLER_LEN + TXP.MSRBAL_LEN + TXP.LINE_LEN,
 					TXP.PAGE_LEN); // !< 頁次 MSR for PB/FC/GL len 2
-			this.bkseq = new String(cussrc,
+//			this.bkseq = new String(cussrc,
+//					TXP.ACTNO_LEN + TXP.ACFILLER_LEN + TXP.MSRBAL_LEN + TXP.LINE_LEN + TXP.PAGE_LEN, TXP.PBVER_LEN); // !< 領用序號 MSR for PB len 1, FC len 2
+			this.pbver = new String(cussrc,
 					TXP.ACTNO_LEN + TXP.ACFILLER_LEN + TXP.MSRBAL_LEN + TXP.LINE_LEN + TXP.PAGE_LEN, TXP.PBVER_LEN); // !< 領用序號 MSR for PB len 1, FC len 2
 			log.debug("[{}]:TxFlow : MS_Check() -- 外幣存摺 PB_MSR [{}]/[{}]/[{}]/[{}]/[{}]/[{}]", this.brws.substring(2),
 					account, actfiller, msrbal, cline, cpage, bkseq);
@@ -768,6 +774,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		String pbpr_wsno = String.format("%7s", " ");    //櫃檯機編號 7
 		String pbpr_crdblog = String.format("%36s", " ");   //摘要+支出收入金額 36
 		String pbpr_crdb = String.format("%36s", " ");   //摘要+支出收入金額 36
+		String pbpr_crdbT = String.format("%36s", " ");   //摘要+支出收入金額 36
 		String pbpr_dscpt = String.format("%16s", " ");  //摘要 16 byte big
 		String pbpr_balance = String.format("%18s", " ");//結存 18
 		String pr_datalog = ""; //  80
@@ -798,34 +805,53 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				//處理摘要
 				byte dtype[] = p0080DataFormat.getTotaTextValueSrc("dsptype", pb_arr.get(i));
 				byte[] dsptb = null;
+				byte[] dsptbsnd = null;
 				if (dtype[0] == (byte)'9') {
 					dsptb = p0080DataFormat.getTotaTextValueSrc("dsptext", pb_arr.get(i));
 					dsptb = FilterBig5(dsptb);
 				} else {
 					String desc = new String(p0080DataFormat.getTotaTextValueSrc("dscpt", pb_arr.get(i))).trim();
 					if (DscptMappingTable.m_Dscpt.containsKey(desc))
-						dsptb = DscptMappingTable.m_Dscpt.get(desc).getBytes();
+////						dsptb = DscptMappingTable.m_Dscpt.get(desc).getBytes();
+						dsptb = DscptMappingTable.m_Dscpt2.get(desc);
 					else
 						dsptb = desc.getBytes();
 				}
+				dsptbsnd = dsptb;
 //				pbpr_dscpt = new String(FilterChi(pbpr_dscpt.getBytes()));
 				//20100503 by Han 支出摘要第12位或若為中文碼時，轉為空白
 				//20100503 by Han 存入摘要第17位或若為中文碼時，轉為空白
-				log.debug("crdb=0 pbpr_dscpt[11]=[{}]",dsptb[11]);
-				log.debug("crdb=1 pbpr_dscpt[16]=[{}]",dsptb[16]);
+				byte[] tmpb1 = null;
+////				log.debug("crdb=0 crdb=1 pbpr_dscpt[11]=[{}] dspt[16]=[{}] {} len={}",dsptb[11],dsptb[16], dsptb, dsptb.length);
 				byte[] crdb = p0080DataFormat.getTotaTextValueSrc("crdb", pb_arr.get(i));
-				if (crdb[0] == (byte)'0')
-					dsptb = FilterChi(dsptb, 12);
-				if (crdb[0] == (byte)'1')
-					dsptb = FilterChi(dsptb, 17);
+				if (crdb[0] == (byte)'0') {
+					tmpb1 = new byte[24];
+					Arrays.fill(tmpb1, (byte)' ');
+					System.arraycopy(dsptb, 0, tmpb1, 0, dsptb.length);
+					dsptb = tmpb1;
+////					dsptb = FilterChi(dsptb, 12);
+				}
+				if (crdb[0] == (byte)'1') {
+					tmpb1 = new byte[34];
+////					dsptb = FilterChi(dsptb, 17);
+					Arrays.fill(tmpb1, (byte)' ');
+					System.arraycopy(dsptb, 0, tmpb1, 0, dsptb.length);
+					dsptb = tmpb1;
+				}
+//				for (int ii = 0; ii < dsptb.length; ii++)
+//					System.out.print(String.format("%x", dsptb[ii]));
+//				System.out.println();
+				log.debug("crdb=0 crdb=1 pbpr_dscpt[11]=[{}] dspt[16]=[{}] {} len={}",dsptb[11],dsptb[16], dsptb, dsptb.length);
+
 				if (crdb[0] == (byte)'0') {
 					pbpr_crdb = String.format("%12s", new String(dsptb, "BIG5"));
-					pbpr_crdblog = String.format("%12s", new String(dsptb));
+//					pbpr_crdblog = String.format("%12s", new String(dsptb));
+					pbpr_crdblog = String.format("%12s", new String(dsptb, "BIG5"));
 				} else {
 					pbpr_crdb = String.format("%17s", new String(dsptb, "BIG5"));
-					pbpr_crdblog = String.format("%17s", new String(dsptb));
+//					pbpr_crdblog = String.format("%17s", new String(dsptb));
+					pbpr_crdblog = String.format("%17s", new String(dsptb, "BIG5"));
 				}
-					
 				//處理支出收入金額
 				double dTxamt = 0.0;
 				if (crdb[0] == (byte)'0') {
@@ -838,6 +864,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 //					NumberFormat format =  new DecimalFormat("#####,###,##0.00        ");
 //					pbpr_crdblog = pbpr_crdblog + String.format("%25s", format.format(dTxamt));
 					pbpr_crdb = pbpr_crdb + String.format("%25s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "        ");
+					
+					pbpr_crdbT = String.format("%25s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "        ");
+					
 					pbpr_crdblog = pbpr_crdblog + String.format("%25s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "        ");
 				} else {
 					//收入
@@ -850,12 +879,22 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 //					pbpr_crdb = pbpr_crdb + String.format("%19s", format.format(dTxamt));
 //					pbpr_crdblog = pbpr_crdblog + String.format("%19s", format.format(dTxamt));
 					pbpr_crdb = pbpr_crdb + String.format("%19s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "   ");
+
+					pbpr_crdbT = String.format("%19s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "   ");
+
 					pbpr_crdblog = pbpr_crdblog + String.format("%19s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "   ");
 				}
 				pr_datalog = pr_data;
 				pbpr_crdb = String.format("%36s", pbpr_crdb);
-				log.debug("pbpr_crdb len={}", pbpr_crdb.length());
+
+				pbpr_crdbT = String.format("%36s", pbpr_crdbT);
+
+				log.debug("pbpr_crdb len={} pbpr_crdbT [{}] len={}", pbpr_crdb.length(), pbpr_crdbT, pbpr_crdbT.length());
+
+				String pr_dataprev = pr_data;
+
 				pr_data = pr_data + pbpr_crdb;
+				
 				pr_datalog = pr_datalog + String.format("%36s", pbpr_crdblog);
 				//處理結存
 				String sbalbuff = "";
@@ -873,8 +912,11 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				nl[0] = (byte)0x0d;
 				nl[1] = (byte)0x0a;
 				pr_data = pr_data + pbpr_balance + new String(nl);
+				
+				pbpr_crdbT = pbpr_crdbT + pbpr_balance + new String(nl);
+				
 				pr_datalog = pr_datalog + pbpr_balance;
-				log.debug("pbpr_date=[{}] pbpr_wsno=[{}] pbpr_dscpt=[{}] pbpr_crdb=[{}] pbpr_balance=[{}] pr_data=[{}]", pbpr_date, pbpr_wsno, pbpr_dscpt, pbpr_crdb, pbpr_balance, pr_data);
+				log.debug("pbpr_date=[{}] pbpr_wsno=[{}] pbpr_dscpt=[{}] pbpr_crdb=[{}] pbpr_balance=[{}] pr_data=[{}] pbpr_crdbT=[{}]", pbpr_date, pbpr_wsno, pbpr_dscpt, pbpr_crdb, pbpr_balance, pr_data, pbpr_crdbT);
 				log.debug("pr_datalog=[{}]", pr_datalog);
 				//Print Data
 				if ( i == 0 )
@@ -903,7 +945,14 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					
 				}
 				log.debug("after skip line------------");
-				prt.Prt_Text(pr_data.getBytes());
+				
+				byte[] sndbary = new byte[pr_dataprev.getBytes().length + pbpr_crdbT.getBytes().length];
+				System.arraycopy(pr_dataprev.getBytes(), 0, sndbary, 0, pr_dataprev.getBytes().length);
+				System.arraycopy(pbpr_crdbT.getBytes(), 0, sndbary, pr_dataprev.getBytes().length, pbpr_crdbT.getBytes().length);
+				System.arraycopy(dsptbsnd, 0, sndbary, pr_dataprev.getBytes().length+1, dsptbsnd.length);
+				
+//				prt.Prt_Text(pr_data.getBytes());
+				prt.Prt_Text(sndbary);
 				//若印滿 24 筆且尚有補登資料，加印「請翻下頁繼續補登」
 				if ( (tl+i) == 24 && (total > (i+1)) )
 				{
@@ -1045,7 +1094,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		int pt = 0;
 
 		for (int i = 0; i < dsplen; i++) {
-			if (dsptext[i] >= 0x80) {
+			if ((int)dsptext[i] >= (int)(0x80 & 0xff)) {
 				pt = pt + 2;
 				i++;
 			} else {
@@ -1092,6 +1141,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 //					String scnt = String.format("%04d", pb_arr.size());
 					p85text.setValue("delcnt", String.format("%04d", pb_arr.size()));
 //					p85text.setValue("fnbdtl", pb_arr.get(pb_arr.size() - 1));
+					log.debug("pb_arr size() - 1={} [{}]", pb_arr.size() - 1, new String(pb_arr.get(pb_arr.size() - 1)));
+					p85text.appendTitaText("date", pb_arr.get(pb_arr.size() - 1));
 					rtn = tital.mkTITAmsg(tital.getTitalabel(), p85text.getP85Titatext());
 					log.debug("P85 tita {}", new String(rtn));
 				}
@@ -1129,6 +1180,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		// optotatext only used while iVal == TXP.RECVFHOST mode
 		byte[] rtn = null;
 		P0080TEXT p0080text = null;
+		Q0880TEXT q0880text = null;
 		int begin = Integer.parseInt(dCount);
 		int totCnt = Integer.parseInt(con);
 		int inqiLine = Integer.parseInt(tx_area.get("cline").trim());
@@ -1181,6 +1233,44 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 						p0080text.setValueRtoLfill("begin", Integer.toString(begin + 1), (byte) '0');
 					rtn = tital.mkTITAmsg(tital.getTitalabel(), p0080text.getP0080Titatext());
 				} else if (iFig == TXP.FCTYPE) {
+					q0880text = new Q0880TEXT();
+					boolean q0880titatextrtn = q0880text.initQ0880TitaTEXT((byte) '0');
+					log.debug("q0880titatextrtn.initQ0880TitaTEXT q0880titatextrtn={}", q0880titatextrtn);
+					tital.setValue("aptype", "Q");
+					tital.setValue("apcode", "08");
+					tital.setValue("stxno", "80");
+					tital.setValue("dscpt", "S80  ");
+					tital.setValueLtoRfill("actno", tx_area.get("account"), (byte) ' ');
+					tital.setValue("crdb", "0");
+					tital.setValue("nbcd", "3");
+					tital.setValue("txamt", this.msrbal.substring(1));
+					q0880text.appendTitaText("newseq", "                              ".getBytes());
+					q0880text.setValue("retur", "0");
+					q0880text.setValue("rbrno", this.brws.substring(0, 3));
+					q0880text.setValue("acbrno", this.brws.substring(0, 3));
+					q0880text.setValue("aptype", "14");
+					q0880text.setValue("corpno", "00");
+					q0880text.setValue("actfg", "1");
+					this.pbavCnt = 999;
+					q0880text.setValueRtoLfill("pbcnt", String.format("%d", this.pbavCnt), (byte) '0');
+					q0880text.setValue("pbver", this.pbver);
+					q0880text.setValue("txnos", String.format("%04d",6));
+					if (begin == 0)
+						q0880text.setValue("begin",String.format("%04d",1));
+					else
+						q0880text.setValue("begin",String.format("%04d", begin + 1));
+
+					if (begin == 0) {
+						q0880text.setValue("txday","00000000");
+						q0880text.setValue("txseq","000000");
+					}
+					else {
+						q0880text.setValue("txday",tx_area.get("txday"));
+						q0880text.setValue("txseq",tx_area.get("txseq"));
+					}
+					q0880text.setValue("pbcol",this.cline);
+					q0880text.setValue("pbpage",this.cpage);
+					rtn = tital.mkTITAmsg(tital.getTitalabel(), q0880text.getQ0880Titatext());
 				} else if (iFig ==TXP.GLTYPE) {
 				}
 			} else { //iVal == RECVFHOST
@@ -1189,7 +1279,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					byte[] texthead = Arrays.copyOfRange(opttotatext, 0, p0080text.getP0080TotaheadtextLen());
 					p0080text.copyTotaHead(texthead);
 					con = new String(p0080text.getHeadValue("nbcnt"));
-					log.debug("P0080totahead rtn={} tota.nbcnt={} tota.nbdelcnt={}",
+					log.debug("P0080totahead rtn={} tota.nbcnt={}",
 							new String(texthead), con,
 							new String(p0080text.getHeadValue("nbdelcnt")));
 					if (Integer.parseInt(con) > this.pbavCnt) {
@@ -1231,10 +1321,94 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 							rtn = new byte[0];
 					}
 				} else if (iFig == TXP.FCTYPE) {
+					rtn = new byte[0];
+					q0880text = new Q0880TEXT();
+					byte[] texthead = Arrays.copyOfRange(opttotatext, 0, q0880text.getQ0880TotaheadtextLen());
+					q0880text.copyTotaHead(texthead);
+					con = new String(q0880text.getHeadValue("nbcnt"));
+					log.debug("Q0880totahead rtn={} tota.nbcnt={}",
+							new String(texthead), con);
+					if (Integer.parseInt(con) > this.pbavCnt) {
+						//if (全部未登摺之資料筆數 > 存摺總剩餘可列印之資料筆數) Eject!
+						SetSignal(firstOpenConn, !firstOpenConn, "0000000000","0000000001");
+						Sleep(1000);
+						log.debug("{} {} {} 54全部未登摺之資料筆數[{}] > 存摺總剩餘可列印之資料筆數[{}]！", brws, catagory, account, con, this.pbavCnt);
+						rtn = new byte[0];
+					} else {
+						totCnt = Integer.parseInt(con);
+						log.debug("{} {} {} :TxFlow : () -- begin=[{}] totCnt=[{}]", brws, catagory, account, begin,
+								totCnt);
+						if (opttotatext.length > texthead.length) {
+							int j = 0;
+							byte[] text = Arrays.copyOfRange(opttotatext, q0880text.getQ0880TotaheadtextLen(),
+									opttotatext.length);
+							log.debug("{} {} {} :TxFlow : () -- totCnt=[{}] text.length={} [{}]", brws, catagory, account,
+									totCnt, text.length, new String(text));
+							if (text.length % q0880text.getQ0880TotatextLen() == 0)
+								j = text.length / q0880text.getQ0880TotatextLen();
+							log.debug("{} {} {} :TxFlow : () -- totCnt=[{}] text.length={} j={}", brws, catagory,
+									account, totCnt, text.length, j);
+							if (j == totCnt) {
+								q0880text.copyTotaText(text, j);
+								if (begin < totCnt) {
+									int dataCnt = 0;
+									if ((totCnt - begin) >= 6)
+										dataCnt = 6;
+									else
+										dataCnt = totCnt - begin;
+									// 20080828 , 滿24筆時 dataCnt <= 6
+									int iCur, iLeft;
+									iCur = iLine + begin;
+									iLeft = 25 - iCur;
+									dataCnt = (dataCnt < iLeft) ? dataCnt : iLeft;
+									log.debug("{} {} {} :TxFlow : () -- dataCnt=[{}]", brws, catagory, account,
+											dataCnt);
+									int i = 0;
+									for (i = 0; i < dataCnt; i++) {
+										// 20080923 , txday[0] == '0'
+										if (q0880text.getTotaTextValue("totatxday", i) == null
+												|| new String(q0880text.getTotaTextValue("totatxday", i)).trim()
+														.length() == 0
+												|| Integer.parseInt(
+														new String(q0880text.getTotaTextValue("totatxday", i))) == 0)
+											break;
+										this.fc_arr.add(q0880text.getTotaTexOc(i));
+										log.debug("[{} {} {} :TxFlow : DataINQ() -- m_fArr[{}]=[{}]", brws, catagory,
+												account, begin + i, new String(q0880text.getTotaTexOc(i)));
+									}
+									if (i == 0) {
+										log.debug("[{} {} {} TxFlow : DataINQ() -- m_fArr data null", brws, catagory,
+												account);
+									} else {
+										tx_area.put("txday", new String(q0880text.getTotaTextValue("totatxday", i - 1)));
+										tx_area.put("txseq", new String(q0880text.getTotaTextValue("totatxseq", i - 1)));
+										log.debug("[{} {} {} : DataINQ() -- tx_area->txday=[{}] tx_area->txseq=[{}]",
+												brws, catagory, account,
+												new String(q0880text.getTotaTextValue("totatxday", i - 1)),
+												new String(q0880text.getTotaTextValue("totatxseq", i - 1)));
+										rtn = text;
+										log.debug("{} {} {} :TxFlow : () -- fc_arr.size={}", brws, catagory, account,
+												fc_arr.size());
+										this.dCount = Integer.toString(begin + i);
+										log.debug("{} {} {} :TxFlow : () -- this.dCount={}", brws, catagory, account,this.dCount);
+									}
+								} else {
+									rtn = new byte[0];
+								}
+							}
+						} else {
+							rtn = new byte[0];
+						}
+					}
 				} else if (iFig == TXP.GLTYPE) {
 				}
 			}
-			log.debug("4--->pb_arr.size=[{}] rtn.len={}", pb_arr.size(), rtn.length);
+			if (iFig == TXP.PBTYPE)
+				log.debug("4--->pb_arr.size=[{}]", pb_arr.size());
+			else if (iFig == TXP.FCTYPE)
+				log.debug("4--->fc_arr.size=[{}]", fc_arr.size());
+			else if (iFig == TXP.GLTYPE)
+				log.debug("4--->gl_arr.size=[{}]", gl_arr.size());
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -1421,7 +1595,6 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 									} else {
 										log.debug("{} {} {} AutoPrnCls : --change ", brws, catagory, account);
 									}
-//									return (-1);
 									rtn = -1;
 									break;
 								}
@@ -1434,7 +1607,6 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 									this.curState = STARTPROCTLM;
 									break;
 								}
-
 							} else {
 								// Receive Delete Result
 								DataDEL(TXP.RECVFHOST, iflg, "");
@@ -1635,6 +1807,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 							log.debug("{} {} {} AutoPrnCls : --keep cheak barcode after Set Signal after check barcode",
 									brws, catagory, account);
 						}
+						prt.Eject(firstOpenConn);
+//						this.curState = SESSIONBREAK;
+//						close();
+
 					}
 					if (this.rpage < 0) {
 						SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000100000");
@@ -1674,6 +1850,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 						log.debug("{} {} {} AutoPrnCls : --keep cheak barcode after Set Signal after check barcode",
 								brws, catagory, account);
 					}
+					this.curState = SESSIONBREAK;
+//					Sleep(1000);
+					close();
+
 				}
 				if (this.rpage < 0) {
 					SetSignal(firstOpenConn, !firstOpenConn, "0000000000", "0000100000");
@@ -1701,6 +1881,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					log.debug("{} {} {} AutoPrnCls : --keep cheak barcode after Set Signal after check barcode", brws,
 							catagory, account);
 				}
+				this.curState = SESSIONBREAK;
+//				Sleep(1000);
+				close();
+
 			}
 			if (this.rpage < 0) {
 				SetSignal(!firstOpenConn, !firstOpenConn, "0000000000", "0000100000");
@@ -1757,8 +1941,6 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			case TXP.PBTYPE:
 				if (PbDataFormat()) {
 					this.curState = WRITEMSR;
-//					this.curState = SESSIONBREAK;
-//					close();
 				}
 				break;
 			case TXP.FCTYPE:
@@ -1849,7 +2031,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				log.debug("{} {} {}:AutoPrnCls : 完成!!.", brws, catagory, account);
 			}
 			this.curState = SESSIONBREAK;
-			Sleep(1000);
+//			Sleep(1000);
 			close();
 			log.debug("after {}=>{} iEnd={} =====check prtcliFSM", before, this.curState, iEnd);
 		default:

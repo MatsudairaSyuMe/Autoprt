@@ -128,6 +128,23 @@ public class P85TEXT {
 //		log.debug(fieldN + ":");
 		System.arraycopy(setbV, 0, p85titatextary, f.offset, f.len);
 	}
+	public boolean appendTitaText(String fieldN, byte[] srcValue) {
+		Field f = p85titatext.get(p85titatextname.get(fieldN));
+		if (this.p85titatext_len > 0 && srcValue != null && srcValue.length > 0) {
+			if (this.p85titatextary == null || this.p85titatextary.length == 0) {
+					this.p85titatextary = new byte[this.p85titatext_len];
+			}
+			int cplen = this.p85titatext_len - f.offset;
+			if (srcValue.length < cplen)
+				cplen = srcValue.length;
+			log.debug("fieldName={} offset={} p85titatext_len={} setval.len={} cplen={}",
+				f.name, f.offset ,this.p85titatext_len,srcValue.length,cplen);
+			System.arraycopy(srcValue, 0, this.p85titatextary, f.offset, cplen);
+			return true;
+		} else
+			return false;
+	}
+
 	public int getP85TitatextLen() {
 		return this.p85titatext_len;
 	}
@@ -153,7 +170,7 @@ public class P85TEXT {
 		int id = 0;
 		for (int l : p85titatext_lens) {
 			Field f = new Field();
-//            log.debug(String.format("%d offset %d len %d",id, p0080titatext_len, l));
+//         log.debug(String.format("%d [%s] offset %d len %d",id, p85titatext_names[id], p85titatext_len, l));
 			f.setData(p85titatext_names[id], p85titatext_len, l);
 			p85titatextname.put(p85titatext_names[id], id);
 			id += 1;
