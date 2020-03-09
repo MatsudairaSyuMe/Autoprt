@@ -1389,7 +1389,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 										rtn = text;
 										log.debug("{} {} {} :TxFlow : () -- fc_arr.size={}", brws, catagory, account,
 												fc_arr.size());
-										this.dCount = Integer.toString(begin + i);
+										this.dCount = String.format("%03d", begin + i);
 										log.debug("{} {} {} :TxFlow : () -- this.dCount={}", brws, catagory, account,this.dCount);
 									}
 								} else {
