@@ -183,7 +183,7 @@ public class P85TEXT {
 		boolean rtn;
 		P85TEXT tl = new P85TEXT();
 		rtn = tl.initP85TitaTEXT((byte) '0');
-		log.debug("tl.initP0080TitaTEXT rtn={}", rtn);
+		log.debug("tl.initP85TitaTEXT rtn={}", rtn);
 		byte[] result = tl.getP85Titatext();
 		// System.out.println("2--->" + Arrays.toString(result) + ":[" + new
 		// String(result) + "]");

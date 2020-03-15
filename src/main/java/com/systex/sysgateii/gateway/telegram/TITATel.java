@@ -243,6 +243,13 @@ public class TITATel {
         Field f = titalabel.get(titalname.get(fieldN));
         System.arraycopy(setbV, 0, titalabelary, f.offset, f.len);
     }
+	public byte[] getValue(String fieldN) throws Exception {
+		byte[] rtn = null;
+		Field f = titalabel.get(titalname.get(fieldN));
+		rtn = new byte[f.len];
+		System.arraycopy(titalabelary, f.offset, rtn, 0, f.len);
+		return rtn;
+	}
 
     private List<Field> titalabel = new ArrayList<Field>();
     private Map<String, Integer> titalname = new HashMap<String, Integer>();
