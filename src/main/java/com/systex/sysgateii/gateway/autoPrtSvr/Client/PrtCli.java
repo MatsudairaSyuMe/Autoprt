@@ -1328,70 +1328,82 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	private boolean WMSRFormat(boolean start)
 	{
 		boolean rtn = false;
-		int l, p, iCnt = 0;
+		int l = 0, p = 0, iCnt = 0;
 		byte wline[] = new byte[2];
 		byte wpage[] = new byte[2];
 		Arrays.fill(wline, (byte) 0x0);
 		Arrays.fill(wpage, (byte) 0x0);
 		byte c_Msr[] = tx_area.get("c_Msr").getBytes();
-		if (this.iFig == TXP.PBTYPE) {
-			if (p0080DataFormat == null)
-				p0080DataFormat = new P0080TEXT();
-			System.arraycopy(c_Msr, 30, wline, 0, 2);
-			System.arraycopy(c_Msr, 32, wpage, 0, 2);
-			iCnt = pb_arr.size();
+		log.debug("{} {} {} WMSRFormat before to write flag={} PBTYPE {} MSR [{}]", brws, catagory, account, start, this.iFig, new String(c_Msr));
+		if (start) {
+			if (this.iFig == TXP.PBTYPE) {
+				if (p0080DataFormat == null)
+					p0080DataFormat = new P0080TEXT();
+				System.arraycopy(c_Msr, 30, wline, 0, 2);
+				System.arraycopy(c_Msr, 32, wpage, 0, 2);
+				iCnt = pb_arr.size();
+			}
+			if (this.iFig == TXP.FCTYPE) {
+				if (q0880DataFormat == null)
+					q0880DataFormat = new Q0880TEXT();
+				System.arraycopy(c_Msr, 30, wline, 0, 2);
+				System.arraycopy(c_Msr, 32, wpage, 0, 2);
+				iCnt = fc_arr.size();
+			}
+			if (this.iFig == TXP.GLTYPE) {
+				if (p0880DataFormat == null)
+					p0880DataFormat = new P0880TEXT();
+				System.arraycopy(c_Msr, 24, wline, 0, 2);
+				System.arraycopy(c_Msr, 26, wpage, 0, 2);
+				iCnt = gl_arr.size();
+			}
+			l = Integer.parseInt(new String(wline));
+			p = Integer.parseInt(new String(wpage));
+			if ((l - 1) + iCnt == 24) {
+				l = 1;
+				p = p + 1;
+			} else
+				l = l + iCnt;
 		}
-		if (this.iFig == TXP.FCTYPE) {
-			if (q0880DataFormat == null)
-				q0880DataFormat = new Q0880TEXT();
-			System.arraycopy(c_Msr, 30, wline, 0, 2);
-			System.arraycopy(c_Msr, 32, wpage, 0, 2);
-			iCnt = fc_arr.size();
-		}
-		if (this.iFig == TXP.GLTYPE) {
-			if (p0880DataFormat == null)
-				p0880DataFormat = new P0880TEXT();
-			System.arraycopy(c_Msr, 24, wline, 0, 2);
-			System.arraycopy(c_Msr, 26, wpage, 0, 2);
-			iCnt = gl_arr.size();
-		}
-		l = Integer.parseInt(new String(wline));
-		p = Integer.parseInt(new String(wpage));
-		if ((l - 1) + iCnt == 24) {
-			l = 1;
-			p = p + 1;
-		} else
-			l = l + iCnt;
 		try {
 			switch (this.iFig) {
 			case TXP.PBTYPE:
-				byte[] spbbal = p0080DataFormat.getTotaTextValueSrc("spbbal", pb_arr.get(iCnt - 1));
-				if (new String(spbbal).equals("-"))
-					System.arraycopy(spbbal, 0, c_Msr, 16, 1);
-				else
-					System.arraycopy("0".getBytes(), 0, c_Msr, 16, 1);
-				System.arraycopy(p0080DataFormat.getTotaTextValueSrc("pbbal", pb_arr.get(iCnt - 1)),0, c_Msr, 17, 13);
-				System.arraycopy(String.format("%02d", l).getBytes(), 0, c_Msr, 30, 2);
-				System.arraycopy(String.format("%02d", p).getBytes(), 0, c_Msr, 32, 2);
-				tx_area.put("c_Msr", new String(c_Msr));
+				if (start) {
+					byte[] spbbal = p0080DataFormat.getTotaTextValueSrc("spbbal", pb_arr.get(iCnt - 1));
+					if (new String(spbbal).equals("-"))
+						System.arraycopy(spbbal, 0, c_Msr, 16, 1);
+					else
+						System.arraycopy("0".getBytes(), 0, c_Msr, 16, 1);
+					System.arraycopy(p0080DataFormat.getTotaTextValueSrc("pbbal", pb_arr.get(iCnt - 1)), 0, c_Msr, 17,
+							13);
+					System.arraycopy(String.format("%02d", l).getBytes(), 0, c_Msr, 30, 2);
+					System.arraycopy(String.format("%02d", p).getBytes(), 0, c_Msr, 32, 2);
+					tx_area.put("c_Msr", new String(c_Msr));
+				}
 				rtn = prt.MS_Write(start, brws, account, c_Msr);
 				log.debug("{} {} {} WMSRFormat after to write new PBTYPE line={} page={} MSR {}", brws, catagory, account, l, p, tx_area.get("c_Msr"));
 				break;
 			case TXP.FCTYPE:
-				System.arraycopy("0".getBytes(), 0, c_Msr, 16, 1);
-				System.arraycopy(q0880DataFormat.getTotaTextValueSrc("pbbal", fc_arr.get(iCnt - 1)),0, c_Msr, 17, 13);
-				System.arraycopy(String.format("%02d", l).getBytes(), 0, c_Msr, 30, 2);
-				System.arraycopy(String.format("%02d", p).getBytes(), 0, c_Msr, 32, 2);
-				tx_area.put("c_Msr", new String(c_Msr));
+				if (start) {
+					System.arraycopy("0".getBytes(), 0, c_Msr, 16, 1);
+					System.arraycopy(q0880DataFormat.getTotaTextValueSrc("pbbal", fc_arr.get(iCnt - 1)), 0, c_Msr, 17,
+							13);
+					System.arraycopy(String.format("%02d", l).getBytes(), 0, c_Msr, 30, 2);
+					System.arraycopy(String.format("%02d", p).getBytes(), 0, c_Msr, 32, 2);
+					tx_area.put("c_Msr", new String(c_Msr));
+				}
 				rtn = prt.MS_Write(start, brws, account, c_Msr);
 				log.debug("{} {} {} WMSRFormat after to write new FCTYPE line={} page={} MSR {}", brws, catagory, account, l, p, tx_area.get("c_Msr"));
 				break;
 			case TXP.GLTYPE:
-				System.arraycopy("000".getBytes(), 0, c_Msr, 16, 3);
-				System.arraycopy(p0880DataFormat.getTotaTextValueSrc("avebal", gl_arr.get(iCnt - 1)),0, c_Msr, 15, 9);
-				System.arraycopy(String.format("%02d", l).getBytes(), 0, c_Msr, 24, 2);
-				System.arraycopy(String.format("%02d", p).getBytes(), 0, c_Msr, 26, 2);
-				tx_area.put("c_Msr", new String(c_Msr));
+				if (start ) {
+					System.arraycopy("000".getBytes(), 0, c_Msr, 16, 3);
+					System.arraycopy(p0880DataFormat.getTotaTextValueSrc("avebal", gl_arr.get(iCnt - 1)), 0, c_Msr, 15,
+							9);
+					System.arraycopy(String.format("%02d", l).getBytes(), 0, c_Msr, 24, 2);
+					System.arraycopy(String.format("%02d", p).getBytes(), 0, c_Msr, 26, 2);
+					tx_area.put("c_Msr", new String(c_Msr));
+				}
 				rtn = prt.MS_Write(start, brws, account, c_Msr);
 				log.debug("{} {} {} WMSRFormat after to write new GLTYPE line={} page={} MSR {}", brws, catagory, account, l, p, tx_area.get("c_Msr"));
 				break;
