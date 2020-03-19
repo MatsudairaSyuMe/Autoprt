@@ -882,11 +882,11 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 						dTxamt *= -1.0;
 //					NumberFormat format =  new DecimalFormat("#####,###,##0.00        ");
 //					pbpr_crdblog = pbpr_crdblog + String.format("%25s", format.format(dTxamt));
-					pbpr_crdb = pbpr_crdb + String.format("%24s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "       ");
+					pbpr_crdb = pbpr_crdb + String.format("%18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "       ");
 					
-					pbpr_crdbT = String.format("%24s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "       ");
+					pbpr_crdbT = String.format("%18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "       ");
 					
-					pbpr_crdblog = pbpr_crdblog + String.format("%24s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "       ");
+					pbpr_crdblog = pbpr_crdblog + String.format("%18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "       ");
 				} else {
 					//收入
 					String samtbuf = "";
@@ -1050,7 +1050,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				//處理支出收入金額
 				double dTxamt = 0.0;
 				byte[] crdb = q0880DataFormat.getTotaTextValueSrc("crdb", fc_arr.get(i));
-				if (crdb[0] == (byte)'0') {
+				if (crdb[0] == (byte)'1') {
 					//支出
 					String samtbuf = "";
 					samtbuf = new String(q0880DataFormat.getTotaTextValueSrc("hcode", fc_arr.get(i)));
@@ -2027,11 +2027,11 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				}
 			}
 			if (iFig == TXP.PBTYPE)
-				log.debug("4--->pb_arr.size=[{}]", pb_arr.size());
+				log.debug("4.1--->pb_arr.size=[{}]", pb_arr.size());
 			else if (iFig == TXP.FCTYPE)
-				log.debug("4--->fc_arr.size=[{}]", fc_arr.size());
+				log.debug("4.2--->fc_arr.size=[{}]", fc_arr.size());
 			else if (iFig == TXP.GLTYPE)
-				log.debug("4--->gl_arr.size=[{}]", gl_arr.size());
+				log.debug("4.3--->gl_arr.size=[{}]", gl_arr.size());
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -2451,9 +2451,6 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 							log.debug("{} {} {} AutoPrnCls : --keep cheak barcode after Set Signal after check barcode",
 									brws, catagory, account);
 						}
-//						prt.Eject(firstOpenConn);
-//						this.curState = SESSIONBREAK;
-//						close();
 
 					}
 					if (this.rpage < 0) {
@@ -2499,10 +2496,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 						log.debug("{} {} {} AutoPrnCls : --keep cheak barcode after Set Signal after check barcode",
 								brws, catagory, account);
 					}
-//					this.curState = SESSIONBREAK;
 					Sleep(1000);
-//					close();
-
 				}
 				if (this.rpage < 0) {
 					SetSignal(firstOpenConn, !firstOpenConn, "0000000000", "0000100000");
@@ -2531,6 +2525,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 							catagory, account);
 				}
 				this.curState = SESSIONBREAK;
+				close();
+////				this.curState = FORMATPRTDATAERROR;
 			}
 			if (this.rpage < 0) {
 				SetSignal(!firstOpenConn, !firstOpenConn, "0000000000", "0000100000");
@@ -2645,24 +2641,18 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					log.debug("PBDATAFORMAT pb_arr.size=>{}=====check prtcliFSM", pb_arr.size());
 					if (PbDataFormat()) {
 						this.curState = WRITEMSR;
-//						this.curState = SESSIONBREAK;
-//						close();
 					}
 					break;
 				case TXP.FCTYPE:
 					log.debug("PBDATAFORMAT fc_arr.size=>{}=====check prtcliFSM", fc_arr.size());
 					if (FcDataFormat()) {
 						this.curState = WRITEMSR;
-//						this.curState = SESSIONBREAK;
-//						close();
 					}
 					break;
 				case TXP.GLTYPE:
 					log.debug("PBDATAFORMAT gl_arr.size=>{}=====check prtcliFSM", gl_arr.size());
 					if (GlDataFormat()) {
 						this.curState = WRITEMSR;
-//						this.curState = SESSIONBREAK;
-//						close();
 					}
 					break;
 			}
@@ -2723,13 +2713,23 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					
 				} else {
 					if (SetSignal(firstOpenConn, firstOpenConn, "0000000000","0101010000")) {
-						this.curState = SNDANDRCVDELTLMCHKENDSETSIG;
+						this.curState = SNDANDRCVDELTLMCHKENDEJECTPRT;
+//						if (prt.Eject(firstOpenConn)) {
+//							this.curState = CAPTUREPASSBOOK;
+//							iFirst = 1;
+//							Sleep(2 * 1000);
+//							log.debug("{} {} {}AutoPrnCls : 翻頁...", brws, catagory, account);
+//						}
 					}
 				}
 			} else {
 				// Show Signal
 				if (SetSignal(firstOpenConn, firstOpenConn, "0000000000","0001000000")) {
 					this.curState = SNDANDRCVDELTLMCHKENDSETSIG;
+//					if (prt.Eject(firstOpenConn)) {
+//						Sleep(2 * 1000);
+//						this.curState = FINISH;
+//					}
 				}
 			}
 			log.debug("after {}=>{} iEnd={} =====check prtcliFSM", before, this.curState, iEnd);
@@ -2744,9 +2744,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 						this.curState = SNDANDRCVDELTLMCHKENDEJECTPRT;
 						if (prt.Eject(firstOpenConn)) {
 							this.curState = CAPTUREPASSBOOK;
-							log.debug("{} {} {}AutoPrnCls : 翻頁...", brws, catagory, account);
-							Sleep(2 * 1000);
 							iFirst = 1;
+							Sleep(2 * 1000);
+							log.debug("{} {} {}AutoPrnCls : 翻頁...", brws, catagory, account);
 						}
 					}
 				}
@@ -2755,14 +2755,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				if (SetSignal(!firstOpenConn, firstOpenConn, "0000000000", "0001000000")) {
 					this.curState = SNDANDRCVDELTLMCHKENDEJECTPRT;
 					if (prt.Eject(firstOpenConn)) {
-//						this.curState = SESSIONBREAK;
 						Sleep(2 * 1000);
-						detectPassBook();
+						this.curState = FINISH;
 					}
-					iFirst = 0;
-					if (iEnd == 2)
-						iEnd = 0;
-					log.debug("{} {} {}:AutoPrnCls : 完成!!.", brws, catagory, account);
 				}
 			}
 			log.debug("after {}=>{} iEnd={} =====check prtcliFSM", before, this.curState, iEnd);
@@ -2776,25 +2771,27 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					if (prt.Eject(!firstOpenConn)) {
 						this.curState = CAPTUREPASSBOOK;
 						Sleep(2 * 1000);
-//						detectPassBook();
+						log.debug("{} {} {}AutoPrnCls : 翻頁...", brws, catagory, account);
+						iFirst = 1;
 					}
 				}
-				log.debug("{} {} {}AutoPrnCls : 翻頁...", brws, catagory, account);
-				iFirst = 1;
 			} else {
 				// Eject Priner
 				if (prt.Eject(!firstOpenConn)) {
-//					this.curState = SESSIONBREAK;
+					this.curState = FINISH;
 					Sleep(2 * 1000);
-					detectPassBook();
 				}
-				iFirst = 0;
-				if (iEnd == 2)
-					iEnd = 0;
-				log.debug("{} {} {}:AutoPrnCls : 完成!!.", brws, catagory, account);
 			}
-//			this.curState = OPENPRINTER;
-//			close();
+			log.debug("after {}=>{} iEnd={} =====check prtcliFSM", before, this.curState, iEnd);
+			break;
+			
+		case FINISH:
+			log.debug("{} {} {} :AutoPrnCls : process FINISH", brws, catagory, account);
+			iFirst = 0;
+			if (iEnd == 2)
+				iEnd = 0;
+			detectPassBook();
+			log.debug("{} {} {}:AutoPrnCls : 完成!!.", brws, catagory, account);
 			log.debug("after {}=>{} iEnd={} =====check prtcliFSM", before, this.curState, iEnd);
 			break;
 		default:
