@@ -1547,7 +1547,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					else
 						tital.setValue("crdb", "0");
 					String sm = this.msrbal.substring(1);
-					sm = tital.FilterMsr(sm, '<', '-');
+					sm = tital.FilterMsr(sm, '-', '0');
 					tital.setValue("txamt", sm);
 					tital.setValue("ver", "02");
 					p85text.setValue("bkseq", this.bkseq);
@@ -1629,7 +1629,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 						p1885text.setValue("snpbbal", "-");
 					sm = tx_area.get("avebal");
 
-					sm = "000" + tital.FilterMsr(sm, '<', '-');
+					sm = "000" + tital.FilterMsr(sm, '-', '0');
 					p1885text.setValue("npbbal", sm);
 					p1885text.setValue("delcnt", String.format("%04d", gl_arr.size()));
 					p1885text.setValue("nbday", tx_area.get("nbday"));
@@ -1693,7 +1693,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					else
 						tital.setValue("crdb", "0");
 					String sm = this.msrbal.substring(1);
-					sm = tital.FilterMsr(sm, '<', '-');
+					sm = tital.FilterMsr(sm, '-', '0');
 					tital.setValue("txamt", sm);
 					tital.setValue("ver", "02");
 					this.pbavCnt = 999;
@@ -1782,7 +1782,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					// 20080905 , prepare txamt
 					String sm = "0" + this.msrbal;
 
-					sm = tital.FilterMsr(sm, '<', '-');
+					sm = tital.FilterMsr(sm, '-', '0');
 					tital.setValue("txamt", sm);
 					this.pbavCnt = 999;
 					p0880text.setValueRtoLfill("pbcnt", String.format("%d", this.pbavCnt), (byte) '0');

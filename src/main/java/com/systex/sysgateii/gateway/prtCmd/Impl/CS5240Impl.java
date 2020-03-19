@@ -625,24 +625,17 @@ public class CS5240Impl implements Printer {
 						if ( buff[i] == (byte)0x0d &&
 							 buff[i+1] == (byte)0x0a )
 						{
-//							hBuf[wlen+3] = buff[i];
 							i++;
-//							wlen++;
-//							hBuf[wlen+3] = buff[i];
-//							Send_hData(S5240_PNON_PRINT_AREA);
 							System.arraycopy(S5240_PNON_PRINT_AREA, 0, hBuf, wlen+3, S5240_PNON_PRINT_AREA.length);
 							wlen += S5240_PNON_PRINT_AREA.length;
-//							Send_hData(S5240_PENLARGE_OD);
 							System.arraycopy(S5240_PENLARGE_OD, 0, hBuf, wlen+3, S5240_PENLARGE_OD.length);
 							wlen += S5240_PENLARGE_OD.length;
-//							Send_hData(S5240_PENLARGE_OA);
 							System.arraycopy(S5240_PENLARGE_OA, 0, hBuf, wlen+3, S5240_PENLARGE_OA.length);
-//							wlen += S5240_PENLARGE_OA.length;
 
 							log.debug("5.2 ===<><>{} {} Prt_Text wlen={} i={}", this.curState, this.curChkState, wlen, i);
 						}
 						if ( buff[i] == (byte)0x0a &&
-							buff[i-1] != (byte)0x0d )
+							 buff[i-1] != (byte)0x0d )
 						{
 							log.debug("5.3 ===<><>{} {} Prt_Text wlen={} i={}", this.curState, this.curChkState, wlen, i);
 							break;
@@ -662,7 +655,6 @@ public class CS5240Impl implements Printer {
 					hBuf[0]=hBuf[1]=hBuf[2]=' ';
 					if ( bBeginSISession == true ) {
 						log.debug("6.1 ===<><>{} Prt_Text leave S5240_PSO chkChkState {} {} wlen={} i={}", this.curState, this.curChkState, wlen, i);
-//						memcpy(&hBuf[wlen+3],S5240_PSO,5);
 						System.arraycopy(S5240_PSO, 0, hBuf, wlen+3, 5);
 						bBeginSISession=false;
 						wlen+=5;
@@ -673,7 +665,6 @@ public class CS5240Impl implements Printer {
 //					wlen = 0;
 					byte[] sendhBuf = new byte[wlen];
 					System.arraycopy(hBuf, 3, sendhBuf, 0, sendhBuf.length);
-					//Send_hDataBuf(&hBuf[3]);
 					Send_hData(sendhBuf);
 					log.debug("6.2 ===<><>{} Prt_Text leave S5240_PSO chkChkState {} {} wlen={} i={}", this.curState, this.curChkState, wlen, i);
 				}

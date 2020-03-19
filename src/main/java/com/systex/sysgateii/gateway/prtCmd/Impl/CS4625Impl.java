@@ -603,34 +603,25 @@ public class CS4625Impl implements Printer {
 					{
 						if ( bBeginSISession == true ) {
 							log.debug("5 ===<><>{} Prt_Text leave S4625_PSO chkChkState {} wlen={} i={}", this.curState, this.curChkState, wlen, i);
-//							memcpy(&hBuf[wlen+3],S4625_PSO,5);
 							System.arraycopy(S4625_PSO, 0, hBuf, wlen+3, 5);
 							bBeginSISession=false;
 							wlen+=5;
 							hBuf[wlen+3] = buff[i];
 						}
-//						if (buff[i] < 0x20 && buff[i] != 0x0d && buff[i] != 0x0a)
 						if (((int)(buff[i] & 0xff) < (int)(0x20 & 0xff)) && buff[i] != (byte)0x0d && buff[i] != (byte)0x0a)
 						{
 							buff[i] = 0x20;
 							hBuf[wlen+3] = buff[i];
 						}
 						if ( buff[i] == (byte)0x0d &&
-								 buff[i+1] == (byte)0x0a )
+							 buff[i+1] == (byte)0x0a )
 						{
-//							hBuf[wlen+3] = buff[i];
 							i++;
-//							wlen++;
-//							hBuf[wlen+3] = buff[i];
-//							Send_hData(S4625_PNON_PRINT_AREA);
 							System.arraycopy(S4625_PNON_PRINT_AREA, 0, hBuf, wlen+3, S4625_PNON_PRINT_AREA.length);
 							wlen += S4625_PNON_PRINT_AREA.length;
-//							Send_hData(S4625_PENLARGE_OD);
 							System.arraycopy(S4625_PENLARGE_OD, 0, hBuf, wlen+3, S4625_PENLARGE_OD.length);
 							wlen += S4625_PENLARGE_OD.length;
-//							Send_hData(S4625_PENLARGE_OA);
 							System.arraycopy(S4625_PENLARGE_OA, 0, hBuf, wlen+3, S4625_PENLARGE_OA.length);
-//							wlen += S4625_PENLARGE_OA.length;
 
 							log.debug("5.2 ===<><>{} {} Prt_Text wlen={} i={}", this.curState, this.curChkState, wlen, i);
 						}
@@ -655,7 +646,6 @@ public class CS4625Impl implements Printer {
 					hBuf[0]=hBuf[1]=hBuf[2]=' ';
 					if ( bBeginSISession == true ) {
 						log.debug("6.1 ===<><>{} Prt_Text leave S4625_PSO chkChkState {} {} wlen={} i={}", this.curState, this.curChkState, wlen, i);
-//						memcpy(&hBuf[wlen+3],S4625_PSO,5);
 						System.arraycopy(S4625_PSO, 0, hBuf, wlen+3, 5);
 						bBeginSISession=false;
 						wlen+=5;
@@ -666,7 +656,6 @@ public class CS4625Impl implements Printer {
 //					wlen = 0;
 					byte[] sendhBuf = new byte[wlen];
 					System.arraycopy(hBuf, 3, sendhBuf, 0, sendhBuf.length);
-					//Send_hDataBuf(&hBuf[3]);
 					Send_hData(sendhBuf);
 					log.debug("6.2 ===<><>{} Prt_Text leave S4625_PSO chkChkState {} {} wlen={} i={}", this.curState, this.curChkState, wlen, i);
 				}
