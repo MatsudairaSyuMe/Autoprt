@@ -30,6 +30,7 @@ import com.systex.sysgateii.gateway.conf.DscptMappingTable;
 import com.systex.sysgateii.gateway.listener.ActorStatusListener;
 import com.systex.sysgateii.gateway.prtCmd.Printer;
 import com.systex.sysgateii.gateway.prtCmd.Impl.CS4625Impl;
+import com.systex.sysgateii.gateway.prtCmd.Impl.CS5240Impl;
 import com.systex.sysgateii.gateway.telegram.P0080TEXT;
 import com.systex.sysgateii.gateway.telegram.P0880TEXT;
 import com.systex.sysgateii.gateway.telegram.P1885TEXT;
@@ -243,6 +244,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			this.prt = new CS4625Impl(this, this.brws, this.type, this.autoturnpage);
 			log.debug("[0000]:AutoPrnCls : load Auto Printer type AUTO46");
 		} else if (this.type.equals("AUTO52")) {
+			this.prt = new CS5240Impl(this, this.brws, this.type, this.autoturnpage);
 			log.debug("[0000]:AutoPrnCls : load Auto Printer type AUTO52");
 		} else {
 			log.error("[0000]:AutoPrnCls : Auto Printer type define error!");
@@ -1088,7 +1090,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				pr_data = pr_data + pbpr_balance + new String(nl);
 				
 				pbpr_crdbT = pbpr_crdbT + pbpr_balance + new String(nl);
-				
+			
 				pr_datalog = pr_datalog + pbpr_balance;
 				log.debug("pbpr_date=[{}] pbpr_wsno=[{}] pbpr_dscpt=[{}] pbpr_crdb=[{}] pbpr_balance=[{}] pr_data=[{}] pbpr_crdbT=[{}]", pbpr_date, pbpr_wsno, pbpr_dscpt, pbpr_crdb, pbpr_balance, pr_data, pbpr_crdbT);
 				log.debug("pr_datalog=[{}]", pr_datalog);
@@ -1254,7 +1256,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				byte[] nl = new byte[2];
 				nl[0] = (byte)0x0d;
 				nl[1] = (byte)0x0a;
-				pr_data = pr_data + " " + pbpr_balance + new String(nl);
+ 			   pr_data = pr_data + " " + pbpr_balance + new String(nl);
 				
 				pbpr_crdbT = pbpr_crdbT + " " +  pbpr_balance + new String(nl);
 				
@@ -1545,7 +1547,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					else
 						tital.setValue("crdb", "0");
 					String sm = this.msrbal.substring(1);
-					sm = tital.FilterMsr(sm, '-', '0');
+					sm = tital.FilterMsr(sm, '<', '-');
 					tital.setValue("txamt", sm);
 					tital.setValue("ver", "02");
 					p85text.setValue("bkseq", this.bkseq);
@@ -1627,7 +1629,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 						p1885text.setValue("snpbbal", "-");
 					sm = tx_area.get("avebal");
 
-					sm = "000" + tital.FilterMsr(sm, '-', '0');
+					sm = "000" + tital.FilterMsr(sm, '<', '-');
 					p1885text.setValue("npbbal", sm);
 					p1885text.setValue("delcnt", String.format("%04d", gl_arr.size()));
 					p1885text.setValue("nbday", tx_area.get("nbday"));
@@ -1691,7 +1693,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					else
 						tital.setValue("crdb", "0");
 					String sm = this.msrbal.substring(1);
-					sm = tital.FilterMsr(sm, '-', '0');
+					sm = tital.FilterMsr(sm, '<', '-');
 					tital.setValue("txamt", sm);
 					tital.setValue("ver", "02");
 					this.pbavCnt = 999;
@@ -1780,7 +1782,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					// 20080905 , prepare txamt
 					String sm = "0" + this.msrbal;
 
-					sm = tital.FilterMsr(sm, '-', '0');
+					sm = tital.FilterMsr(sm, '<', '-');
 					tital.setValue("txamt", sm);
 					this.pbavCnt = 999;
 					p0880text.setValueRtoLfill("pbcnt", String.format("%d", this.pbavCnt), (byte) '0');
@@ -2269,6 +2271,18 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		return rtn;
 	}
 
+	private void detectPassBook() {
+		this.curState = ENTERPASSBOOKSIG;
+		SetSignal(firstOpenConn, firstOpenConn, "1100000000", "0000000000");
+		this.iFirst = 0;
+		this.iEnd = 0;
+		this.catagory = "";
+		this.account = "";
+		this.pb_arr.clear();
+		this.fc_arr.clear();
+		this.gl_arr.clear();
+		log.debug("{}=====SetSignal prtcliFSM", this.curState);
+	}
 	private void prtcliFSM(boolean isInit) {
 		if (isInit) {
 			this.curState = SESSIONBREAK;
@@ -2710,26 +2724,14 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				} else {
 					if (SetSignal(firstOpenConn, firstOpenConn, "0000000000","0101010000")) {
 						this.curState = SNDANDRCVDELTLMCHKENDSETSIG;
-//					prt.Eject(firstOpenConn);
-//					Sleep(2 * 1000);
 					}
 				}
-//				log.debug("{} {} {}AutoPrnCls : 翻頁...", brws, catagory, account);
-//				iFirst = 1;
 			} else {
 				// Show Signal
 				if (SetSignal(firstOpenConn, firstOpenConn, "0000000000","0001000000")) {
 					this.curState = SNDANDRCVDELTLMCHKENDSETSIG;
-//				prt.Eject(firstOpenConn);
-//				Sleep(2 * 1000);
-//				iFirst = 0;
-//				if (iEnd == 2)
-//					iEnd = 0;
-//				log.debug("{} {} {}:AutoPrnCls : 完成!!.", brws, catagory, account);
 				}
 			}
-//			this.curState = SESSIONBREAK;
-//			close();
 			log.debug("after {}=>{} iEnd={} =====check prtcliFSM", before, this.curState, iEnd);
 			break;
 		case SNDANDRCVDELTLMCHKENDSETSIG:
@@ -2741,28 +2743,28 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					if (SetSignal(!firstOpenConn, firstOpenConn, "0000000000","0101010000")) {
 						this.curState = SNDANDRCVDELTLMCHKENDEJECTPRT;
 						if (prt.Eject(firstOpenConn)) {
-							this.curState = SESSIONBREAK;
+							this.curState = CAPTUREPASSBOOK;
 							log.debug("{} {} {}AutoPrnCls : 翻頁...", brws, catagory, account);
+							Sleep(2 * 1000);
 							iFirst = 1;
 						}
 					}
 				}
-//				log.debug("{} {} {}AutoPrnCls : 翻頁...", brws, catagory, account);
-//				iFirst = 1;
 			} else {
 				// Show Signal
 				if (SetSignal(!firstOpenConn, firstOpenConn, "0000000000", "0001000000")) {
 					this.curState = SNDANDRCVDELTLMCHKENDEJECTPRT;
-					if (prt.Eject(firstOpenConn))
-						this.curState = SESSIONBREAK;
+					if (prt.Eject(firstOpenConn)) {
+//						this.curState = SESSIONBREAK;
+						Sleep(2 * 1000);
+						detectPassBook();
+					}
 					iFirst = 0;
 					if (iEnd == 2)
 						iEnd = 0;
 					log.debug("{} {} {}:AutoPrnCls : 完成!!.", brws, catagory, account);
 				}
 			}
-//			this.curState = SESSIONBREAK;
-//			close();
 			log.debug("after {}=>{} iEnd={} =====check prtcliFSM", before, this.curState, iEnd);
 			break;
 		case SNDANDRCVDELTLMCHKENDEJECTPRT:
@@ -2772,7 +2774,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					
 				} else {
 					if (prt.Eject(!firstOpenConn)) {
-						this.curState = SESSIONBREAK;
+						this.curState = CAPTUREPASSBOOK;
+						Sleep(2 * 1000);
+//						detectPassBook();
 					}
 				}
 				log.debug("{} {} {}AutoPrnCls : 翻頁...", brws, catagory, account);
@@ -2780,7 +2784,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			} else {
 				// Eject Priner
 				if (prt.Eject(!firstOpenConn)) {
-					this.curState = SESSIONBREAK;
+//					this.curState = SESSIONBREAK;
+					Sleep(2 * 1000);
+					detectPassBook();
 				}
 				iFirst = 0;
 				if (iEnd == 2)

@@ -12,8 +12,8 @@ import com.systex.sysgateii.gateway.autoPrtSvr.Client.PrtCli;
 import com.systex.sysgateii.gateway.prtCmd.Printer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class CS4625Impl implements Printer {
-	private static Logger log = LoggerFactory.getLogger(CS4625Impl.class);
+public class CS5240Impl implements Printer {
+	private static Logger log = LoggerFactory.getLogger(CS5240Impl.class);
 	private byte ESQ = (byte) 0x1b;
 	private byte ENQ = (byte) 0x05;
 	private byte ACK = (byte) 0x06;
@@ -55,63 +55,63 @@ public class CS4625Impl implements Printer {
 	// private byte CC_UPPER_SELECT_INSERTER = (byte) 0x6C;
 	// private byte CC_LOWER_SELECT_INSERTER = (byte) 0x6D;
 
-	private byte[] S4625_PEJT = { ESQ, (byte) 0x4f };
-	private byte[] S4625_PENQ = { ESQ, (byte) 'j' };
-	private byte[] S4625_PERRCODE_REQ = { ESQ, 'k' };
-	// private byte[] S4625_PACK = {ACK,(byte)0};
-	private byte[] S4625_PENLARGE_OD = { (byte) 0x0D };
-	private byte[] S4625_PENLARGE_OA = { (byte) 0x0a};
-	private byte[] S4625_PREVERSE_LINEFEED = { ESQ, (byte) '7' };
+	private byte[] S5240_PEJT = { ESQ, (byte) 0x4f };
+	private byte[] S5240_PENQ = { ESQ, (byte) 'j' };
+	private byte[] S5240_PERRCODE_REQ = { ESQ, 'k' };
+	// private byte[] S5240_PACK = {ACK,(byte)0};
+	private byte[] S5240_PENLARGE_OD = { (byte) 0x0D };
+	private byte[] S5240_PENLARGE_OA = { (byte) 0x0a};
+	private byte[] S5240_PREVERSE_LINEFEED = { ESQ, (byte) '7' };
 	// private byte[]
-	// S4625_PINIT_PRT={ESQ,(byte)'4',ESQ,(byte)'h',(byte)'0',(byte)0};
+	// S5240_PINIT_PRT={ESQ,(byte)'4',ESQ,(byte)'h',(byte)'0',(byte)0};
 	// 20060713 , pr2(-e) 有時會印出之前傳票資料, 故在 initialize printer 時, send del , 清除buffer
 	// 20060721, pr2中文自會mess suspect ,
 	// private byte[]
-	// S4625_PINIT_PRT={(byte)0x7f,ESQ,(byte)'4',ESQ,(byte)'h',(byte)'0',(byte)0};
+	// S5240_PINIT_PRT={(byte)0x7f,ESQ,(byte)'4',ESQ,(byte)'h',(byte)'0',(byte)0};
 	// private byte[]
-	// S4625_PINIT_PRT={ESQ,(byte)'4',ESQ,(byte)'h',(byte)'0',(byte)0};
+	// S5240_PINIT_PRT={ESQ,(byte)'4',ESQ,(byte)'h',(byte)'0',(byte)0};
 	// uprivate byte[]
-	// S4625_PINIT_PRT={ESQ,(byte)'[',(byte)'5',(byte)'1',(byte)'4',(byte)0};
-	private byte[] S4625_PINIT_PRT = { ESQ, (byte) '[', (byte) '0', (byte) '0', (byte) '0' };
+	// S5240_PINIT_PRT={ESQ,(byte)'[',(byte)'5',(byte)'1',(byte)'4',(byte)0};
+	private byte[] S5240_PINIT_PRT = { ESQ, (byte) '[', (byte) '0', (byte) '0', (byte) '0' };
 	// FS,'J','0','0','4','2',FS,'K','0','1','4','7','0','5','2','2',0};
 
-	private byte[] S4625_PSI = { ESQ, (byte) '[', (byte) '5', (byte) '1', (byte) '8'};
-	private byte[] S4625_PSO = { ESQ, (byte) '[', (byte) '0', (byte) '0', (byte) '0' };
-	private byte[] S4625_PNON_PRINT_AREA = { ESQ, (byte) 0x78 };
+	private byte[] S5240_PSI = { ESQ, (byte) '[', (byte) '5', (byte) '1', (byte) '8'};
+	private byte[] S5240_PSO = { ESQ, (byte) '[', (byte) '0', (byte) '0', (byte) '0' };
+	private byte[] S5240_PNON_PRINT_AREA = { ESQ, (byte) 0x78 };
 
-	private byte[] S4625_PINIT = { ESQ, (byte) '0' };
-	private byte[] S4625_PRESET = { ESQ, (byte) 'l' };
-	private byte[] S4625_PMS_READ = { ESQ, (byte) ']', ESQ, (byte) 'j'};
-	private byte[] S4625_PMS_WRITE = { ESQ, (byte) 0x5c, ESQ, (byte) 'j'};
-	private byte[] S4625_PSTAT = { ESQ, (byte) 'j' };
-	private byte[] S4625_PSTD = { ESQ, (byte) '4', ESQ, (byte) 'h', (byte) '0' };
-	private byte[] S4625_PHEL = { ESQ, (byte) '3'};
-	private byte[] S4625_PHVEL = { ESQ, (byte) '3', ESQ, (byte) 'h', (byte) '1'};
-	private byte[] S4625_PVEL = { ESQ, (byte) 'h', (byte) '1'};
+	private byte[] S5240_PINIT = { ESQ, (byte) '0' };
+	private byte[] S5240_PRESET = { ESQ, (byte) 'l' };
+	private byte[] S5240_PMS_READ = { ESQ, (byte) ']', ESQ, (byte) 'j'};
+	private byte[] S5240_PMS_WRITE = { ESQ, (byte) 0x5c, ESQ, (byte) 'j'};
+	private byte[] S5240_PSTAT = { ESQ, (byte) 'j' };
+	private byte[] S5240_PSTD = { ESQ, (byte) '4', ESQ, (byte) 'h', (byte) '0' };
+	private byte[] S5240_PHEL = { ESQ, (byte) '3'};
+	private byte[] S5240_PHVEL = { ESQ, (byte) '3', ESQ, (byte) 'h', (byte) '1'};
+	private byte[] S5240_PVEL = { ESQ, (byte) 'h', (byte) '1'};
 	// private byte[]
-	// S4625_PFINE={STX,(byte)5,MI_DATA,ESQ,(byte)0x49,(byte)0,(byte)0,ETX,(byte)0,(byte)0};
+	// S5240_PFINE={STX,(byte)5,MI_DATA,ESQ,(byte)0x49,(byte)0,(byte)0,ETX,(byte)0,(byte)0};
 //	typedef int (WINAPI *INTPROC)(char *);		// 定義pointer of Function
 	// 20040129 7,STX,3,'0',ESQ,'l',ETX,0 上口
 //	         11,STX,7,'0',ESQ,'m',ESQ,'I',00H,0AH,ETX,0 下口
 	// unsigned char
-	// S4625_UPTHRTOPEN[7]={STX,(byte)3,(byte)'0',ESQ,(byte)'l',ETX,(byte)0};
+	// S5240_UPTHRTOPEN[7]={STX,(byte)3,(byte)'0',ESQ,(byte)'l',ETX,(byte)0};
 	// unsigned char
-	// S4625_DNTHRTOPEN[7]={STX,(byte)3,(byte)'0',ESQ,(byte)'m',ETX,(byte)0};
+	// S5240_DNTHRTOPEN[7]={STX,(byte)3,(byte)'0',ESQ,(byte)'m',ETX,(byte)0};
 
 	// unsigned char
-	// S4625_PEJT_UPPER[8]={STX,(byte)3,MI_DATA,CC,CC_UPPER_OPEN_INSERTER,ETX,
+	// S5240_PEJT_UPPER[8]={STX,(byte)3,MI_DATA,CC,CC_UPPER_OPEN_INSERTER,ETX,
 //				    (3+MI_DATA+CC+CC_UPPER_OPEN_INSERTER+ETX),(byte)0};
 	// Read BarCode
-	private byte[] S4625_BAR_CODE = { ESQ, (byte) 'W', (byte) 'A' };
-	private byte[] S4625_SET_SIGNAL = { ESQ, (byte) 'e', (byte) 0, (byte) 0};
+	private byte[] S5240_BAR_CODE = { ESQ, (byte) 'W', (byte) 'A' };
+	private byte[] S5240_SET_SIGNAL = { ESQ, (byte) 'e', (byte) 0, (byte) 0};
 	// Set Signal
-	private byte[] S4625_OFF_SIGNAL = { ESQ, (byte) 'f', (byte) 0, (byte) 0};
-	private byte[] S4625_SET_BLINK = { ESQ, (byte) 'g', (byte) 0, (byte) 0, (byte) 0, (byte) 0};
+	private byte[] S5240_OFF_SIGNAL = { ESQ, (byte) 'f', (byte) 0, (byte) 0};
+	private byte[] S5240_SET_BLINK = { ESQ, (byte) 'g', (byte) 0, (byte) 0, (byte) 0, (byte) 0};
 	// Turn Page
-	private byte[] S4625_TURN_PAGE = { ESQ, (byte) 'W', (byte) 'B'};
-	private byte[] S4625_REVS_PAGE = { ESQ, (byte) 'W', (byte) 'C' };
-	private byte[] S4625_DET_PASS = { ESQ, (byte) 'Y', (byte) ESQ, (byte) 'j' };
-	private byte[] S4625_CANCEL = { CANCEL};
+	private byte[] S5240_TURN_PAGE = { ESQ, (byte) 'W', (byte) 'B'};
+	private byte[] S5240_REVS_PAGE = { ESQ, (byte) 'W', (byte) 'C' };
+	private byte[] S5240_DET_PASS = { ESQ, (byte) 'Y', (byte) ESQ, (byte) 'j' };
+	private byte[] S5240_CANCEL = { CANCEL};
 	private byte[] inBuff = new byte[128];
 	private byte[] curmsdata;
 	private byte[] curbarcodedata;
@@ -203,7 +203,7 @@ public class CS4625Impl implements Printer {
 	private int nCPI = 0;
 	private int nLPI = 0;
 
-	public CS4625Impl(final PrtCli pc, final String brws, final String type, final String autoturnpage) {
+	public CS5240Impl(final PrtCli pc, final String brws, final String type, final String autoturnpage) {
 		this.pc = pc;
 		this.brws = brws;
 		this.wsno = this.brws.substring(2);
@@ -232,7 +232,7 @@ public class CS4625Impl implements Printer {
 			} else {
 				log.debug("1 ===<><>{} chkChkState {} {}", this.curState, this.curChkState, data);
 				this.curState = OpenPrinter_START;
-				Send_hData(S4625_PRESET);
+				Send_hData(S5240_PRESET);
 			}
 		}
 		if (this.curState == OpenPrinter_START || this.curState == OpenPrinter) {
@@ -252,7 +252,7 @@ public class CS4625Impl implements Printer {
 				return false;
 			} else {
 				this.curState = OpenPrinter_START_2;
-				Send_hData(S4625_PINIT_PRT);
+				Send_hData(S5240_PINIT_PRT);
 			}
 		}
 		if (this.curState == OpenPrinter_START_2 || this.curState == OpenPrinter_2) {
@@ -367,7 +367,7 @@ public class CS4625Impl implements Printer {
 		if (this.curChkState == CheckStatus_START) {
 			this.curChkState = CheckStatus;
 			log.debug("CheckStatus curState={} curChkState={}", this.curState, this.curChkState);
-			if (Send_hData(S4625_PSTAT) != 0)
+			if (Send_hData(S5240_PSTAT) != 0)
 				return (data);
 		}
 		if (this.curChkState == CheckStatus) {
@@ -438,22 +438,29 @@ public class CS4625Impl implements Printer {
 
 		// filter space 91.10.09
 		bLineFeed = false;
-
-		for (j = len - 1; j >= 0; j--) {
-			if (buff[j] != (byte)0x0a && buff[j] != (byte)0x0d)
+		
+		for (j = (len - 1); j >= 0; j--) {
+			if (buff[j] != 0x0a && buff[j] != 0x0d)
 				break;
 			else
 				bLineFeed = true;
 		}
-/*		if (bLineFeed) {
+		if (bLineFeed) {
 			linefeed = new byte[len - j - 1];
 			System.arraycopy(buff, j + 1, linefeed, 0, len - j - 1);
 			offset = j;
-			linefeed = new byte[offset + 1];
-			System.arraycopy(buff, 0, linefeed, 0, offset + 1);
+			for (j = offset; j >= 0; j--) {
+				if (buff[j] != ' ')
+					break;
+			}
+			if ((len - offset) > 0)
+				System.arraycopy(linefeed, 0, buff, j + 1, linefeed.length);
+			len = j + 1 + linefeed.length;
+			linefeed = new byte[len];
+			System.arraycopy(buff, 0, linefeed, 0, len);
 			buff = linefeed;
-		}*/
-		len = buff.length;
+		}
+		
 		if (this.notSetCLPI.get() == true)
 		{
 			if (nCPI != 0)
@@ -488,11 +495,11 @@ public class CS4625Impl implements Printer {
 				if ( buff[i] == (byte)0x0a &&
 					 buff[i-1] != (byte)0x0d )
 				{
-					Send_hData(S4625_PNON_PRINT_AREA);
-					Send_hData(S4625_PENLARGE_OD);
+					Send_hData(S5240_PNON_PRINT_AREA);
+					Send_hData(S5240_PENLARGE_OD);
 					//20060906 if addfont is the last char and follows a 0x0a , then slip won't catch newline
 					if ( i == ( len -  1 ) )
-						Send_hData(S4625_PENLARGE_OA);
+						Send_hData(S5240_PENLARGE_OA);
 					//Sleep(250);
 //					PurgeBuffer();
 					//see what happen in r8
@@ -522,9 +529,9 @@ public class CS4625Impl implements Printer {
 				if ( buff[0] == (byte)0x0a ||
 					 buff[0] == (byte)0x0d )
 				{
-					Send_hData(S4625_PNON_PRINT_AREA);
-					Send_hData(S4625_PENLARGE_OD);
-					Send_hData(S4625_PENLARGE_OA);
+					Send_hData(S5240_PNON_PRINT_AREA);
+					Send_hData(S5240_PENLARGE_OD);
+					Send_hData(S5240_PENLARGE_OA);
 					//Sleep(250);
 //					PurgeBuffer();
 					//see what happen in r8
@@ -535,21 +542,21 @@ public class CS4625Impl implements Printer {
 			}*/
 /*			if (len > 1) {
 				if (buff[i] == (byte) 0x0a && buff[i - 1] != (byte) 0x0d) {
-					System.arraycopy(S4625_PNON_PRINT_AREA, 0, hBuf, wlen+3, S4625_PNON_PRINT_AREA.length);
-					wlen += S4625_PNON_PRINT_AREA.length;
-					System.arraycopy(S4625_PENLARGE_OD, 0, hBuf, wlen+3, S4625_PENLARGE_OD.length);
-					wlen += S4625_PENLARGE_OD.length;
-					System.arraycopy(S4625_PENLARGE_OA, 0, hBuf, wlen+3, S4625_PENLARGE_OA.length);
+					System.arraycopy(S5240_PNON_PRINT_AREA, 0, hBuf, wlen+3, S5240_PNON_PRINT_AREA.length);
+					wlen += S5240_PNON_PRINT_AREA.length;
+					System.arraycopy(S5240_PENLARGE_OD, 0, hBuf, wlen+3, S5240_PENLARGE_OD.length);
+					wlen += S5240_PENLARGE_OD.length;
+					System.arraycopy(S5240_PENLARGE_OA, 0, hBuf, wlen+3, S5240_PENLARGE_OA.length);
 					i++;
 					log.debug("2.1 ===<><>{} {} Prt_Text wlen={} i={}", this.curState, this.curChkState, wlen, i);
 				}
 			} else {
 				if (buff[0] == (byte) 0x0a || buff[0] == (byte) 0x0d) {
-					System.arraycopy(S4625_PNON_PRINT_AREA, 0, hBuf, wlen+3, S4625_PNON_PRINT_AREA.length);
-					wlen += S4625_PNON_PRINT_AREA.length;
-					System.arraycopy(S4625_PENLARGE_OD, 0, hBuf, wlen+3, S4625_PENLARGE_OD.length);
-					wlen += S4625_PENLARGE_OD.length;
-					System.arraycopy(S4625_PENLARGE_OA, 0, hBuf, wlen+3, S4625_PENLARGE_OA.length);
+					System.arraycopy(S5240_PNON_PRINT_AREA, 0, hBuf, wlen+3, S5240_PNON_PRINT_AREA.length);
+					wlen += S5240_PNON_PRINT_AREA.length;
+					System.arraycopy(S5240_PENLARGE_OD, 0, hBuf, wlen+3, S5240_PENLARGE_OD.length);
+					wlen += S5240_PENLARGE_OD.length;
+					System.arraycopy(S5240_PENLARGE_OA, 0, hBuf, wlen+3, S5240_PENLARGE_OA.length);
 					i++;
 					log.debug("2.2 ===<><>{} {} Prt_Text wlen={} i={}", this.curState, this.curChkState, wlen, i);
 				}
@@ -582,10 +589,10 @@ public class CS4625Impl implements Printer {
 							break;
 						}*/
 						if ( bBeginSISession == false ) {
-							log.debug("4 ===<><>{} Prt_Text enter S4625_PSI chkChkState {} wlen={} i={}", this.curState, this.curChkState, wlen, i);
+							log.debug("4 ===<><>{} Prt_Text enter S5240_PSI chkChkState {} {} wlen={} i={}", this.curState, this.curChkState, wlen, i);
 
-//							memcpy(&hBuf[wlen+3],S4625_PSI,5);
-							System.arraycopy(S4625_PSI, 0, hBuf, wlen+3, 5);
+//							memcpy(&hBuf[wlen+3],S5240_PSI,5);
+							System.arraycopy(S5240_PSI, 0, hBuf, wlen+3, 5);
 							bBeginSISession=true;
 							wlen+=5;
 							hBuf[wlen+3] = buff[i];
@@ -602,9 +609,9 @@ public class CS4625Impl implements Printer {
 					else
 					{
 						if ( bBeginSISession == true ) {
-							log.debug("5 ===<><>{} Prt_Text leave S4625_PSO chkChkState {} wlen={} i={}", this.curState, this.curChkState, wlen, i);
-//							memcpy(&hBuf[wlen+3],S4625_PSO,5);
-							System.arraycopy(S4625_PSO, 0, hBuf, wlen+3, 5);
+							log.debug("5 ===<><>{} Prt_Text leave S5240_PSO chkChkState {} {} wlen={} i={}", this.curState, this.curChkState, wlen, i);
+//							memcpy(&hBuf[wlen+3],S5240_PSO,5);
+							System.arraycopy(S5240_PSO, 0, hBuf, wlen+3, 5);
 							bBeginSISession=false;
 							wlen+=5;
 							hBuf[wlen+3] = buff[i];
@@ -616,26 +623,26 @@ public class CS4625Impl implements Printer {
 							hBuf[wlen+3] = buff[i];
 						}
 						if ( buff[i] == (byte)0x0d &&
-								 buff[i+1] == (byte)0x0a )
+							 buff[i+1] == (byte)0x0a )
 						{
 //							hBuf[wlen+3] = buff[i];
 							i++;
 //							wlen++;
 //							hBuf[wlen+3] = buff[i];
-//							Send_hData(S4625_PNON_PRINT_AREA);
-							System.arraycopy(S4625_PNON_PRINT_AREA, 0, hBuf, wlen+3, S4625_PNON_PRINT_AREA.length);
-							wlen += S4625_PNON_PRINT_AREA.length;
-//							Send_hData(S4625_PENLARGE_OD);
-							System.arraycopy(S4625_PENLARGE_OD, 0, hBuf, wlen+3, S4625_PENLARGE_OD.length);
-							wlen += S4625_PENLARGE_OD.length;
-//							Send_hData(S4625_PENLARGE_OA);
-							System.arraycopy(S4625_PENLARGE_OA, 0, hBuf, wlen+3, S4625_PENLARGE_OA.length);
-//							wlen += S4625_PENLARGE_OA.length;
+//							Send_hData(S5240_PNON_PRINT_AREA);
+							System.arraycopy(S5240_PNON_PRINT_AREA, 0, hBuf, wlen+3, S5240_PNON_PRINT_AREA.length);
+							wlen += S5240_PNON_PRINT_AREA.length;
+//							Send_hData(S5240_PENLARGE_OD);
+							System.arraycopy(S5240_PENLARGE_OD, 0, hBuf, wlen+3, S5240_PENLARGE_OD.length);
+							wlen += S5240_PENLARGE_OD.length;
+//							Send_hData(S5240_PENLARGE_OA);
+							System.arraycopy(S5240_PENLARGE_OA, 0, hBuf, wlen+3, S5240_PENLARGE_OA.length);
+//							wlen += S5240_PENLARGE_OA.length;
 
 							log.debug("5.2 ===<><>{} {} Prt_Text wlen={} i={}", this.curState, this.curChkState, wlen, i);
 						}
 						if ( buff[i] == (byte)0x0a &&
-							 buff[i-1] != (byte)0x0d )
+							buff[i-1] != (byte)0x0d )
 						{
 							log.debug("5.3 ===<><>{} {} Prt_Text wlen={} i={}", this.curState, this.curChkState, wlen, i);
 							break;
@@ -650,13 +657,13 @@ public class CS4625Impl implements Printer {
 						wlen++;
 					}
 				}
-				log.debug("6 ===<><>{} Prt_Text leave S4625_PSO chkChkState {} {} wlen={} i={}", this.curState, this.curChkState, wlen, i);
+				log.debug("6 ===<><>{} Prt_Text leave S5240_PSO chkChkState {} {} wlen={} i={}", this.curState, this.curChkState, wlen, i);
 				if ( wlen > 0 ) {
 					hBuf[0]=hBuf[1]=hBuf[2]=' ';
 					if ( bBeginSISession == true ) {
-						log.debug("6.1 ===<><>{} Prt_Text leave S4625_PSO chkChkState {} {} wlen={} i={}", this.curState, this.curChkState, wlen, i);
-//						memcpy(&hBuf[wlen+3],S4625_PSO,5);
-						System.arraycopy(S4625_PSO, 0, hBuf, wlen+3, 5);
+						log.debug("6.1 ===<><>{} Prt_Text leave S5240_PSO chkChkState {} {} wlen={} i={}", this.curState, this.curChkState, wlen, i);
+//						memcpy(&hBuf[wlen+3],S5240_PSO,5);
+						System.arraycopy(S5240_PSO, 0, hBuf, wlen+3, 5);
 						bBeginSISession=false;
 						wlen+=5;
 					}
@@ -668,7 +675,7 @@ public class CS4625Impl implements Printer {
 					System.arraycopy(hBuf, 3, sendhBuf, 0, sendhBuf.length);
 					//Send_hDataBuf(&hBuf[3]);
 					Send_hData(sendhBuf);
-					log.debug("6.2 ===<><>{} Prt_Text leave S4625_PSO chkChkState {} {} wlen={} i={}", this.curState, this.curChkState, wlen, i);
+					log.debug("6.2 ===<><>{} Prt_Text leave S5240_PSO chkChkState {} {} wlen={} i={}", this.curState, this.curChkState, wlen, i);
 				}
 			}
 		}
@@ -723,7 +730,7 @@ public class CS4625Impl implements Printer {
 
 		if (this.curState == Eject_START) {
 			log.debug("{} {} {} 存摺退出...", brws, "", "");
-			if (Send_hData(S4625_PINIT) != 0)
+			if (Send_hData(S5240_PINIT) != 0)
 				return false;
 		}
 		byte[] data = null;
@@ -771,7 +778,7 @@ public class CS4625Impl implements Printer {
 		if (this.curState == MS_Read_START) {
 			this.curState = MS_Read;
 			log.debug("MS_Read curState={} curChkState={}", this.curState, this.curChkState);
-			if (Send_hData(S4625_PMS_READ) != 0)
+			if (Send_hData(S5240_PMS_READ) != 0)
 				return (data);
 		}
 		if (this.curState == MS_Read) {
@@ -967,7 +974,7 @@ public class CS4625Impl implements Printer {
 	public boolean ResetPrinter() {
 		// TODO Auto-generated method stub
 		log.debug("ResetPrinter ===<><>{}", this.curState);
-		if (Send_hData(S4625_PRESET) != 0)
+		if (Send_hData(S5240_PRESET) != 0)
 			return false;
 		return true;
 	}
@@ -978,7 +985,7 @@ public class CS4625Impl implements Printer {
 		log.debug("{} {} {} ResetPrinterInit curState={}", brws, "", "", this.curState);
 		if (this.curState == ResetPrinterInit_START) {
 			log.debug("{} {} {} 00補摺機重置中...", brws, "", "");
-			if (Send_hData(S4625_PINIT) != 0)
+			if (Send_hData(S5240_PINIT) != 0)
 				return false;
 		}
 		byte[] data = null;
@@ -1169,7 +1176,7 @@ public class CS4625Impl implements Printer {
 		if (nLine < 0) {
 			nLine = nLine * -1;
 			for(int i = 0;i < nLine; i++)
-				Send_hData(S4625_PREVERSE_LINEFEED);
+				Send_hData(S5240_PREVERSE_LINEFEED);
 		} else {
 			byte[] pData = {ESQ, (byte)0x49, 0x0, 0x0, 0x0};
 			String sptrn = String.format("%03d",nLine);
@@ -1273,7 +1280,7 @@ public class CS4625Impl implements Printer {
 			Send_hData(this.curmsdata);
 
 			// actual ms write
-			Send_hData(S4625_PMS_WRITE);
+			Send_hData(S5240_PMS_WRITE);
 
 		}
 		if (this.curState == MS_Write_START_2) {
@@ -1305,7 +1312,7 @@ public class CS4625Impl implements Printer {
 					case (byte) '9': // MAGNETIC STRIPE READ/write error
 					case (byte) 'r': // MAGNETIC STRIPE READ error
 					case (byte) 'E': // Obstacles with media
-						if (Send_hData(S4625_PERRCODE_REQ) != 0)
+						if (Send_hData(S5240_PERRCODE_REQ) != 0)
 							return false;
 						Sleep(50);
 						data = Rcv_Data(5);
@@ -1314,16 +1321,16 @@ public class CS4625Impl implements Printer {
 						ResetPrinterInit();
 						break;
 					case (byte) 'q':
-						if (Send_hData(S4625_PERRCODE_REQ) != 0)
+						if (Send_hData(S5240_PERRCODE_REQ) != 0)
 							return false;
 						Sleep(50);
 						data = Rcv_Data(5);
 						log.debug("{} {} {} 94補摺機狀態錯誤！(MSW) ERROR:[{}]", iCnt, brws, account, data);
 						// 20060706 , if write eorror , retry 3 times
 						/*
-						 * iRetryCnt++; if ( iRetryCnt < 1 ) { unsigned char S4625_PCLEAR[2]={0x7f,0};
+						 * iRetryCnt++; if ( iRetryCnt < 1 ) { unsigned char S5240_PCLEAR[2]={0x7f,0};
 						 * 
-						 * Send_hData(S4625_PRESET); Send_hData(S4625_PCLEAR); goto S4265_MSRW_Retry; }
+						 * Send_hData(S5240_PRESET); Send_hData(S5240_PCLEAR); goto S4265_MSRW_Retry; }
 						 */
 						this.curState = ResetPrinterInit_START;
 						ResetPrinterInit();
@@ -1461,7 +1468,7 @@ public class CS4625Impl implements Printer {
 		case (byte) 0xd0:
 			return true;
 		case (byte) '1': // 20060619 paper jam
-			Send_hData(S4625_PERRCODE_REQ);
+			Send_hData(S5240_PERRCODE_REQ);
 			Sleep(50);
 			data = Rcv_Data(5);
 			// 20091002 , show error code
@@ -1481,7 +1488,7 @@ public class CS4625Impl implements Printer {
 			return false;
 		case (byte) '8':
 			// command error,
-			Send_hData(S4625_PERRCODE_REQ);
+			Send_hData(S5240_PERRCODE_REQ);
 			Sleep(50);
 			data = Rcv_Data(5);
 			// 20091002 , show error code
@@ -1490,7 +1497,7 @@ public class CS4625Impl implements Printer {
 			ResetPrinter();
 			return false;
 		case (byte) 'X': // Warning , paper lower
-			Send_hData(S4625_PERRCODE_REQ);
+			Send_hData(S5240_PERRCODE_REQ);
 			Sleep(50);
 			data = Rcv_Data(5);
 			// 20091002 , show error code
@@ -1502,7 +1509,7 @@ public class CS4625Impl implements Printer {
 		case (byte) 'r': // read error of MS
 			this.curState = CheckStatus_START;
 			data = CheckStatus();
-			Send_hData(S4625_PERRCODE_REQ);
+			Send_hData(S5240_PERRCODE_REQ);
 			Sleep(50);
 			data = Rcv_Data(5);
 			// 20091002 , show error code
@@ -1514,7 +1521,7 @@ public class CS4625Impl implements Printer {
 			return false;
 		case (byte) 0x21:
 		case (byte) 0x22:
-			Send_hData(S4625_PERRCODE_REQ);
+			Send_hData(S5240_PERRCODE_REQ);
 			Sleep(50);
 			data = Rcv_Data(5);
 			// 20091002 , show error code
@@ -1525,11 +1532,11 @@ public class CS4625Impl implements Printer {
 			ResetPrinterInit();
 			return false;
 		case 0x00:
-			log.debug("[{}]:S4625 : Error Reset[0x00]", String.format(outptrn2, wsno));
+			log.debug("[{}]:S5240 : Error Reset[0x00]", String.format(outptrn2, wsno));
 
 			return false;
 		default:
-			log.debug("[{}]:S4625 : Error Reset[{}]", String.format(outptrn2, wsno), String.format(outptrn3, data[2]));
+			log.debug("[{}]:S5240 : Error Reset[{}]", String.format(outptrn2, wsno), String.format(outptrn3, data[2]));
 			ResetPrinter();
 			return false;
 		}
@@ -1564,7 +1571,7 @@ public class CS4625Impl implements Printer {
 		case (byte) 0xd0:
 			return true;
 		case (byte) '1': // 20060619 paper jam
-			Send_hData(S4625_PERRCODE_REQ);
+			Send_hData(S5240_PERRCODE_REQ);
 			Sleep(50);
 			data = Rcv_Data(5);
 			log.debug("{} {} {} 95硬體錯誤代碼Reset-1[{}]", brws, "", "", String.format(outptrn1, data));
@@ -1574,36 +1581,36 @@ public class CS4625Impl implements Printer {
 			return false;
 		case (byte) '8':
 			// command error,
-			Send_hData(S4625_PERRCODE_REQ);
+			Send_hData(S5240_PERRCODE_REQ);
 			Sleep(50);
 			data = Rcv_Data(5);
 			log.debug("{} {} {} 95硬體錯誤代碼Reset-2[{}]", brws, "", "", String.format(outptrn1, data));
 			return false;
 		case (byte) 'X': // Warning , paper lower
-			Send_hData(S4625_PERRCODE_REQ);
+			Send_hData(S5240_PERRCODE_REQ);
 			Sleep(50);
 			data = Rcv_Data(5);
 			log.debug("{} {} {} 95硬體錯誤代碼Reset-3[{}]", brws, "", "", String.format(outptrn1, data));
 			return true;
 		case (byte) 'q': // read/write error of MS
 		case (byte) 'r': // read error of MS
-			Send_hData(S4625_PERRCODE_REQ);
+			Send_hData(S5240_PERRCODE_REQ);
 			Sleep(50);
 			data = Rcv_Data(5);
 			log.debug("{} {} {} 95硬體錯誤代碼Reset-4[{}]", brws, "", "", String.format(outptrn1, data));
 			return false;
 		case (byte) 0x21:
 		case (byte) 0x22:
-			Send_hData(S4625_PERRCODE_REQ);
+			Send_hData(S5240_PERRCODE_REQ);
 			Sleep(50);
 			data = Rcv_Data(5);
 			log.debug("{} {} {} 95硬體錯誤代碼Reset-5[{}]", brws, "", "", String.format(outptrn1, data));
 			return false;
 		case (byte) 0x00:
-			log.debug("[{}]:S4625 : Error Reset[0x00]", String.format(outptrn2, wsno));
+			log.debug("[{}]:S5240 : Error Reset[0x00]", String.format(outptrn2, wsno));
 			return false;
 		default:
-			log.debug("[{}]:S4625 : Error Reset[{}]", String.format(outptrn2, wsno), String.format(outptrn3, data[2]));
+			log.debug("[{}]:S5240 : Error Reset[{}]", String.format(outptrn2, wsno), String.format(outptrn3, data[2]));
 			return false;
 		}
 	}
@@ -1679,7 +1686,7 @@ public class CS4625Impl implements Printer {
 			} else {
 				this.curChkState = CheckStatus_FINISH;
 				this.curState = ReadBarcode_START_2;
-				Send_hData(S4625_BAR_CODE);
+				Send_hData(S5240_BAR_CODE);
 			}
 		}
 		if (this.curState == ReadBarcode_START_2) {
@@ -1776,10 +1783,10 @@ public class CS4625Impl implements Printer {
 			log.debug("SetSignal 2 ===<><>{} curChkState {}", this.curState, this.curChkState);
 			if (this.curState == SetSignal_START_2) {
 				// Lamp OFF
-				S4625_OFF_SIGNAL[2] = (byte)0;
-				S4625_OFF_SIGNAL[3] = (byte)0xff;
-				if ( Send_hData(S4625_OFF_SIGNAL) < 0 ) {
-					log.debug("[{}]:S4625 : SetSignal() -- OFF Signal Failed!!", String.format(outptrn2, wsno));
+				S5240_OFF_SIGNAL[2] = (byte)0;
+				S5240_OFF_SIGNAL[3] = (byte)0xff;
+				if ( Send_hData(S5240_OFF_SIGNAL) < 0 ) {
+					log.debug("[{}]:S5240 : SetSignal() -- OFF Signal Failed!!", String.format(outptrn2, wsno));
 					return false;
 				}
 				this.curState = SetSignal_2;
@@ -1798,10 +1805,10 @@ public class CS4625Impl implements Printer {
 			log.debug("SetSignal 3 ===<><>{} curChkState {}", this.curState, this.curChkState);
 			if (this.curState == SetSignal_START_3) {
 				Sleep(100);
-				S4625_SET_SIGNAL[2] = light1;
-				S4625_SET_SIGNAL[3] = light1;
-				if ( Send_hData(S4625_SET_SIGNAL) < 0 ) {
-					log.debug("[{}]:S4625 : SetSignal() -- OFF Signal Failed!!", String.format(outptrn2, wsno));
+				S5240_SET_SIGNAL[2] = light1;
+				S5240_SET_SIGNAL[3] = light1;
+				if ( Send_hData(S5240_SET_SIGNAL) < 0 ) {
+					log.debug("[{}]:S5240 : SetSignal() -- OFF Signal Failed!!", String.format(outptrn2, wsno));
 					return false;
 				}
 				Sleep(100);
@@ -1821,10 +1828,10 @@ public class CS4625Impl implements Printer {
 			log.debug("SetSignal 4 ===<><>{} curChkState {}", this.curState, this.curChkState);
 			if (this.curState == SetSignal_START_4) {
 				if ((int)blink1 != 0 || (int)blink2 != 0) {
-					S4625_SET_BLINK[2] = blink1;
-					S4625_SET_BLINK[3] = blink2;
-					if ( Send_hData(S4625_SET_BLINK) < 0 ) {
-						log.debug("[{}]:S4625 : SetSignal() -- OFF Signal Failed!!", String.format(outptrn2, wsno));
+					S5240_SET_BLINK[2] = blink1;
+					S5240_SET_BLINK[3] = blink2;
+					if ( Send_hData(S5240_SET_BLINK) < 0 ) {
+						log.debug("[{}]:S5240 : SetSignal() -- OFF Signal Failed!!", String.format(outptrn2, wsno));
 						return false;
 					}
 					Sleep(100);
@@ -1882,4 +1889,5 @@ public class CS4625Impl implements Printer {
 	public AtomicBoolean getIsShouldShutDown() {
 		return isShouldShutDown;
 	}
+
 }
