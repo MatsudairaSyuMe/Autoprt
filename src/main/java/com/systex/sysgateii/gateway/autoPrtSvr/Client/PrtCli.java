@@ -2443,7 +2443,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 						}
 					} else {
 						log.debug("21存摺頁次錯誤！[{}]", rpage);
-						if (SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000001")) {
+						////orig "0000000000", "0000100000"
+						if (SetSignal(firstOpenConn, firstOpenConn, "0101000000","0000111111")) {
 							log.debug(
 									"{} {} {} AutoPrnCls : --ckeep cheak barcode after Set Signal after check barcode",
 									brws, catagory, account);
@@ -2455,7 +2456,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					}
 					if (this.rpage < 0) {
 						prt.Eject(firstOpenConn);
-						SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000100000");
+						SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000001");
 						this.curState = SESSIONBREAK;
 					}
 				}
@@ -2487,8 +2488,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					log.debug("21存摺頁次錯誤！[{}]", rpage);
 //					WMSRFormat(true, rpage);
 //					WMSRFormat(true, rpage);
-
-					if (SetSignal(firstOpenConn, !firstOpenConn, "0000000000", "0000000001")) {
+					//// orig "0000000000", "0000100000"
+					if (SetSignal(firstOpenConn, !firstOpenConn, "0101000000","0000111111")) {
 						log.debug("{} {} {} AutoPrnCls : --ckeep cheak barcode after Set Signal after check barcode",
 								brws, catagory, account);
 					} else {
@@ -2496,10 +2497,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 						log.debug("{} {} {} AutoPrnCls : --keep cheak barcode after Set Signal after check barcode",
 								brws, catagory, account);
 					}
-					Sleep(1000);
+////					Sleep(1000);
 				}
 				if (this.rpage < 0) {
-					SetSignal(firstOpenConn, !firstOpenConn, "0000000000", "0000100000");
+					SetSignal(firstOpenConn, !firstOpenConn, "0000000000", "0000000001");
 					this.curState = SESSIONBREAK;
 				}
 			}
@@ -2517,7 +2518,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				}
 			} else {
 				log.debug("21存摺頁次錯誤！[{}]", rpage);
-				if (SetSignal(!firstOpenConn, !firstOpenConn, "0000000000", "0000000001")) {
+				//// orig "0000000000", "0000100000"
+				if (SetSignal(firstOpenConn, !firstOpenConn, "0101000000","0000111111")) {
 					log.debug("{} {} {} AutoPrnCls : --ckeep cheak barcode after Set Signal after check barcode", brws,
 							catagory, account);
 				} else {
@@ -2529,7 +2531,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 ////				this.curState = FORMATPRTDATAERROR;
 			}
 			if (this.rpage < 0) {
-				SetSignal(!firstOpenConn, !firstOpenConn, "0000000000", "0000100000");
+				SetSignal(firstOpenConn, !firstOpenConn, "0000000000", "0000000001");
 				this.curState = SESSIONBREAK;
 				close();
 			}
