@@ -1566,9 +1566,12 @@ public class CS5240Impl implements Printer {
 			Sleep(50);
 			data = Rcv_Data(5);
 			log.debug("{} {} {} 95硬體錯誤代碼Reset-1[{}]", brws, "", "", String.format(outptrn1, data));
+			Send_hData(S5240_CANCEL);  //special for S5020
 			return false;
 		case (byte) 'a': // 20060801 hardware error ,ESCra , this may need resetInit()
 		case (byte) 'b':
+			log.debug("{} {} {} 95硬體錯誤代碼Reset-a[{}]", brws, "", "", String.format(outptrn1, data));
+			Send_hData(S5240_CANCEL);  //special for S5020
 			return false;
 		case (byte) '8':
 			// command error,
@@ -1576,6 +1579,7 @@ public class CS5240Impl implements Printer {
 			Sleep(50);
 			data = Rcv_Data(5);
 			log.debug("{} {} {} 95硬體錯誤代碼Reset-2[{}]", brws, "", "", String.format(outptrn1, data));
+			Send_hData(S5240_CANCEL);  //special for S5020
 			return false;
 		case (byte) 'X': // Warning , paper lower
 			Send_hData(S5240_PERRCODE_REQ);
@@ -1589,6 +1593,7 @@ public class CS5240Impl implements Printer {
 			Sleep(50);
 			data = Rcv_Data(5);
 			log.debug("{} {} {} 95硬體錯誤代碼Reset-4[{}]", brws, "", "", String.format(outptrn1, data));
+			Send_hData(S5240_CANCEL);  //special for S5020			
 			return false;
 		case (byte) 0x21:
 		case (byte) 0x22:
@@ -1596,12 +1601,15 @@ public class CS5240Impl implements Printer {
 			Sleep(50);
 			data = Rcv_Data(5);
 			log.debug("{} {} {} 95硬體錯誤代碼Reset-5[{}]", brws, "", "", String.format(outptrn1, data));
+			Send_hData(S5240_CANCEL);  //special for S5020
 			return false;
 		case (byte) 0x00:
 			log.debug("[{}]:S5240 : Error Reset[0x00]", String.format(outptrn2, wsno));
+			Send_hData(S5240_CANCEL);  //special for S5020
 			return false;
 		default:
 			log.debug("[{}]:S5240 : Error Reset[{}]", String.format(outptrn2, wsno), String.format(outptrn3, data[2]));
+			Send_hData(S5240_CANCEL);  //special for S5020
 			return false;
 		}
 	}
