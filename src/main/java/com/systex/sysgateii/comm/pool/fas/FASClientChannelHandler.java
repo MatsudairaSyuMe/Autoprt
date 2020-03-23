@@ -6,12 +6,16 @@ import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.systex.sysgateii.gateway.telegram.S004;
+import com.systex.sysgateii.gateway.util.dataUtil;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -31,13 +35,24 @@ public class FASClientChannelHandler extends ChannelInboundHandlerAdapter {
 	private static Logger log = LoggerFactory.getLogger(FASClientChannelHandler.class);
 	private static final ByteBuf HEARTBEAT_SEQUENCE = Unpooled
 			.unreleasableBuffer(Unpooled.copiedBuffer("hb_request", CharsetUtil.UTF_8));
+	private static final String FASACTIVES004ID = "S004";
 
 	static AtomicInteger count = new AtomicInteger(1);
-//	private ByteBuf clientMessageBuf = Unpooled.buffer(16384);
 	private ByteBuf clientMessageBuf = null;
 	private ConcurrentHashMap<Channel, File> seqf_map = null;
 	private File seqNoFile;
 	private String getSeqStr = "";
+	private String curMrkttm = "";
+	private boolean S004Start = false;
+	private S004 s004tele = null;
+	private List<String> brnoList = null;
+	private List<String> wsnoList = null;
+	//20200212 MatsudairaSyume
+	//  check brno 999 for broadcast, other number for peer branch 
+	private String showBrno = "999";  //default for broadcast
+	private String verhbrno = "984";
+	private String verhwsno = "80";
+
 
 	public FASClientChannelHandler(ByteBuf rcvBuf) {
 		this.clientMessageBuf = rcvBuf;
@@ -106,40 +121,51 @@ public class FASClientChannelHandler extends ChannelInboundHandlerAdapter {
 						}
 						clientMessageBuf.writeBytes(buf);
 						log.debug("clientMessageBuf.readableBytes={}",clientMessageBuf.readableBytes());
-/*						while (clientMessageBuf.readableBytes() >= 12) {
-							byte[] lenbary = new byte[3];
-							clientMessageBuf.getBytes(clientMessageBuf.readerIndex() + 3, lenbary);
-							log.debug("clientMessageBuf.readableBytes={} size={}",clientMessageBuf.readableBytes(), fromByteArray(lenbary));
-							if ((size = fromByteArray(lenbary)) > 0 && size <= clientMessageBuf.readableBytes()) {
-								telmbyteary = new byte[size];
-								clientMessageBuf.readBytes(telmbyteary);
-								log.debug("read {} byte(s) from clientMessageBuf after {}", size, clientMessageBuf.readableBytes());
-								getSeqStr = new String(telmbyteary, 7, 3);
-								FileUtils.writeStringToFile(seqNoFile, getSeqStr, Charset.defaultCharset());
-								List<String> rlist = cnvS004toR0061(telmbyteary);
-								if (rlist != null && rlist.size() > 0) {
-									for (String l : rlist) {
-										telmbyteary = l.getBytes();
-										buf = channel_.alloc().buffer().writeBytes(telmbyteary);
-										publishactorSendmessage(clientId, buf);
-									}
-									try {
-										int seqno = Integer.parseInt(
-												FileUtils.readFileToString(seqNoFile, Charset.defaultCharset())) + 1;
-										if (seqno > 999) {
-											seqno = 0;
+						if (clientMessageBuf.readableBytes() > 47) {
+							byte[] trnidbary = new byte[4];
+							clientMessageBuf.getBytes(clientMessageBuf.readerIndex() + 38, trnidbary);
+							if (new String(trnidbary, CharsetUtil.UTF_8).equals(FASACTIVES004ID)) {
+								log.debug("receive broadcast {} telegram", FASACTIVES004ID);
+								while (clientMessageBuf.readableBytes() >= 12) {
+									byte[] lenbary = new byte[3];
+									clientMessageBuf.getBytes(clientMessageBuf.readerIndex() + 3, lenbary);
+									log.debug("clientMessageBuf.readableBytes={} size={}",clientMessageBuf.readableBytes(), dataUtil.fromByteArray(lenbary));
+									if ((size = dataUtil.fromByteArray(lenbary)) > 0 && size <= clientMessageBuf.readableBytes()) {
+										telmbyteary = new byte[size];
+										clientMessageBuf.readBytes(telmbyteary);
+										log.debug("read {} byte(s) from clientMessageBuf after {}", size, clientMessageBuf.readableBytes());
+										getSeqStr = new String(telmbyteary, 7, 3);
+										FileUtils.writeStringToFile(seqNoFile, getSeqStr, Charset.defaultCharset());
+										List<String> rlist = cnvS004toR0061(dataUtil.remove03(telmbyteary));
+										if (rlist != null && rlist.size() > 0) {
+											for (String l : rlist) {
+												telmbyteary = l.getBytes();
+												buf = ctx.channel().alloc().buffer().writeBytes(telmbyteary);
+												//20200215
+												// modofy for brodcst dnd F0304
+/////												publishactorSendmessage(this.showBrno, buf);
+												//----
+											}
+											try {
+												//write S004 TITA to HOST
+												int seqno = Integer.parseInt(
+														FileUtils.readFileToString(seqNoFile, Charset.defaultCharset())) + 1;
+												if (seqno > 999) {
+													seqno = 0;
+												}
+												HostS004SndHost(ctx, seqno, verhbrno, verhwsno, curMrkttm);
+												FileUtils.writeStringToFile(seqNoFile, Integer.toString(seqno), Charset.defaultCharset());
+											} catch (Exception e) {
+												log.warn(e.getMessage());
+											}
 										}
-										HostS004SndHost(seqno, verhbrno, verhwsno, curMrkttm);
-										FileUtils.writeStringToFile(seqNoFile, Integer.toString(seqno), Charset.defaultCharset());
-									} catch (Exception e) {
-										log.warn(e.getMessage());
-									}
+									} else
+										break;
+									
 								}
-
-							} else
-								break;
-		
-						}*/
+								
+							}
+						}
 					}
 				} else // if
 					log.warn("not ByteBuf");
@@ -163,12 +189,72 @@ public class FASClientChannelHandler extends ChannelInboundHandlerAdapter {
 		}
 	}
 
-	private int fromByteArray(byte[] bytes) {
-	    int r = 0;
-	    for (byte b: bytes)
-	        r =  (r * 100) + ((((b >> 4)& 0xf) * 10 + (b & 0xf)));
-	    return r;
+	public void sendBytes(ChannelHandlerContext ctx, byte[] msg) throws IOException {
+		if (ctx.channel() != null && ctx.channel().isActive()) {
+			ByteBuf buf = ctx.channel().alloc().buffer().writeBytes(msg);
+			ctx.channel().writeAndFlush(buf);
+		} else {
+			throw new IOException("Can't send message to inactive connection");
+		}
 	}
+
+	private List<String> cnvS004toR0061(byte[] src) {
+		List<String> rtnList = null;
+		byte[] rtn = src;
+
+		if (src != null && src.length > 47) {
+			try {
+				if (new String(src, 38, 4, CharsetUtil.UTF_8).equals("S004")) {
+					// S004 telegram
+					if (!this.S004Start) {
+						this.S004Start = true;
+						//20200215
+						this.showBrno = new String(src, src.length - 4, 4).trim();
+						this.s004tele = new S004(this.showBrno, wsnoList.get(0));
+						//---
+					} else if (src[32] == (byte) '1') {
+						this.S004Start = false;
+					}
+					log.debug("S004 {} telegram", src[32] == (byte) '0' ? "" : "last");
+					rtn = new byte[src.length - 47];
+					System.arraycopy(src, 47, rtn, 0, src.length - 51);
+					this.s004tele.setData(rtn);
+					//20200212 MatsudairaSyume
+					//  check brno 999 for broadcast, other number for peer branch 
+					log.debug("brno 0 ={} ==>[{}]", brnoList.get(0), showBrno);
+					//----
+					log.debug("wsno 0 ={}", wsnoList.get(0));
+					log.debug("getMrktdt()={}", new String(this.s004tele.getMrktdt()));
+					log.debug("getSysdt={}", new String(this.s004tele.getSysdt()));
+					curMrkttm = new String(this.s004tele.getMrkttm());
+					log.debug("getMrkttm={}", curMrkttm);
+					log.debug("getType={}", new String(this.s004tele.getType()));
+					if (this.S004Start == false) {
+						log.debug("RateRecList={}", this.s004tele.getRateRecList().size());
+						rtnList = this.s004tele.getRateRecList();
+						this.s004tele = null;
+					}
+				}
+			} catch (Exception e) {
+				log.debug("not S004 telegram");
+			}
+		}
+		return rtnList;
+	}
+	
+	private void HostS004SndHost(ChannelHandlerContext ctx, int seq, String brno, String wsno, String mrkttm) {
+		String S004TITAStr = String.format(
+				"\u000f\u000f\u000f\u0000\u0001d\u0001%03d\u000f\u000f%03d%02d0\u0000006100000000000000000FU0700C8400000000000000000000000000000000000000000000000014000000000000000000000001000000000000000000000%03d000000001%4s?\u0004",
+				seq, Integer.parseInt(brno), Integer.parseInt(wsno), Integer.parseInt(brno), mrkttm);
+		byte[] S004TITA = new byte[S004TITAStr.length()];
+		System.arraycopy(S004TITAStr.getBytes(), 0, S004TITA, 0, S004TITAStr.getBytes().length);
+		try {
+			sendBytes(ctx, S004TITA);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
 	private String date() {
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		return sdf.format(new Date());

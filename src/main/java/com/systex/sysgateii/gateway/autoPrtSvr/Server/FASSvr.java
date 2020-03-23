@@ -180,7 +180,6 @@ public class FASSvr implements MessageListener<byte[]>, Runnable {
 		int size = 0;
 		if (isTITA_TOTA_START()) {
 			if (this.ec2.getrcvBuf().hasArray() && this.ec2.getrcvBuf().readableBytes() > 0) {
-//				while (this.ec2.getrcvBuf().readableBytes() >= 12) {
 				if (this.ec2.getrcvBuf().readableBytes() >= 12) {
 					this.ec2.getrcvBuf().getBytes(this.ec2.getrcvBuf().readerIndex() + 3, lenbary);
 					size = dataUtil.fromByteArray(lenbary);

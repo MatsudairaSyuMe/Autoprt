@@ -2,7 +2,12 @@ package com.systex.sysgateii.gateway.util;
 
 import java.util.Arrays;
 
+import org.apache.commons.lang3.ArrayUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class dataUtil {
+	private static Logger log = LoggerFactory.getLogger(dataUtil.class);
 	private final static String STAR = "**********************";
 
 	public int ArraySearchIndexOf(final byte[] outerArray, final byte[] smallerArray) {
@@ -18,6 +23,14 @@ public class dataUtil {
 				return i;
 		}
 		return -1;
+	}
+
+	public static byte[] remove03(byte[] source) {
+		if (source[source.length - 1] == 0x03) {
+			source = ArrayUtils.subarray(source, 0, source.length - 1);
+			log.debug("remove03");
+		}
+		return source;
 	}
 
 	public static int fromByteArray(byte[] bytes) {
@@ -56,7 +69,6 @@ public class dataUtil {
 		int outlen = ifmt.length();
 		String Lifmt = "";
 		String Lfmt = "";
-		int obuflen;
 		Lifmt = ifmt.trim();
 		double Lidbl;
 
@@ -79,13 +91,9 @@ public class dataUtil {
 			}
 		}
 		Lfmt = new String(ckc);
-//    System.out.println("<" +Lfmt +">");
-		obuflen = Lifmt.length();
 		String[] pary = Lfmt.trim().split("\\.");
 
-//    System.out.println(String.format("[%s] %b %b %b after search . %d", ifmt, Ldollarsign, Lstarsign, Lminus, pary.length));
 		if (pary.length == 0) {
-//        System.out.println("{" +STAR.substring(0, outlen) + "}");
 			return STAR.substring(0, outlen);
 		}
 		String p1 = "", p2 = "";
@@ -117,25 +125,20 @@ public class dataUtil {
 		String Ltbuf = "";
 
 		Ltbuf = String.format(Ltfmt, Lidbl);
-//    System.out.println(String.format("%s %s %s", Ltfmt, Lidbl, Ltbuf));
 
 		pary = Ltbuf.split("\\.");
 
 		if (pary.length == 0) {
-//        System.out.println("{" +STAR.substring(0, outlen) + "}");
 			return STAR.substring(0, outlen);
 		}
 		String p3 = "", p4 = "";
 		p3 = pary[0];
 
 		int LIfmt = p3.length();
-		// if (pary.length == 1 && pary[0].length() == 0)
-		// p3 = " ";
 		if (pary.length > 1)
 			p4 = pary[1];
 
 		if (LIfmt > Ldec) {
-//        System.out.println("{" +STAR.substring(0, outlen) + "}");
 			return STAR.substring(0, outlen);
 		}
 		int p5 = p3.length() - 1; // index of p3
@@ -150,16 +153,11 @@ public class dataUtil {
 		for (i = 0; i < Ldec; i++) {
 			switch ((char) p6ary[p6]) {
 			case (char) '9':
-//                *(--p7) = *p5;
 				if (p5 < 0)
 					p7ary[--p7] = (char) ' ';
 				else {
 					p7ary[--p7] = p5ary[p5];
 
-//                if ( *p7 == '-' )
-					// *p7 = '0';
-					// else if ( *p7 == ' ' )
-					// *p7 = '0';
 					if (p7ary[p7] == (char) '-')
 						p7ary[p7] = (char) '0';
 					else if (p7ary[p7] == (char) ' ')
@@ -170,26 +168,16 @@ public class dataUtil {
 				break;
 			case (char) '-':
 			case (char) 'Z':
-				// *(--p7) = *p5;
 				if (p5 < 0)
 					p7ary[--p7] = (char) ' ';
 				else {
 					p7ary[--p7] = p5ary[p5];
-					// if ( *p7 == '+' )
-					// *p7 = ' ';
 					p5--;
 				}
 				if (p7ary[p7] == (char) '+')
 					p7ary[p7] = (char) ' ';
 				break;
 			case (char) ',':
-				// if ( *(p6-1) == '9')
-				// *(--p7) = ',';
-				// else
-				// if ( *p5 == ' ')
-				// *(--p7) = ' ';
-				// else
-				// *(--p7) = ',';
 				if (p6ary[p6 - 1] == (char) '9')
 					p7ary[--p7] = (char) ',';
 				else if ((p5 > -1) && p5ary[p5] == (char) ' ')
@@ -198,7 +186,6 @@ public class dataUtil {
 					p7ary[--p7] = (char) ',';
 				break;
 			default:
-				// *(--p7) = *p5;
 				if (p5 < 0) {
 					p7ary[--p7] = (char) ' ';
 				} else {
@@ -239,9 +226,6 @@ public class dataUtil {
 		if (p2.length() > 0) {
 			obuf = obuf + '.' + p4;
 		}
-
-//    System.out.println("p7ary=[" + obuf + "]");
-
 		return obuf;
 	}
 }
