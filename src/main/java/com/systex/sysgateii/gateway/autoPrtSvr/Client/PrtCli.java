@@ -136,34 +136,36 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	public static final int CHKACTNO = 9;// Check ACTNO(BOT or not) , PAGE, maybe line...
 	public static final int CHKBARCODE = 10; // Get Passbook's Page Type=2
 	public static final int SETSIGAFTERCHKBARCODE = 11; // Show Signal after get Passbook's Page Type=2
-	public static final int SNDANDRCVTLM = 12; // compose TITA and send tita & Receive TOTA and check error
-	public static final int SETREQSIG = 13; // Show Signal before send telegram to Host
-	public static final int WAITSETREQSIG = 14; // wait Show Signal before send telegram to Host finished
-	public static final int SENDTLM = 15; // start send TOTA and check error
-	public static final int RECVTLM = 16; // Receive TOTA and check error
-	public static final int STARTPROCTLM = 17; // start to send tita & Receive TOTA and check error
+	public static final int EJECTAFTERPAGEERROR = 12; // Show Signal after get Passbook's Page error
+	public static final int EJECTAFTERPAGEERRORWAIT = 13; // Show Signal after get Passbook's Page error
+	public static final int SNDANDRCVTLM = 14; // compose TITA and send tita & Receive TOTA and check error
+	public static final int SETREQSIG = 15; // Show Signal before send telegram to Host
+	public static final int WAITSETREQSIG = 16; // wait Show Signal before send telegram to Host finished
+	public static final int SENDTLM = 17; // start send TOTA and check error
+	public static final int RECVTLM = 18; // Receive TOTA and check error
+	public static final int STARTPROCTLM = 19; // start to send tita & Receive TOTA and check error
 	
-	public static final int PBDATAFORMAT = 18; //// Format 列印台幣存摺資料格式  print data
-	public static final int FCDATAFORMAT = 19; //// Format 列印外匯存摺資料格式  print data
-	public static final int GLDATAFORMAT = 20; //// Format 列印黃金存摺資料格式  print data
-	public static final int FORMATPRTDATAERROR = 21; // 61存摺資料補登失敗！Show Signal
-	public static final int WRITEMSR = 22; //// Write MSR
-	public static final int WRITEMSRWAITCONFIRM = 23;  //// Write MSR ware confirm
-	public static final int WRITEMSRERR = 24; //// Write MSR ERROR 71存摺磁條寫入有問題！
-	public static final int READMSRERRAFTERWRITEMSRERR = 25; // 11磁條讀取失敗(1)！
-	public static final int READMSRSUCAFTERWRITEMSRERR = 26; // 12存摺磁條讀取成功(1)！
-	public static final int COMPMSRSUCAFTERWRITEMSRERR = 27; // 12存摺磁條比對正確(1)！
-	public static final int COMPMSRERRAFTERWRITEMSRERR = 28; // 12存摺磁條比對失敗(1)！
-	public static final int WRITEMSRERRSHOWSIG = 29; // 71存摺磁條寫入失敗！ Show Signal
-	public static final int SNDANDRCVDELTLM = 30; // 72存摺資料補登成功！
-	public static final int SNDANDRCVDELTLMCHKEND = 31;        // 72存摺資料補登成功, 檢查翻頁及燈號開始！
-	public static final int SNDANDRCVDELTLMCHKENDSETSIG = 32; // 72存摺資料補登成功, 檢查翻頁及燈號完成退摺開始！
-	public static final int SNDANDRCVDELTLMCHKENDEJECTPRT = 33; // 72存摺資料補登成功, 檢查翻頁及燈號退摺！
-	public static final int DELPASSBOOKREGCOMPERR = 34; // 73存摺資料補登刪除失敗！Show Signal
-	public static final int NOTFINISH = 35; // iEnd != 0 continue printing
-	public static final int NOTFINISHATP = 36; // iEnd != 0 continue printing, Auto turn page
-	public static final int NOTFINISHHTP = 37; // iEnd != 0 continue printing, Handy turn page, Show Reentry signal.
-	public static final int FINISH = 38; // iEnd == 0 printing finished,
+	public static final int PBDATAFORMAT = 20; //// Format 列印台幣存摺資料格式  print data
+	public static final int FCDATAFORMAT = 21; //// Format 列印外匯存摺資料格式  print data
+	public static final int GLDATAFORMAT = 22; //// Format 列印黃金存摺資料格式  print data
+	public static final int FORMATPRTDATAERROR = 23; // 61存摺資料補登失敗！Show Signal
+	public static final int WRITEMSR = 24; //// Write MSR
+	public static final int WRITEMSRWAITCONFIRM = 25;  //// Write MSR ware confirm
+	public static final int WRITEMSRERR = 26; //// Write MSR ERROR 71存摺磁條寫入有問題！
+	public static final int READMSRERRAFTERWRITEMSRERR = 27; // 11磁條讀取失敗(1)！
+	public static final int READMSRSUCAFTERWRITEMSRERR = 28; // 12存摺磁條讀取成功(1)！
+	public static final int COMPMSRSUCAFTERWRITEMSRERR = 29; // 12存摺磁條比對正確(1)！
+	public static final int COMPMSRERRAFTERWRITEMSRERR = 30; // 12存摺磁條比對失敗(1)！
+	public static final int WRITEMSRERRSHOWSIG = 31; // 71存摺磁條寫入失敗！ Show Signal
+	public static final int SNDANDRCVDELTLM = 32; // 72存摺資料補登成功！
+	public static final int SNDANDRCVDELTLMCHKEND = 33;        // 72存摺資料補登成功, 檢查翻頁及燈號開始！
+	public static final int SNDANDRCVDELTLMCHKENDSETSIG = 34; // 72存摺資料補登成功, 檢查翻頁及燈號完成退摺開始！
+	public static final int SNDANDRCVDELTLMCHKENDEJECTPRT = 35; // 72存摺資料補登成功, 檢查翻頁及燈號退摺！
+	public static final int DELPASSBOOKREGCOMPERR = 36; // 73存摺資料補登刪除失敗！Show Signal
+	public static final int NOTFINISH = 37; // iEnd != 0 continue printing
+	public static final int NOTFINISHATP = 38; // iEnd != 0 continue printing, Auto turn page
+	public static final int NOTFINISHHTP = 39; // iEnd != 0 continue printing, Handy turn page, Show Reentry signal.
+	public static final int FINISH = 40; // iEnd == 0 printing finished,
 											// === 2 超過存摺頁次, 仍然顯示補登完成燈號
 											// go to capture
 	private int curState = SESSIONBREAK;
@@ -2283,6 +2285,18 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		this.gl_arr.clear();
 		log.debug("{}=====SetSignal prtcliFSM", this.curState);
 	}
+	private void resetPassBook() {
+		this.curState = SESSIONBREAK;
+		this.iFirst = 0;
+		this.iEnd = 0;
+		this.catagory = "";
+		this.account = "";
+		this.pb_arr.clear();
+		this.fc_arr.clear();
+		this.gl_arr.clear();
+		log.debug("{}=====SetSignal prtcliFSM", this.curState);
+		return;
+	}
 	private void prtcliFSM(boolean isInit) {
 		if (isInit) {
 			this.curState = SESSIONBREAK;
@@ -2444,19 +2458,15 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					} else {
 						log.debug("21存摺頁次錯誤！[{}]", rpage);
 						if (SetSignal(firstOpenConn, firstOpenConn, "0000000000","0000100000")) {
+							this.curState = SETSIGAFTERCHKBARCODE;
 							log.debug(
-									"{} {} {} AutoPrnCls : --ckeep cheak barcode after Set Signal after check barcode",
+									"{} {} {} AutoPrnCls : --eject passbook set signal after check barcode page error!!",
 									brws, catagory, account);
 						} else {
+							this.curState = SETSIGAFTERCHKBARCODE;
 							log.debug("{} {} {} AutoPrnCls : --keep cheak barcode after Set Signal after check barcode",
 									brws, catagory, account);
 						}
-
-					}
-					if (this.rpage < 0) {
-						prt.Eject(firstOpenConn);
-						SetSignal(firstOpenConn, firstOpenConn, "0000000000","0000100000");
-						this.curState = SESSIONBREAK;
 					}
 				}
 			} else {
@@ -2487,19 +2497,16 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					log.debug("21存摺頁次錯誤！[{}]", rpage);
 //					WMSRFormat(true, rpage);
 //					WMSRFormat(true, rpage);
-					if (SetSignal(firstOpenConn, !firstOpenConn, "0000000000","0000100000")) {
-						log.debug("{} {} {} AutoPrnCls : --ckeep cheak barcode after Set Signal after check barcode",
+					if (SetSignal(firstOpenConn, firstOpenConn, "0000000000","0000100000")) {
+						this.curState = SETSIGAFTERCHKBARCODE;
+						log.debug(
+								"{} {} {} AutoPrnCls : --eject passbook set signal after check barcode page error!!",
 								brws, catagory, account);
 					} else {
 						this.curState = SETSIGAFTERCHKBARCODE;
 						log.debug("{} {} {} AutoPrnCls : --keep cheak barcode after Set Signal after check barcode",
 								brws, catagory, account);
 					}
-////					Sleep(1000);
-				}
-				if (this.rpage < 0) {
-					SetSignal(firstOpenConn, !firstOpenConn, "0000000000","0000100000");
-					this.curState = SESSIONBREAK;
 				}
 			}
 			log.debug("after {}=>{}=====check prtcliFSM", before, this.curState);
@@ -2510,24 +2517,15 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				if (SetSignal(!firstOpenConn, !firstOpenConn, "0000000000", "0010000000")) {
 					this.curState = SNDANDRCVTLM;
 					log.debug("{} {} {} AutoPrnCls : --change process telegram", brws, catagory, account);
-				} else {
-					this.curState = SETSIGAFTERCHKBARCODE;
-					log.debug("{} {} {} AutoPrnCls : --change Set Signal after check barcode", brws, catagory, account);
 				}
 			} else {
 				log.debug("21存摺頁次錯誤！[{}]", rpage);
 				if (SetSignal(firstOpenConn, !firstOpenConn, "0000000000","0000100000")) {
-					log.debug("{} {} {} AutoPrnCls : --ckeep cheak barcode after Set Signal after check barcode", brws,
-							catagory, account);
-				} else {
-					log.debug("{} {} {} AutoPrnCls : --keep cheak barcode after Set Signal after check barcode", brws,
-							catagory, account);
+					this.curState = EJECTAFTERPAGEERROR;
+					log.debug(
+							"{} {} {} AutoPrnCls : --eject passbook after check barcode page error!!",
+							brws, catagory, account);
 				}
-				this.curState = SESSIONBREAK;
-				close();
-////				this.iEnd = 0;
-////				this.curState = SNDANDRCVDELTLMCHKENDSETSIG;
-////				this.curState = FORMATPRTDATAERROR;
 			}
 			if (this.rpage < 0) {
 				SetSignal(firstOpenConn, !firstOpenConn, "0000000000","0000100000");
@@ -2536,6 +2534,33 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			}
 			
 			log.debug("after {}=>{}=====check prtcliFSM", before, this.curState);
+			break;
+		case EJECTAFTERPAGEERROR:
+			log.debug("{} {} {} :AutoPrnCls : process EJECTAFTERPAGEERROR", brws,catagory, account);
+			if (prt.Eject(firstOpenConn)) {
+//				Sleep(2 * 1000);
+				iFirst = 0;
+				iEnd = 0;
+				this.curState = FINISH;
+//				this.curState = SESSIONBREAK;
+//				resetPassBook();
+//				close();
+			} else
+				this.curState = EJECTAFTERPAGEERRORWAIT;
+			log.debug("after {}=>{} =====check prtcliFSM", before, this.curState);
+			break;
+		case EJECTAFTERPAGEERRORWAIT:
+			log.debug("{} {} {} :AutoPrnCls : process EJECTAFTERPAGEERRORWAIT", brws,catagory, account);
+			if (prt.Eject(!firstOpenConn)) {
+////				Sleep(2 * 1000);
+				iFirst = 0;
+				iEnd = 0;
+				this.curState = FINISH;
+//				this.curState = SESSIONBREAK;
+//				resetPassBook();
+//				close();
+			}
+			log.debug("after {}=>{} r={} =====check prtcliFSM", before, this.curState);
 			break;
 		case SNDANDRCVTLM:
 			log.debug("{} {} {} :AutoPrnCls : process telegram isTITA_TOTA_START={} alreadySendTelegram={}", brws,

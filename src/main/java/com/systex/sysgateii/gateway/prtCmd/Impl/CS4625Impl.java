@@ -1861,7 +1861,7 @@ public class CS4625Impl implements Printer {
 
 	private void Sleep(int s) {
 		try {
-			TimeUnit.MICROSECONDS.sleep(s);
+			TimeUnit.MILLISECONDS.sleep(s);
 		} catch (InterruptedException e1) { // TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
