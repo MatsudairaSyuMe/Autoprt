@@ -307,6 +307,12 @@ public class CS4625Impl implements Printer {
 		return 0;
 	}
 
+	private void clearBuffer() {
+		log.debug("cleanBuffer curState={} curPurState={}", this.curState, this.curPurState);
+		pc.clientMessageBuf.clear();
+		return;
+	}
+
 	@Override
 	public int Send_hData(byte[] buff) {
 		// TODO Auto-generated method stub
@@ -861,6 +867,8 @@ public class CS4625Impl implements Printer {
 		}
 		log.debug("{} {} {} DetectPaper curState={} iCnt={}", brws, "", "", this.curState, this.iCnt);
 		if (this.curState == DetectPaper_START) {
+			//20200325 clear buffer before send data
+			clearBuffer();
 			GetPaper();
 			log.debug("{} {} {} DetectPaper GetPaper curState={}", brws, "", "", this.curState);
 		}
@@ -912,6 +920,11 @@ public class CS4625Impl implements Printer {
 				} else if (data[2] == (byte)'A') {
 					this.curChkState = CheckStatus_START;
 					log.debug("{} {} {} get 'A' curState={} change to curChkState={} ", brws, wsno, "",this.curState,  this.curChkState);
+					this.iCnt = 0;
+				} else if (data[2] == (byte)'4') {
+					this.curChkState = CheckStatus_START;
+					clearBuffer();
+					log.debug("{} {} {} get '4' paper in chasis curState={}  curChkState={} ", brws, wsno, "",this.curState,  this.curChkState);
 					this.iCnt = 0;
 				} else {
 					switch (data[2]) {

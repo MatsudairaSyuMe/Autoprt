@@ -306,7 +306,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 						future.channel().close();
 						if (iRetry > MAXDELAY)
 							iRetry = MAXDELAY;
-						final int _newwait = iRetry * RECONNECT * 1000;
+//						final int _newwait = iRetry * RECONNECT * 1000;
+						final int _newwait = iRetry * RECONNECT * 100;
 						log.debug("{} {} {} 99補摺機斷線，請檢查線路！", brws, "", "");
 						clientMessageBuf.clear();
 						if (!future.channel().isActive()) {
@@ -386,7 +387,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			@Override
 			public void initChannel(SocketChannel ch) throws Exception {
 				ch.pipeline().addLast("log", new LoggingHandler(PrtCli.class, LogLevel.INFO));
-				ch.pipeline().addLast(new IdleStateHandler(1, 0, 0, TimeUnit.SECONDS));
+//				ch.pipeline().addLast(new IdleStateHandler(1, 0, 0, TimeUnit.SECONDS));
+				ch.pipeline().addLast(new IdleStateHandler(500, 0, 0, TimeUnit.MILLISECONDS));
 				ch.pipeline().addLast(getHandler("PrtCli"));
 			}
 		});

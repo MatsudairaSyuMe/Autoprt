@@ -33,9 +33,9 @@
 		</board>
 	</boards>
 	<validDevice>
- <!--        <dev type="AUTO52" brws="9838902" ip="10.24.1.230:4001=10.24.1.230:3301" autoturnpage="false"/>-->
+         <dev type="AUTO46" brws="9838902" ip="10.24.1.230:4001=10.24.1.230:3301" autoturnpage="false"/>
  <!--         <dev type="AUTO52" brws="9838902" ip="10.24.1.96:4001=10.24.1.230:3301" autoturnpage="false"/>-->
-          <dev type="AUTO46" brws="9838902" ip="10.24.1.95:4001=10.24.1.230:3301" autoturnpage="false"/>
+ <!--         <dev type="AUTO46" brws="9838902" ip="10.24.1.95:4001=10.24.1.230:3301" autoturnpage="false"/>-->
  <!--    <dev type="AUTO52" brws="9838903" ip="10.24.1.94:4001=10.24.1.230:3301" autoturnpage="false"/>-->
 	</validDevice>
 	<system>
