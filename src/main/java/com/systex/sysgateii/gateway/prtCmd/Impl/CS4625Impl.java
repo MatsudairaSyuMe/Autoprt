@@ -358,7 +358,7 @@ public class CS4625Impl implements Printer {
 				}
 			}
 //20200330			Sleep(100);
-			Sleep(50);
+			Sleep(20);
 		} while (++retry < 10);
 		if (getIsShouldShutDown().get())
 			return "DIS".getBytes();
@@ -380,14 +380,15 @@ public class CS4625Impl implements Printer {
 		}
 		if (this.curChkState == CheckStatus) {
 			this.curChkState = CheckStatusRecvData;
-//20200330			Sleep(50);
+//			Sleep(50);
 			this.iCnt = 0;
 			data = Rcv_Data(3);
 		} else if (this.curChkState == CheckStatusRecvData) {
-//20200330			Sleep(100);
+//			Sleep(100);
 			this.iCnt++;
 			data = Rcv_Data(3);
-			if (data == null && iCnt > 3) {
+			//20200330 change from 3 to 20
+			if (data == null && iCnt > 20) {
 				log.debug("{} {} {} {} 95補摺機無回應！", iCnt, brws, "", "");
 				this.curChkState = CheckStatus_FINISH;
 				pc.close();
@@ -413,8 +414,8 @@ public class CS4625Impl implements Printer {
 					return rtn;
 				}
 			}
-////20200330			Sleep(100);
-			Sleep(50);
+//20200330			Sleep(100);
+			Sleep(20);
 		} while (++retry < 10);
 		if (getIsShouldShutDown().get())
 			return "DIS".getBytes();
