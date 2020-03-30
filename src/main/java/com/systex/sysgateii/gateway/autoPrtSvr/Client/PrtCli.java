@@ -124,6 +124,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	// State Value
 	public static final int SESSIONBREAK = -1; // 94補摺機斷線！.
 	public static final int OPENPRINTER = 0;
+//	public static final int CHECKPRINTER = 1;
+//	public static final int CHECKPRINTERWAIT = 2;
 
 	public static final int ENTERPASSBOOKSIG = 1; // 00請插入存摺... Capture Passbook
 	public static final int CAPTUREPASSBOOK = 2;
@@ -156,16 +158,17 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	public static final int READMSRSUCAFTERWRITEMSRERR = 28; // 12存摺磁條讀取成功(1)！
 	public static final int COMPMSRSUCAFTERWRITEMSRERR = 29; // 12存摺磁條比對正確(1)！
 	public static final int COMPMSRERRAFTERWRITEMSRERR = 30; // 12存摺磁條比對失敗(1)！
-	public static final int WRITEMSRERRSHOWSIG = 31; // 71存摺磁條寫入失敗！ Show Signal
-	public static final int SNDANDRCVDELTLM = 32; // 72存摺資料補登成功！
-	public static final int SNDANDRCVDELTLMCHKEND = 33;        // 72存摺資料補登成功, 檢查翻頁及燈號開始！
-	public static final int SNDANDRCVDELTLMCHKENDSETSIG = 34; // 72存摺資料補登成功, 檢查翻頁及燈號完成退摺開始！
-	public static final int SNDANDRCVDELTLMCHKENDEJECTPRT = 35; // 72存摺資料補登成功, 檢查翻頁及燈號退摺！
-	public static final int DELPASSBOOKREGCOMPERR = 36; // 73存摺資料補登刪除失敗！Show Signal
-	public static final int NOTFINISH = 37; // iEnd != 0 continue printing
-	public static final int NOTFINISHATP = 38; // iEnd != 0 continue printing, Auto turn page
-	public static final int NOTFINISHHTP = 39; // iEnd != 0 continue printing, Handy turn page, Show Reentry signal.
-	public static final int FINISH = 40; // iEnd == 0 printing finished,
+	public static final int EJECTAFTERPAGEERRORWAITSTATUS = 31;
+	public static final int WRITEMSRERRSHOWSIG = 32; // 71存摺磁條寫入失敗！ Show Signal
+	public static final int SNDANDRCVDELTLM = 33; // 72存摺資料補登成功！
+	public static final int SNDANDRCVDELTLMCHKEND = 34;        // 72存摺資料補登成功, 檢查翻頁及燈號開始！
+	public static final int SNDANDRCVDELTLMCHKENDSETSIG = 35; // 72存摺資料補登成功, 檢查翻頁及燈號完成退摺開始！
+	public static final int SNDANDRCVDELTLMCHKENDEJECTPRT = 36; // 72存摺資料補登成功, 檢查翻頁及燈號退摺！
+	public static final int DELPASSBOOKREGCOMPERR = 37; // 73存摺資料補登刪除失敗！Show Signal
+//	public static final int NOTFINISH = 38; // iEnd != 0 continue printing
+//	public static final int NOTFINISHATP = 39; // iEnd != 0 continue printing, Auto turn page
+//	public static final int NOTFINISHHTP = 40; // iEnd != 0 continue printing, Handy turn page, Show Reentry signal.
+	public static final int FINISH = 38; // iEnd == 0 printing finished,
 											// === 2 超過存摺頁次, 仍然顯示補登完成燈號
 											// go to capture
 	private int curState = SESSIONBREAK;
@@ -2262,7 +2265,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				}
 			}
 		} while (this.iCount < iCon);
-		if ((this.curState == STARTPROCTLM || this.curState == SNDANDRCVDELTLMCHKEND) && !dispatcher.isTITA_TOTA_START() && alreadySendTelegram)
+
+		if ((this.curState == STARTPROCTLM || this.curState == SNDANDRCVDELTLMCHKEND)
+				&& !dispatcher.isTITA_TOTA_START() && alreadySendTelegram)
 			//relese channel
 			this.alreadySendTelegram = false;
 
@@ -2275,28 +2280,23 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		return rtn;
 	}
 
-	private void detectPassBook() {
-		this.curState = ENTERPASSBOOKSIG;
-		SetSignal(firstOpenConn, firstOpenConn, "1100000000", "0000000000");
-		this.iFirst = 0;
-		this.iEnd = 0;
-		this.catagory = "";
-		this.account = "";
-		this.pb_arr.clear();
-		this.fc_arr.clear();
-		this.gl_arr.clear();
-		log.debug("{}=====SetSignal prtcliFSM", this.curState);
-	}
 	private void resetPassBook() {
-		this.curState = SESSIONBREAK;
+		this.alreadySendTelegram = false;
+		this.dispatcher.setTITA_TOTA_START(false);
 		this.iFirst = 0;
 		this.iEnd = 0;
+		this.dCount = "000";
+		this.iCount = Integer.parseInt(this.dCount);
 		this.catagory = "";
 		this.account = "";
+		this.iFirst = 0;
+		this.iEnd = 0;
 		this.pb_arr.clear();
 		this.fc_arr.clear();
 		this.gl_arr.clear();
-		log.debug("{}=====SetSignal prtcliFSM", this.curState);
+		SetSignal(firstOpenConn, firstOpenConn, "1100000000", "0000000000");
+		this.curState = ENTERPASSBOOKSIG;
+		log.debug("{}=====resetPassBook prtcliFSM", this.curState);
 		return;
 	}
 	private void prtcliFSM(boolean isInit) {
@@ -2313,6 +2313,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			log.debug("=======================check prtcliFSM init");
 			return;
 		}
+
 		log.debug("before {}=======================check prtcliFSM", this.curState);
 		int before = this.curState;
 		switch (this.curState) {
@@ -2321,8 +2322,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			this.curState = OPENPRINTER;
 			log.debug("after {}=>{}===check prtcliFSM", before, this.curState);
 			break;
-		case OPENPRINTER:
 
+		case OPENPRINTER:
 			this.alreadySendTelegram = false;
 			this.dispatcher.setTITA_TOTA_START(false);
 			this.iFirst = 0;
@@ -2331,7 +2332,6 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			this.iCount = Integer.parseInt(this.dCount);
 			this.catagory = "";
 			this.account = "";
-
 			if ((this.iFirst == 0) && prt.OpenPrinter(!firstOpenConn)) {
 				this.curState = ENTERPASSBOOKSIG;
 				SetSignal(firstOpenConn, firstOpenConn, "1100000000", "0000000000");
@@ -2346,6 +2346,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			}
 			log.debug("after {}=>{}=====check prtcliFSM", before, this.curState);
 			break;
+
 		case ENTERPASSBOOKSIG:
 			if (SetSignal(!firstOpenConn, firstOpenConn, "1100000000", "0000000000")) {
 				this.curState = CAPTUREPASSBOOK;
@@ -2355,6 +2356,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			}
 			log.debug("after {}=>{}=====check prtcliFSM", before, this.curState);
 			break;
+
 		case CAPTUREPASSBOOK:
 			if (this.iFirst == 0 || this.autoturnpage.equals("false")) {
 				if (this.iFirst == 1) {
@@ -2370,6 +2372,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				}
 			}
 			break;
+
 		case GETPASSBOOKSHOWSIG:
 			log.debug("{} {} {} :AutoPrnCls : Show Signal", brws, catagory, account);
 			if (SetSignal(!firstOpenConn, !firstOpenConn, "0000000000", "0010000000")) {
@@ -2378,6 +2381,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				log.debug("{} {} {} AutoPrnCls : --start Set CPI", brws, catagory, account);
 			}
 			break;
+
 		case SETCPI:
 			log.debug("{} {} {} :AutoPrnCls : Set CPI", brws, catagory, account);
 			if (prt.SetCPI(!firstOpenConn, 6)) {
@@ -2386,6 +2390,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				log.debug("{} {} {} AutoPrnCls : --start Set LPI", brws, catagory, account);
 			}
 			break;
+
 		case SETLPI:
 			log.debug("{} {} {} :AutoPrnCls : Set LPI", brws, catagory, account);
 			if (prt.SetLPI(!firstOpenConn, 5)) {
@@ -2408,6 +2413,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				log.debug("{} {} {} AutoPrnCls : --start Read MSR", brws, catagory, account);
 			}
 			break;
+
 		case READMSR:
 			log.debug("{} {} {} :AutoPrnCls : Read MSR", brws, catagory, account);
 			cusid = null;
@@ -2420,6 +2426,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			}
 			log.debug("after {}=>{}=====check prtcliFSM", before, this.curState);
 			break;
+
 		case CHKACTNO:
 			log.debug("{} {} {} :========<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>AutoPrnCls : check Account", brws, catagory,
 					account);
@@ -2479,6 +2486,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 
 			log.debug("after {}=>{}=====check prtcliFSM", before, this.curState);
 			break;
+
 		case CHKBARCODE:
 			log.debug("{} {} {} :AutoPrnCls : process check barcode", brws, catagory, account);
 			if ((this.rpage = prt.ReadBarcode(!firstOpenConn, (short) 2)) > 0) {
@@ -2513,6 +2521,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			}
 			log.debug("after {}=>{}=====check prtcliFSM", before, this.curState);
 			break;
+
 		case SETSIGAFTERCHKBARCODE:
 			log.debug("{} {} {} :AutoPrnCls : process setsignal after checkbcode", brws, catagory, account);
 			if (npage == rpage) {
@@ -2522,7 +2531,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				}
 			} else {
 				log.debug("21存摺頁次錯誤！[{}]", rpage);
-				if (SetSignal(firstOpenConn, !firstOpenConn, "0000000000","0000100000")) {
+				if (SetSignal(!firstOpenConn, firstOpenConn, "0000000000","0000100000")) {
 					this.curState = EJECTAFTERPAGEERROR;
 					log.debug(
 							"{} {} {} AutoPrnCls : --eject passbook after check barcode page error!!",
@@ -2530,40 +2539,30 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				}
 			}
 			if (this.rpage < 0) {
-				SetSignal(firstOpenConn, !firstOpenConn, "0000000000","0000100000");
+				SetSignal(!firstOpenConn, firstOpenConn, "0000000000","0000100000");
 				this.curState = SESSIONBREAK;
 				close();
 			}
 			
 			log.debug("after {}=>{}=====check prtcliFSM", before, this.curState);
 			break;
+
 		case EJECTAFTERPAGEERROR:
 			log.debug("{} {} {} :AutoPrnCls : process EJECTAFTERPAGEERROR", brws,catagory, account);
-			if (prt.Eject(firstOpenConn)) {
-//				Sleep(2 * 1000);
-				iFirst = 0;
-				iEnd = 0;
-				this.curState = FINISH;
-//				this.curState = SESSIONBREAK;
-//				resetPassBook();
-//				close();
-			} else
+			if (prt.Eject(firstOpenConn))
+				resetPassBook();
+			else
 				this.curState = EJECTAFTERPAGEERRORWAIT;
 			log.debug("after {}=>{} =====check prtcliFSM", before, this.curState);
 			break;
+
 		case EJECTAFTERPAGEERRORWAIT:
 			log.debug("{} {} {} :AutoPrnCls : process EJECTAFTERPAGEERRORWAIT", brws,catagory, account);
-			if (prt.Eject(!firstOpenConn)) {
-////				Sleep(2 * 1000);
-				iFirst = 0;
-				iEnd = 0;
-				this.curState = FINISH;
-//				this.curState = SESSIONBREAK;
-//				resetPassBook();
-//				close();
-			}
+			if (prt.Eject(!firstOpenConn))
+				resetPassBook();
 			log.debug("after {}=>{} r={} =====check prtcliFSM", before, this.curState);
 			break;
+
 		case SNDANDRCVTLM:
 			log.debug("{} {} {} :AutoPrnCls : process telegram isTITA_TOTA_START={} alreadySendTelegram={}", brws,
 					catagory, account, dispatcher.isTITA_TOTA_START(), alreadySendTelegram);
@@ -2591,6 +2590,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			}
 			log.debug("after {}=>{} r={} =====check prtcliFSM", before, this.curState, r);
 			break;
+
 		case SETREQSIG:
 		case WAITSETREQSIG:
 		case SENDTLM:
@@ -2638,6 +2638,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			}
 			log.debug("after {}=>{}=====check prtcliFSM", before, this.curState);
 			break;
+
 		case STARTPROCTLM:
 			log.debug("{} {} {} 06存摺資料補登中...", brws, catagory, account);
 			switch (this.iFig) {
@@ -2663,6 +2664,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			log.debug("{} {} {} AutoPrnCls : 補登... {}", brws, catagory, account, this.iFig == TXP.PBTYPE ? "台幣存摺" : (this.iFig == TXP.FCTYPE ? "外匯存摺" : "黃金存摺"));
 			log.debug("after {}=>{}=====check prtcliFSM", before, this.curState);
 			break;
+
 		case PBDATAFORMAT:
 			switch (this.iFig) {
 				case TXP.PBTYPE:
@@ -2686,6 +2688,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			}
 			log.debug("{} {} {} AutoPrnCls : 補登... {}", brws, catagory, account, this.iFig == TXP.PBTYPE ? "台幣存摺" : (this.iFig == TXP.FCTYPE ? "外匯存摺" : "黃金存摺"));
 			log.debug("after {}=>{}=====check prtcliFSM", before, this.curState);
+
 		case FORMATPRTDATAERROR:
 			log.debug("{} {} {} ORMATPRTDATAERROR :AutoPrnCls : XXDataFormat() -- Print Data Error!", brws, catagory, account);
 			log.debug("{} {} {} 61存摺資料補登失敗！", brws, catagory, account);
@@ -2697,6 +2700,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			this.curState = OPENPRINTER;
 			log.debug("after {}=>{}=====check prtcliFSM", before, this.curState);
 			break;
+
 		case WRITEMSR:
 			log.debug("{} {} {} :AutoPrnCls : process WRITEMSR", brws, catagory, account);
 			if (WMSRFormat(firstOpenConn)) {
@@ -2706,6 +2710,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			log.debug("{} {} {} :AutoPrnCls : WMSRFormat() -- c_Msr=[{}]",brws, catagory, account, this.tx_area.get("c_Msr"));
 			log.debug("after {}=>{}=====check prtcliFSM", before, this.curState);
 			break;
+
 		case WRITEMSRWAITCONFIRM:
 			log.debug("{} {} {} :AutoPrnCls : process WRITEMSRWAITCONFIRM", brws, catagory, account);
 			if (WMSRFormat(!firstOpenConn)) {
@@ -2714,6 +2719,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			}
 			log.debug("after {}=>{}=====check prtcliFSM", before, this.curState);
 			break;
+
 		case SNDANDRCVDELTLM:
 			log.debug("{} {} {} :AutoPrnCls : process SNDANDRCVDELTLM isTITA_TOTA_START={} alreadySendTelegram={}", brws,
 					catagory, account, dispatcher.isTITA_TOTA_START(), alreadySendTelegram);
@@ -2734,6 +2740,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			log.debug("SNDANDRCVDELTLM r = {} pb_arr.size()=>{}=====check prtcliFSM", r, pb_arr.size());
 			log.debug("after {}=>{} r={} =====check prtcliFSM", before, this.curState, r);
 			break;
+
 		case SNDANDRCVDELTLMCHKEND:
 			log.debug("{} {} {} :AutoPrnCls : process SNDANDRCVDELTLMCHKEND", brws, catagory, account);
 			if (iEnd == 1) {
@@ -2742,26 +2749,17 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				} else {
 					if (SetSignal(firstOpenConn, firstOpenConn, "0000000000","0101010000")) {
 						this.curState = SNDANDRCVDELTLMCHKENDEJECTPRT;
-//						if (prt.Eject(firstOpenConn)) {
-//							this.curState = CAPTUREPASSBOOK;
-//							iFirst = 1;
-//							Sleep(2 * 1000);
-//							log.debug("{} {} {}AutoPrnCls : 翻頁...", brws, catagory, account);
-//						}
 					}
 				}
 			} else {
 				// Show Signal
 				if (SetSignal(firstOpenConn, firstOpenConn, "0000000000","0001000000")) {
 					this.curState = SNDANDRCVDELTLMCHKENDSETSIG;
-//					if (prt.Eject(firstOpenConn)) {
-//						Sleep(2 * 1000);
-//						this.curState = FINISH;
-//					}
 				}
 			}
 			log.debug("after {}=>{} iEnd={} =====check prtcliFSM", before, this.curState, iEnd);
 			break;
+
 		case SNDANDRCVDELTLMCHKENDSETSIG:
 			log.debug("{} {} {} :AutoPrnCls : process SNDANDRCVDELTLMCHKENDSETSIG", brws, catagory, account);
 			if (iEnd == 1) {
@@ -2790,6 +2788,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			}
 			log.debug("after {}=>{} iEnd={} =====check prtcliFSM", before, this.curState, iEnd);
 			break;
+
 		case SNDANDRCVDELTLMCHKENDEJECTPRT:
 			log.debug("{} {} {} :AutoPrnCls : process SNDANDRCVDELTLMCHKENDEJECTPRT", brws, catagory, account);
 			if (iEnd == 1) {
@@ -2818,10 +2817,11 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			iFirst = 0;
 			if (iEnd == 2)
 				iEnd = 0;
-			detectPassBook();
+			resetPassBook();
 			log.debug("{} {} {}:AutoPrnCls : 完成!!.", brws, catagory, account);
 			log.debug("after {}=>{} iEnd={} =====check prtcliFSM", before, this.curState, iEnd);
 			break;
+
 		default:
 			log.debug("unknow status after {}=>{} iEnd={} =====check prtcliFSM", before, this.curState, iEnd);
 			break;

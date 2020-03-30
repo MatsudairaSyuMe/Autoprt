@@ -356,7 +356,8 @@ public class CS5240Impl implements Printer {
 					return rtn;
 				}
 			}
-			Sleep(100);
+//20200330			Sleep(100);
+			Sleep(50);
 		} while (++retry < 10);
 		if (getIsShouldShutDown().get())
 			return "DIS".getBytes();
@@ -378,11 +379,11 @@ public class CS5240Impl implements Printer {
 		}
 		if (this.curChkState == CheckStatus) {
 			this.curChkState = CheckStatusRecvData;
-			Sleep(50);
+//20200330			Sleep(50);
 			this.iCnt = 0;
 			data = Rcv_Data(3);
 		} else if (this.curChkState == CheckStatusRecvData) {
-			Sleep(100);
+//20200330			Sleep(100);
 			this.iCnt++;
 			data = Rcv_Data(3);
 			if (data == null && iCnt > 3) {
@@ -394,6 +395,7 @@ public class CS5240Impl implements Printer {
 		}
 		return data;
 	}
+
 
 	@Override
 	public byte[] Rcv_Data(int rcv_len) {
@@ -411,7 +413,8 @@ public class CS5240Impl implements Printer {
 					return rtn;
 				}
 			}
-			Sleep(100);
+			//20200330			Sleep(100);
+			Sleep(50);
 		} while (++retry < 10);
 		if (getIsShouldShutDown().get())
 			return "DIS".getBytes();
