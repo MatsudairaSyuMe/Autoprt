@@ -731,7 +731,9 @@ public class CS5240Impl implements Printer {
 
 		if (this.curState == Eject_START) {
 			log.debug("{} {} {} 存摺退出...", brws, "", "");
-			if (Send_hData(S5240_PINIT) != 0)
+			//20200331 modify for command
+//			Send_hData(S5240_PINIT)
+			if (Send_hData(S5240_PEJT) != 0)
 				return false;
 		}
 		byte[] data = null;
@@ -759,7 +761,6 @@ public class CS5240Impl implements Printer {
 			return true;
 		} else
 			return false;
-
 	}
 
 	@Override

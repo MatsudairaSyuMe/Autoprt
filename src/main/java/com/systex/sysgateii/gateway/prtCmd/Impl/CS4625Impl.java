@@ -722,7 +722,9 @@ public class CS4625Impl implements Printer {
 
 		if (this.curState == Eject_START) {
 			log.debug("{} {} {} 存摺退出...", brws, "", "");
-			if (Send_hData(S4625_PINIT) != 0)
+			//20200331 modify for command
+//			Send_hData(S4625_PINIT)
+			if (Send_hData(S4625_PEJT) != 0)
 				return false;
 		}
 		byte[] data = null;
@@ -1761,6 +1763,8 @@ public class CS4625Impl implements Printer {
 //		this.curState = SETSIGNAL;
 		byte[] data = null;
 		if (this.curState == SetSignal) {
+			//20200331 test for speed
+			/*
 			data = CheckStatus();
 			log.debug("SetSignal 1 ===<><>{} {}", this.curState, data);
 			if (this.curChkState == CheckStatus_FINISH) {
@@ -1777,6 +1781,10 @@ public class CS4625Impl implements Printer {
 				} else
 					this.curState = SetSignal_START_2;
 			}
+			*/
+			//20200331 test for speed
+			this.curChkState = CheckStatus_FINISH;
+			this.curState = SetSignal_START_2;
 		}
 		if (this.curState == SetSignal_START_2 || this.curState == SetSignal_2) {
 			log.debug("SetSignal 2 ===<><>{} curChkState {}", this.curState, this.curChkState);
@@ -1791,6 +1799,8 @@ public class CS4625Impl implements Printer {
 				this.curState = SetSignal_2;
 				this.curChkState = CheckStatus_START;
 			}
+			//20200331 test for speed
+			/*
 			data = CheckStatus();
 			if (CheckDis(data) != 0) 
 				return false;
@@ -1799,21 +1809,26 @@ public class CS4625Impl implements Printer {
 				return false;
 			} else 
 				this.curState = SetSignal_START_3;
+			*/
+			//20200331 test for speed
+			this.curState = SetSignal_START_3;
 		}
 		if (this.curState == SetSignal_START_3 || this.curState == SetSignal_3) {
 			log.debug("SetSignal 3 ===<><>{} curChkState {}", this.curState, this.curChkState);
 			if (this.curState == SetSignal_START_3) {
-				Sleep(100);
+//20200331 test for speed				Sleep(100);
 				S4625_SET_SIGNAL[2] = light1;
 				S4625_SET_SIGNAL[3] = light1;
 				if ( Send_hData(S4625_SET_SIGNAL) < 0 ) {
 					log.debug("[{}]:S4625 : SetSignal() -- OFF Signal Failed!!", String.format(outptrn2, wsno));
 					return false;
 				}
-				Sleep(100);
+//20200331 test for speed				Sleep(100);
 				this.curState = SetSignal_3;
 				this.curChkState = CheckStatus_START;
 			}
+			//20200331 test for speed
+			/*
 			data = CheckStatus();
 			if (CheckDis(data) != 0) 
 				return false;
@@ -1822,6 +1837,8 @@ public class CS4625Impl implements Printer {
 				return false;
 			} else 
 				this.curState = SetSignal_START_4;
+			*/
+			this.curState = SetSignal_START_4;
 		}
 		if (this.curState == SetSignal_START_4 || this.curState == SetSignal_4) {
 			log.debug("SetSignal 4 ===<><>{} curChkState {}", this.curState, this.curChkState);
