@@ -2294,8 +2294,27 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		this.pb_arr.clear();
 		this.fc_arr.clear();
 		this.gl_arr.clear();
-		SetSignal(firstOpenConn, firstOpenConn, "1100000000", "0000000000");
 		this.curState = ENTERPASSBOOKSIG;
+		SetSignal(firstOpenConn, firstOpenConn, "1100000000", "0000000000");
+		log.debug("{}=====resetPassBook prtcliFSM", this.curState);
+		return;
+	}
+
+	private void openPassBook() {
+		this.alreadySendTelegram = false;
+		this.dispatcher.setTITA_TOTA_START(false);
+		this.iFirst = 0;
+		this.iEnd = 0;
+		this.dCount = "000";
+		this.iCount = Integer.parseInt(this.dCount);
+		this.catagory = "";
+		this.account = "";
+		this.iFirst = 0;
+		this.iEnd = 0;
+		this.pb_arr.clear();
+		this.fc_arr.clear();
+		this.gl_arr.clear();
+		this.curState = SESSIONBREAK;
 		log.debug("{}=====resetPassBook prtcliFSM", this.curState);
 		return;
 	}
@@ -2560,7 +2579,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			log.debug("{} {} {} :AutoPrnCls : process EJECTAFTERPAGEERRORWAIT", brws,catagory, account);
 			if (prt.Eject(!firstOpenConn))
 				resetPassBook();
-			log.debug("after {}=>{} r={} =====check prtcliFSM", before, this.curState);
+			log.debug("after {}=>{} =====check prtcliFSM", before, this.curState);
 			break;
 
 		case SNDANDRCVTLM:
@@ -2771,7 +2790,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 						if (prt.Eject(firstOpenConn)) {
 							this.curState = CAPTUREPASSBOOK;
 							iFirst = 1;
-							Sleep(2 * 1000);
+//20200401							Sleep(2 * 1000);
 							log.debug("{} {} {}AutoPrnCls : 翻頁...", brws, catagory, account);
 						}
 					}
@@ -2781,7 +2800,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				if (SetSignal(!firstOpenConn, firstOpenConn, "0000000000", "0001000000")) {
 					this.curState = SNDANDRCVDELTLMCHKENDEJECTPRT;
 					if (prt.Eject(firstOpenConn)) {
-						Sleep(2 * 1000);
+//20200401						Sleep(2 * 1000);
 						this.curState = FINISH;
 					}
 				}
@@ -2797,7 +2816,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				} else {
 					if (prt.Eject(!firstOpenConn)) {
 						this.curState = CAPTUREPASSBOOK;
-						Sleep(2 * 1000);
+//20200401						Sleep(2 * 1000);
 						log.debug("{} {} {}AutoPrnCls : 翻頁...", brws, catagory, account);
 						iFirst = 1;
 					}
@@ -2806,7 +2825,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				// Eject Priner
 				if (prt.Eject(!firstOpenConn)) {
 					this.curState = FINISH;
-					Sleep(2 * 1000);
+//20200401					Sleep(2 * 1000);
 				}
 			}
 			log.debug("after {}=>{} iEnd={} =====check prtcliFSM", before, this.curState, iEnd);
@@ -2817,6 +2836,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			iFirst = 0;
 			if (iEnd == 2)
 				iEnd = 0;
+//			openPassBook();
 			resetPassBook();
 			log.debug("{} {} {}:AutoPrnCls : 完成!!.", brws, catagory, account);
 			log.debug("after {}=>{} iEnd={} =====check prtcliFSM", before, this.curState, iEnd);

@@ -358,7 +358,7 @@ public class CS4625Impl implements Printer {
 				}
 			}
 //20200330			Sleep(100);
-			Sleep(20);
+			Sleep(50);
 		} while (++retry < 10);
 		if (getIsShouldShutDown().get())
 			return "DIS".getBytes();
@@ -415,7 +415,7 @@ public class CS4625Impl implements Printer {
 				}
 			}
 //20200330			Sleep(100);
-			Sleep(20);
+			Sleep(50);
 		} while (++retry < 10);
 		if (getIsShouldShutDown().get())
 			return "DIS".getBytes();
@@ -703,7 +703,7 @@ public class CS4625Impl implements Printer {
 		// TODO Auto-generated method stub
 		byte[] Pdata = {ESQ,(byte)'l',ESQ,(byte)'L',(byte)'0',(byte)'0',(byte)'0'};
 		Send_hData(Pdata);
-
+//		Sleep(200);
 		return true;
 	}
 
@@ -1464,6 +1464,12 @@ public class CS4625Impl implements Printer {
 		switch (data[2]) {
 		case (byte) '2':
 		case (byte) '4':
+			//20200401
+			if (this.curState == 39 || this.curState == 14) {
+				this.curChkState = CheckStatus_START;
+				return false;
+			}
+		//----
 		case (byte) 'P':
 		case (byte) 'A':
 		case (byte) 0xd0:
@@ -1850,7 +1856,7 @@ public class CS4625Impl implements Printer {
 						log.debug("[{}]:S4625 : SetSignal() -- OFF Signal Failed!!", String.format(outptrn2, wsno));
 						return false;
 					}
-					Sleep(100);
+					Sleep(1000);
 				}
 				this.curState = SetSignal_4;
 				this.curChkState = CheckStatus_START;
