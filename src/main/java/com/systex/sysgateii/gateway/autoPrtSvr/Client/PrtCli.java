@@ -2119,6 +2119,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 						}
 					}
 					this.curState = SETREQSIG;
+					//20200403
+					SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0010000000");
+					//----
 					if (SetSignal(firstOpenConn, !firstOpenConn, "0000000000", "0010000000")) {
 						this.curState = RECVTLM;
 						log.debug("{} {} {} AutoPrnCls : --change start process telegram", brws, catagory, account);
@@ -2300,24 +2303,6 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		return;
 	}
 
-	private void openPassBook() {
-		this.alreadySendTelegram = false;
-		this.dispatcher.setTITA_TOTA_START(false);
-		this.iFirst = 0;
-		this.iEnd = 0;
-		this.dCount = "000";
-		this.iCount = Integer.parseInt(this.dCount);
-		this.catagory = "";
-		this.account = "";
-		this.iFirst = 0;
-		this.iEnd = 0;
-		this.pb_arr.clear();
-		this.fc_arr.clear();
-		this.gl_arr.clear();
-		this.curState = SESSIONBREAK;
-		log.debug("{}=====resetPassBook prtcliFSM", this.curState);
-		return;
-	}
 	private void prtcliFSM(boolean isInit) {
 		if (isInit) {
 			this.curState = SESSIONBREAK;
@@ -2766,15 +2751,20 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				if (!this.autoturnpage.equals("false")){
 					
 				} else {
-					if (SetSignal(firstOpenConn, firstOpenConn, "0000000000","0101010000")) {
+/*//20200403					if (SetSignal(firstOpenConn, firstOpenConn, "0000000000","0101010000")) {
 						this.curState = SNDANDRCVDELTLMCHKENDEJECTPRT;
 					}
+				*/
+					SetSignal(firstOpenConn, firstOpenConn, "0000000000","0101010000");
+					this.curState = SNDANDRCVDELTLMCHKENDEJECTPRT;
 				}
 			} else {
 				// Show Signal
-				if (SetSignal(firstOpenConn, firstOpenConn, "0000000000","0001000000")) {
+/*//20200403				if (SetSignal(firstOpenConn, firstOpenConn, "0000000000","0001000000")) {
 					this.curState = SNDANDRCVDELTLMCHKENDSETSIG;
-				}
+				}*/
+				SetSignal(firstOpenConn, firstOpenConn, "0000000000","0001000000");
+				this.curState = SNDANDRCVDELTLMCHKENDSETSIG;
 			}
 			log.debug("after {}=>{} iEnd={} =====check prtcliFSM", before, this.curState, iEnd);
 			break;
@@ -2836,7 +2826,6 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			iFirst = 0;
 			if (iEnd == 2)
 				iEnd = 0;
-//			openPassBook();
 			resetPassBook();
 			log.debug("{} {} {}:AutoPrnCls : 完成!!.", brws, catagory, account);
 			log.debug("after {}=>{} iEnd={} =====check prtcliFSM", before, this.curState, iEnd);

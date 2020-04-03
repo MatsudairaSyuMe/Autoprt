@@ -372,6 +372,13 @@ public class CS4625Impl implements Printer {
 		// TODO Auto-generated method stub
 		byte[] data = null;
 		log.debug("CheckStatus curState={} curChkState={}", this.curState, this.curChkState);
+		//20200402 make sure there already response
+/*		if ((data = Rcv_Data(3)) != null) {
+			this.curChkState = CheckStatus_FINISH;
+			log.debug("CheckStatus check first get data curState={} curChkState={} {} [{}]", this.curState, this.curChkState, Arrays.toString(data), new String(data, 1, 2));
+			return data;
+		}*/
+		//----
 		if (this.curChkState == CheckStatus_START) {
 			this.curChkState = CheckStatus;
 			log.debug("CheckStatus curState={} curChkState={}", this.curState, this.curChkState);
@@ -1852,11 +1859,14 @@ public class CS4625Impl implements Printer {
 				if ((int)blink1 != 0 || (int)blink2 != 0) {
 					S4625_SET_BLINK[2] = blink1;
 					S4625_SET_BLINK[3] = blink2;
+					//20200403  test
+//					clearBuffer();
+					//----
 					if ( Send_hData(S4625_SET_BLINK) < 0 ) {
 						log.debug("[{}]:S4625 : SetSignal() -- OFF Signal Failed!!", String.format(outptrn2, wsno));
 						return false;
 					}
-					Sleep(1000);
+//20200403  test	Sleep(1000);
 				}
 				this.curState = SetSignal_4;
 				this.curChkState = CheckStatus_START;
