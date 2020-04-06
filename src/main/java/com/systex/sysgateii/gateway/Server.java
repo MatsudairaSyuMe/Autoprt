@@ -1,5 +1,7 @@
 package com.systex.sysgateii.gateway;
 
+import java.io.File;
+
 /**
  * 
  * Created by MatsudairaSyume 2019/11/5
@@ -15,12 +17,17 @@ import com.systex.sysgateii.gateway.autoPrtSvr.Server.FASSvr;
 import com.systex.sysgateii.gateway.autoPrtSvr.Server.PrnSvr;
 import com.systex.sysgateii.gateway.conf.DynamicProps;
 
+import ch.qos.logback.classic.util.ContextInitializer;
+
 public class Server {
-	private static Logger log = LoggerFactory.getLogger(Server.class);
+	private static Logger log = null;
 	private static AtomicBoolean isShouldShutDown = new AtomicBoolean(false);
 	private static final long TEST_TIME_SECONDS = 3;
 
 	public static void main(String[] args) {
+		System.setProperty(ContextInitializer.CONFIG_FILE_PROPERTY, "." + File.separator + "logback.xml");
+		log = LoggerFactory.getLogger(Server.class);
+
 		try {
 			log.info("sysgateii server start...");
 			DynamicProps dcf = new DynamicProps("rateprtservice.xml");
