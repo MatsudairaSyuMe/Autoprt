@@ -92,7 +92,6 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 			fasDespacther = setfassvr;
 			server.run();
 		}
-
 	}
 
 	public static void stopServer() {

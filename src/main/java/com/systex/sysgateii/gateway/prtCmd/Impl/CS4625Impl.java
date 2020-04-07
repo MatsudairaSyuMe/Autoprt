@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class CS4625Impl implements Printer {
 	private static Logger log = LoggerFactory.getLogger(CS4625Impl.class);
+	private static Logger amlog = LoggerFactory.getLogger("amlog");
 	private byte ESQ = (byte) 0x1b;
 	private byte ENQ = (byte) 0x05;
 	private byte ACK = (byte) 0x06;
@@ -397,6 +398,7 @@ public class CS4625Impl implements Printer {
 			//20200330 change from 3 to 20
 			if (data == null && iCnt > 20) {
 				log.debug("{} {} {} {} 95補摺機無回應！", iCnt, brws, "", "");
+				amlog.info("[{}][{}][{}]95補摺機無回應！", brws, "        ", "            ");
 				this.curChkState = CheckStatus_FINISH;
 				pc.close();
 			} else if (data != null && !new String(data).equals("DIS"))
@@ -747,6 +749,7 @@ public class CS4625Impl implements Printer {
 
 			if (!CheckError(data)) {
 				log.debug("{} {} {}95補摺機硬體錯誤！(EJT)", brws, "", "");
+				amlog.info("[{}][{}][{}]95補摺機硬體錯誤！(EJT)", brws, "        ", "            ");
 				return false;
 			} else {
 				log.debug("2 ===<><>{} chkChkState {} {}", this.curState, this.curChkState, data);
@@ -756,6 +759,7 @@ public class CS4625Impl implements Printer {
 		log.debug("3 ===<><>{} chkChkState {}", this.curState, this.curChkState);
 		if (curState == Eject_FINISH) {
 			log.debug("{} {} {} 06存摺退出成功！", brws, "", "");
+			amlog.info("[{}][{}][{}]06存摺退出成功！", brws, "        ", "            ");
 			return true;
 		} else
 			return false;
@@ -794,6 +798,7 @@ public class CS4625Impl implements Printer {
 			data = Rcv_Data();
 			if (data == null && iCnt > 40) {
 				log.debug("{} {} {} {} 94補摺機狀態錯誤！(MSR-2)", iCnt, brws, "", "");
+				amlog.info("[{}][{}][{}]94補摺機狀態錯誤！(MSR-2)", brws, "        ", "            ");
 				this.curState = ResetPrinterInit_START;
 				ResetPrinterInit();
 				pc.close();
@@ -802,6 +807,7 @@ public class CS4625Impl implements Printer {
 					if (data[2] == (byte)(0x7f & 0xff)) {
 						iCnt = 0;
 						log.debug("{} {} {} {} 94補摺機狀態錯誤！", iCnt, brws, "", "");
+						amlog.info("[{}][{}][{}]94補摺機狀態錯誤！", brws, "        ", "            ");
 						this.curState = ResetPrinterInit_START;
 						ResetPrinterInit();
 						this.curmsdata = null;
@@ -819,6 +825,7 @@ public class CS4625Impl implements Printer {
 					} else {
 						iCnt = 0;
 						log.debug("{} {} {} {} 94補摺機狀態錯誤！(MSR-1)", iCnt, brws, "", "");
+						amlog.info("[{}][{}][{}]94補摺機狀態錯誤！(MSR-1)", brws, "        ", "            ");
 						this.curState = ResetPrinterInit_START;
 						ResetPrinterInit();
 						pc.close();
@@ -828,6 +835,7 @@ public class CS4625Impl implements Printer {
 				} else {
 					iCnt = 0;
 					log.debug("{} {} {} {} 94補摺機狀態錯誤！(MSR-1)", iCnt, brws, "", "");
+					amlog.info("[{}][{}][{}]94補摺機狀態錯誤！(MSR-1)", brws, "        ", "            ");
 					this.curState = ResetPrinterInit_START;
 					ResetPrinterInit();
 					pc.close();
@@ -896,6 +904,7 @@ public class CS4625Impl implements Printer {
 				currentTime = System.currentTimeMillis();
 				if (((currentTime - this.detectStartTimeout) / 1000) > this.detectTimeout) {
 					log.debug("{} {} {} 96超過時間尚未重新插入存摺！", brws, "", "");
+					amlog.info("[{}][{}][{}]96超過時間尚未重新插入存摺！", brws, "        ", "            ");
 					this.curState = DetectPaper_FINISH;
 					return false;
 				}
@@ -928,6 +937,7 @@ public class CS4625Impl implements Printer {
 
 				if (data[2] == (byte)'P') {
 					log.debug("{} {} {} 01偵測到存摺插入！", brws, "", "");
+					amlog.info("[{}][{}][{}]01偵測到存摺插入！", brws, "        ", "            ");
 					this.curState = DetectPaper_FINISH;
 					return true;
 				} else if (data[2] == (byte)'A') {
@@ -943,32 +953,41 @@ public class CS4625Impl implements Printer {
 					switch (data[2]) {
 					case (byte) '1': // 20060619 paper jam
 						log.debug("{} {} {} 94請重試一下,否則有卡紙現象", brws, wsno, "");
+						amlog.info("[{}][{}][{}]94請重試一下,否則有卡紙現象", brws, "        ", "            ");
 						this.curChkState = CheckStatus_START;
 						this.iCnt = 0;
 						break;
 					case (byte) '8':
 						log.debug("{} {} {} 94指令錯誤", brws, wsno, "");
+						amlog.info("[{}][{}][{}]94指令錯誤", brws, "        ", "            ");
 						break;
 					case (byte) 'q':
 						log.debug("{} {} {} 94寫磁條錯檢查磁頭", brws, wsno, "");
+						amlog.info("[{}][{}][{}]94寫磁條錯檢查磁頭", brws, "        ", "            ");
 						break;
 					case (byte) 'r':
 						log.debug("{} {} {} 94空白磁條,請重建磁條", brws, wsno, "");
+						amlog.info("[{}][{}][{}]94空白磁條,請重建磁條", brws, "        ", "            ");
 						break;
 					case (byte) 'X':
 						log.debug("{} {} {} 94傳票稍短,超出可列印範圍", brws, wsno, "");
+						amlog.info("[{}][{}][{}]94傳票稍短,超出可列印範圍", brws, "        ", "            ");
 						break;
 					case (byte) 'a':
 						log.debug("{} {} {} 94紙張插歪 或 錯誤資料格式", brws, wsno, "");
+						amlog.info("[{}][{}][{}]94紙張插歪 或 錯誤資料格式", brws, "        ", "            ");
 						break;
 					case (byte) 0x90:
 						log.debug("{} {} {} 94硬體媒介故障", brws, wsno, "");
+						amlog.info("[{}][{}][{}]94硬體媒介故障", brws, "        ", "            ");
 						break;
 					case (byte) 0x80:
 						log.debug("{} {} {} 94補摺機無法運作", brws, wsno, "");
+						amlog.info("[{}][{}][{}]94補摺機無法運作", brws, "        ", "            ");
 						break;
 					default:
 						log.debug("{} {} {} 94硬體故障", brws, wsno, "");
+						amlog.info("[{}][{}][{}]94硬體故障", brws, "        ", "            ");
 						break;
 					}
 				}
@@ -993,6 +1012,7 @@ public class CS4625Impl implements Printer {
 		log.debug("{} {} {} ResetPrinterInit curState={}", brws, "", "", this.curState);
 		if (this.curState == ResetPrinterInit_START) {
 			log.debug("{} {} {} 00補摺機重置中...", brws, "", "");
+			amlog.info("[{}][{}][{}]00補摺機重置中..", brws, "        ", "            ");		
 			if (Send_hData(S4625_PINIT) != 0)
 				return false;
 		}
@@ -1017,6 +1037,7 @@ public class CS4625Impl implements Printer {
 		log.debug("5 ===<><>{} chkChkState {}", this.curState, this.curChkState);
 		if (curState == ResetPrinterInit_FINISH) {
 			log.debug("{} {} {} 00補摺機重置完成！", brws, "", "");
+			amlog.info("[{}][{}][{}]00補摺機重置完成！", brws, "        ", "            ");		
 			return true;
 		} else
 			return false;
@@ -1070,6 +1091,7 @@ public class CS4625Impl implements Printer {
 			if (CheckDis(data) != 0) {
 				if (!pc.connectStatus()) {
 					log.debug("{} {} {} 94補摺機斷線！", brws, "", "");
+					amlog.info("[{}][{}][{}]94補摺機斷線！", brws, "        ", "            ");		
 					return false;
 				}
 				return false;
@@ -1154,6 +1176,7 @@ public class CS4625Impl implements Printer {
 			if (CheckDis(data) != 0) {
 				if (!pc.connectStatus()) {
 					log.debug("{} {} {} 94補摺機斷線！", brws, "", "");
+					amlog.info("[{}][{}][{}]94補摺機斷線！", brws, "        ", "            ");		
 					return false;
 				}
 				return false;
@@ -1213,11 +1236,46 @@ public class CS4625Impl implements Printer {
 		// TODO Auto-generated method stub
 		return 0;
 	}
+	
+	private String setpasname(String cussrc) {
+		String pasname = "        ";
+		String chkcatagory = cussrc.substring(3, 6);;
 
+		switch (chkcatagory) {
+		// 台幣存摺
+			case "001":
+			case "002":
+			case "003":
+			case "004":
+			case "005":
+			case "006":
+			case "008":
+				pasname = "台幣存摺";
+				break;
+				// 外幣存摺
+			case "007":
+			case "021":
+			case "701":
+			case "702":
+			case "703":
+				pasname = "外幣存摺";
+				break;
+				// 黃金存摺
+			case "071":
+			case "072":
+				pasname = "黃金存摺";
+				break;
+			default:
+				pasname = "        ";
+				break;
+		}
+		return pasname;
+	}
 	@Override
 	public boolean MS_Write(boolean start, String brws, String account, byte[] buff) {
 		// TODO Auto-generated method stub
 		boolean rtn = false;
+		String pasname = setpasname(account);
 		if (start) {
 			if ((buff == null || buff.length == 0)) {
 				log.debug("MS_Write ERROR!!! msr dat null on initial status");
@@ -1269,11 +1327,13 @@ public class CS4625Impl implements Printer {
 				this.curChkState = CheckStatus_FINISH;
 				if (!pc.connectStatus()) {
 					log.debug("{} {} {} 94補摺機斷線！", brws, account, "");
+					amlog.info("[{}][{}][{}]94補摺機斷線！", brws, pasname, account);		
 					return false;
 				}
 			}
 			if (data != null && !CheckError(data)) {
 				log.debug("{} {} {}95補摺機硬體錯誤！(EJT)", brws, account, "");
+				amlog.info("[{}][{}][{}]95補摺機硬體錯誤！(EJT)", brws, pasname, account);		
 				this.curChkState = CheckStatus_FINISH;
 				return false;
 			} else {
@@ -1285,6 +1345,7 @@ public class CS4625Impl implements Printer {
 		if (this.curState == MS_Write_START_2) {
 			this.curChkState = CheckStatus_FINISH;
 			log.debug("{} {} {}07存摺磁條寫入中...", brws, account, "");
+			amlog.info("[{}][{}][{}]07存摺磁條寫入中...", brws, pasname, account);		
 			Send_hData(this.curmsdata);
 
 			// actual ms write
@@ -1310,6 +1371,7 @@ public class CS4625Impl implements Printer {
 					break;
 				} else if (data[2] == (byte) 's') {
 					log.debug("{} {} {} {} 94補摺機狀態錯誤！(MSW)", iCnt, brws, account, "");
+					amlog.info("[{}][{}][{}]94補摺機狀態錯誤！(MSW)", brws, pasname, account);		
 					this.curState = ResetPrinterInit_START;
 					ResetPrinterInit();
 					pc.close();
@@ -1325,6 +1387,7 @@ public class CS4625Impl implements Printer {
 						Sleep(50);
 						data = Rcv_Data(5);
 						log.debug("{} {} {} 94補摺機狀態錯誤！(MSW) ERROR:[{}]", iCnt, brws, account, data);
+						amlog.info("[{}][{}][{}]94補摺機狀態錯誤！(MSW) ERROR:[{}]", brws, pasname, account, data);		
 						this.curState = ResetPrinterInit_START;
 						ResetPrinterInit();
 						break;
@@ -1334,6 +1397,7 @@ public class CS4625Impl implements Printer {
 						Sleep(50);
 						data = Rcv_Data(5);
 						log.debug("{} {} {} 94補摺機狀態錯誤！(MSW) ERROR:[{}]", iCnt, brws, account, data);
+						amlog.info("[{}][{}][{}]94補摺機狀態錯誤！(MSW) ERROR:[{}]", brws, pasname, account, data);		
 						// 20060706 , if write eorror , retry 3 times
 						/*
 						 * iRetryCnt++; if ( iRetryCnt < 1 ) { unsigned char S4625_PCLEAR[2]={0x7f,0};
@@ -1345,6 +1409,7 @@ public class CS4625Impl implements Printer {
 						return false;
 					case '8':
 						log.debug("{} {} {} 94補摺機指令錯誤！(MSW)", iCnt, brws, account);
+						amlog.info("[{}][{}][{}]94補摺機指令錯誤！(MSW)", brws, pasname, account);		
 						this.curState = ResetPrinterInit_START;
 						ResetPrinterInit();
 						return false;
@@ -1356,6 +1421,7 @@ public class CS4625Impl implements Printer {
 					}
 				} else if (iCnt > 40) {
 					log.debug("{} {} {} {} 94補摺機狀態錯誤！(MSR-2)", iCnt, brws, "", "");
+					amlog.info("[{}][{}][{}]94補摺機狀態錯誤！(MSR-2)", brws, pasname, account);		
 					this.curState = ResetPrinterInit_START;
 					ResetPrinterInit();
 					pc.close();
@@ -1487,6 +1553,7 @@ public class CS4625Impl implements Printer {
 			data = Rcv_Data(5);
 			// 20091002 , show error code
 			log.debug("{} {} {} 95硬體錯誤代碼1[{}]", brws, "", "", String.format(outptrn1, data));
+			amlog.info("[{}][{}][{}]95硬體錯誤代碼1[{}]", brws, "        ", "            ", String.format(outptrn1, data));		
 
 			ResetPrinter();
 			this.curState = ResetPrinterInit_START;
@@ -1507,6 +1574,7 @@ public class CS4625Impl implements Printer {
 			data = Rcv_Data(5);
 			// 20091002 , show error code
 			log.debug("{} {} {} 95硬體錯誤代碼2[{}]", brws, "", "", String.format(outptrn1, data));
+			amlog.info("[{}][{}][{}]95硬體錯誤代碼2[{}]]", brws, "        ", "            ", String.format(outptrn1, data));		
 
 			ResetPrinter();
 			return false;
@@ -1516,6 +1584,7 @@ public class CS4625Impl implements Printer {
 			data = Rcv_Data(5);
 			// 20091002 , show error code
 			log.debug("{} {} {} 95硬體錯誤代碼3[{}]", brws, "", "", String.format(outptrn1, data));
+			amlog.info("[{}][{}][{}]95硬體錯誤代碼3[{}]", brws, "        ", "            ", String.format(outptrn1, data));		
 
 			ResetPrinter();
 			return true;
@@ -1528,6 +1597,7 @@ public class CS4625Impl implements Printer {
 			data = Rcv_Data(5);
 			// 20091002 , show error code
 			log.debug("{} {} {} 95硬體錯誤代碼4[{}]", brws, "", "", String.format(outptrn1, data));
+			amlog.info("[{}][{}][{}]95硬體錯誤代碼4[{}]", brws, "        ", "            ", String.format(outptrn1, data));		
 
 			ResetPrinter();
 			this.curState = ResetPrinterInit_START;
@@ -1540,7 +1610,7 @@ public class CS4625Impl implements Printer {
 			data = Rcv_Data(5);
 			// 20091002 , show error code
 			log.debug("{} {} {} 95硬體錯誤代碼5{}]", brws, "", "", String.format(outptrn1, data));
-
+			amlog.info("[{}][{}][{}]95硬體錯誤代碼5{}]", brws, "        ", "            ", String.format(outptrn1, data));		
 			ResetPrinter();
 			this.curState = ResetPrinterInit_START;
 			ResetPrinterInit();
@@ -1589,6 +1659,7 @@ public class CS4625Impl implements Printer {
 			Sleep(50);
 			data = Rcv_Data(5);
 			log.debug("{} {} {} 95硬體錯誤代碼Reset-1[{}]", brws, "", "", String.format(outptrn1, data));
+			amlog.info("[{}][{}][{}]95硬體錯誤代碼Reset-1[{}]", brws, "        ", "            ", String.format(outptrn1, data));		
 			return false;
 		case (byte) 'a': // 20060801 hardware error ,ESCra , this may need resetInit()
 		case (byte) 'b':
@@ -1599,12 +1670,14 @@ public class CS4625Impl implements Printer {
 			Sleep(50);
 			data = Rcv_Data(5);
 			log.debug("{} {} {} 95硬體錯誤代碼Reset-2[{}]", brws, "", "", String.format(outptrn1, data));
+			amlog.info("[{}][{}][{}]95硬體錯誤代碼Reset-2[{}]", brws, "        ", "            ", String.format(outptrn1, data));		
 			return false;
 		case (byte) 'X': // Warning , paper lower
 			Send_hData(S4625_PERRCODE_REQ);
 			Sleep(50);
 			data = Rcv_Data(5);
 			log.debug("{} {} {} 95硬體錯誤代碼Reset-3[{}]", brws, "", "", String.format(outptrn1, data));
+			amlog.info("[{}][{}][{}]95硬體錯誤代碼Reset-3[{}]", brws, "        ", "            ", String.format(outptrn1, data));		
 			return true;
 		case (byte) 'q': // read/write error of MS
 		case (byte) 'r': // read error of MS
@@ -1612,6 +1685,7 @@ public class CS4625Impl implements Printer {
 			Sleep(50);
 			data = Rcv_Data(5);
 			log.debug("{} {} {} 95硬體錯誤代碼Reset-4[{}]", brws, "", "", String.format(outptrn1, data));
+			amlog.info("[{}][{}][{}]95硬體錯誤代碼Reset-4[{}]", brws, "        ", "            ", String.format(outptrn1, data));		
 			return false;
 		case (byte) 0x21:
 		case (byte) 0x22:
@@ -1619,6 +1693,7 @@ public class CS4625Impl implements Printer {
 			Sleep(50);
 			data = Rcv_Data(5);
 			log.debug("{} {} {} 95硬體錯誤代碼Reset-5[{}]", brws, "", "", String.format(outptrn1, data));
+			amlog.info("[{}][{}][{}]95硬體錯誤代碼Reset-5[{}]", brws, "        ", "            ", String.format(outptrn1, data));		
 			return false;
 		case (byte) 0x00:
 			log.debug("[{}]:S4625 : Error Reset[0x00]", String.format(outptrn2, wsno));
@@ -1688,11 +1763,13 @@ public class CS4625Impl implements Printer {
 			if (data[2] != (byte)'4' && data[2] != (byte)'P' && data[2] != (byte)'2') {
 				if (new String(data).equals("DIS")) {
 					log.debug("{} {} {} 94補摺機斷線", brws, "", "");
+					amlog.info("[{}][{}][{}]94補摺機斷線", brws, "        ", "            ");		
 					this.curChkState = CheckStatus_FINISH;
 					return 0;
 				}
 				if (!CheckError(data)) {
 					log.debug("{} {} {} 95補摺機硬體錯誤！(SIG)", brws, "", "");
+					amlog.info("[{}][{}][{}]95補摺機硬體錯誤！(SIG)", brws, "        ", "            ");		
 					this.curChkState = CheckStatus_FINISH;
 					ResetPrinter();
 					return 0;
@@ -1721,6 +1798,7 @@ public class CS4625Impl implements Printer {
 				} else if (data[1] == (byte)'s') {
 					if (data[2] == (byte)0x7f) { // barcode error , blank paper etc
 						log.debug("{} {} {} {} 94補摺機狀態錯誤！(讀空白頁)", iCnt, brws, "", "");
+						amlog.info("[{}][{}][{}]95補摺機硬體錯誤！(讀空白頁)", brws, "        ", "            ");		
 						this.curState = ResetPrinterInit_START;
 						return -1;
 //						ResetPrinterInit();
@@ -1734,6 +1812,7 @@ public class CS4625Impl implements Printer {
 					}
 				} else if (iCnt > 40) {
 					log.debug("{} {} {} {} 94補摺機狀態錯誤！(MSR-2)", iCnt, brws, "", "");
+					amlog.info("[{}][{}][{}]95補摺機硬體錯誤！(MSR-2)", brws, "        ", "            ");		
 					this.curState = ResetPrinterInit_START;
 					ResetPrinterInit();
 					pc.close();
@@ -1876,6 +1955,7 @@ public class CS4625Impl implements Printer {
 				return false;
 			if (!CheckError(data)) {
 				log.debug("{} {} {} 95補摺機硬體錯誤！(SIG)", brws, "", "");
+				amlog.info("[{}][{}][{}]95補摺機硬體錯誤！(SIG)", brws, "        ", "            ");		
 				return false;
 			} else 
 				this.curState = SetSignal_FINISH;
@@ -1904,6 +1984,7 @@ public class CS4625Impl implements Printer {
 			return -1;
 		if (new String(data).contains("DIS")) {
 			log.debug("{} {} {} 94補摺機斷線！", brws, "", "");
+			amlog.info("[{}][{}][{}]94補摺機斷線！", brws, "        ", "            ");		
 			return -2;
 		}
 		return 0;

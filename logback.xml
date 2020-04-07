@@ -5,10 +5,15 @@
      debug:當此屬性設置為true時，將列印出logback內部日誌訊息，實時查看logback運行狀態。預設值為false。 -->
 <configuration scan="true" scanPeriod="60 seconds" debug="false">
 	<property name="encoding" value="UTF-8" scope="context" />
+	<property name="maxSize" value="10MB" scope="context"/>
 	<!-- 上下文變數設置,用來定義變數值,其中name的值是變數的名稱，value的值時變數定義的值。
 	通過<property>定義的值會被插入到logger上下文中。定義變數後，可以使“${}”來使用變數。 -->
 	<property name="CONTEXT_NAME" value="sysgateii-test" />
+	<property name="ASCONTEXT_NAME" value="AS" />
+	<property name="AMCONTEXT_NAME" value="AM" />
+	<property name="ATCONTEXT_NAME" value="AT" />
 	<property name="logs.dir" value="/home/scotthong/tmp" />
+	<timestamp key="byDate" datePattern="yyyyMMdd" />
 
 	<!-- 上下文名稱：<contextName>, 每個logger都關聯到logger上下文， 預設上下文名稱為"default"。
 	但可以使用<contextName>設置成其他名字，用於區分不同應用程序的記錄。一旦設置，不能修改。 -->
@@ -42,9 +47,9 @@
 			<maxIndex>1</maxIndex>
 		</rollingPolicy>
 
-		<!-- 激活滾動的條件。 -->
+		<!-- 啟動滾動的條件。 -->
 		<triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
-			<!-- 活動文件的大小，預設值是10MB -->
+			<!-- 啟動文件的大小，預設值是10MB -->
 			<maxFileSize>30MB</maxFileSize>
 		</triggeringPolicy>
 
@@ -57,6 +62,48 @@
 		</encoder>
 	</appender>
 
+    <appender name="AS_LOG"
+              class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <Append>true</Append>
+        <file>${logs.dir}/${ASCONTEXT_NAME}${byDate}.log</file>
+        <filter class = "ch.qos.logback.classic.filter.ThresholdFilter" >
+        		<level>DEBUG</level>
+        </filter>
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+		    <fileNamePattern>${logs.dir}/archive/${ASCONTEXT_NAME}${byDate}%d{yyyy-MM-dd}.%i.log.zip</fileNamePattern>
+		    <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+		    	<maxFileSize>${maxSize}</maxFileSize>
+		    </timeBasedFileNamingAndTriggeringPolicy>
+  			<maxHistory>3</maxHistory>	
+			<cleanHistoryOnStart>true</cleanHistoryOnStart>
+		</rollingPolicy>
+        <encoder>
+        		<pattern>TIME     [0000]:%d{yyyy.MM.dd HH:mm:ss:SSS} %msg%n</pattern>
+        	<!--	<charset>${encoding}</charset> -->
+                 <charset class="java.nio.charset.Charset">UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <appender name="AM_LOG"
+              class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <Append>true</Append>
+        <file>${logs.dir}/${AMCONTEXT_NAME}${byDate}.log</file>
+        <filter class = "ch.qos.logback.classic.filter.ThresholdFilter" >
+        		<level>DEBUG</level>
+        </filter>
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+		    <fileNamePattern>${logs.dir}/archive/${AMCONTEXT_NAME}${byDate}%d{yyyy-MM-dd}.%i.log.zip</fileNamePattern>
+		    <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+		    	<maxFileSize>${maxSize}</maxFileSize>
+		    </timeBasedFileNamingAndTriggeringPolicy>
+  			<maxHistory>3</maxHistory>	
+			<cleanHistoryOnStart>true</cleanHistoryOnStart>
+		</rollingPolicy>
+        <encoder>
+        		<pattern>[%d{yyyy/MM/dd HH:mm:ss:SSS}] %msg%n</pattern>
+                <charset class="java.nio.charset.Charset">UTF-8</charset>
+        </encoder>
+    </appender>
 	<!-- 特殊的<logger>元素，是根logger。只有一個level屬性，應為已經被命名為"root". level:設置列印級別，大小寫無關：TRACE, 
 		DEBUG, INFO, WARN, ERROR, ALL 和 OFF，不能設置為INHERITED或者同義詞NULL。預設是DEBUG。
 		<root>可以包含零個或多個<appender-ref>元素，標識這個appender將會添加到這個loger。 -->
@@ -74,5 +121,12 @@
 		additivity:是否向上級logger傳遞列印訊息。預設是true。(這個logger的上級就是上面的root)
 	<logger>可以包含零個或多個<appender-ref>元素，標識這個appender將會添加到這個logger。 -->
 	<logger name="sysgateii-test" level="DEBUG" additivity="true"></logger>
+    <logger name="aslog" level="ALL" additivity="false">
+        <appender-ref ref="AS_LOG"/>
+    </logger>
+    <logger name="amlog" level="ALL" additivity="false">
+        <appender-ref ref="AM_LOG"/>
+    </logger>
+
 
 </configuration>
