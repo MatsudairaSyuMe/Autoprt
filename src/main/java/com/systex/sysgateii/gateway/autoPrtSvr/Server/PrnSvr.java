@@ -7,6 +7,8 @@ package com.systex.sysgateii.gateway.autoPrtSvr.Server;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 /*
  * PrnSvr
@@ -24,20 +26,28 @@ import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.systex.sysgateii.gateway.autoPrtSvr.Client.PrtCli;
 import com.systex.sysgateii.gateway.conf.DynamicProps;
 import com.systex.sysgateii.gateway.listener.MessageListener;
 
 public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 	private static Logger log = LoggerFactory.getLogger(PrnSvr.class);
+	private static Logger atlog = LoggerFactory.getLogger("atlog");
 	static PrnSvr server;
 	static FASSvr fasDespacther;
 	static ConcurrentHashMap<String, Object> cfgMap = null;
 	static List<ConcurrentHashMap<String, Object>> list = null;
+	private DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss:SSS");
+	private LocalDateTime now = LocalDateTime.now();
+	private String atptrn = "[TID:%s %s]:[%s]:%s";
 
 	public PrnSvr() {
 		log.info("[0000]:=============[Start]=============");
+		ODSTrace("=============[Start]=============");
+	}
+	private void ODSTrace(String s) {
+		atlog.info(String.format(atptrn, "00000", dtf.format(LocalDateTime.now()), "0000", s));
+		return;
 	}
 	@Override
 	public void messageReceived(String serverId, byte[] msg) {
@@ -50,13 +60,16 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 		String jvmName = bean.getName();
 		long pid = Long.valueOf(jvmName.split("@")[0]);
 		log.info("[0000]:------MainThreadId={}------", pid);
+		ODSTrace(String.format("------MainThreadId=%d------", pid));
 		try {
 			Thread thread;
 			PrtCli conn;
 			log.info("[0000]:------Call MaintainLog OK------");
+			ODSTrace("------Call MaintainLog OK------");
 
 			// Load Uniconv.dll
-			log.info("[0000]:AutoPrnCls : rateprtservice.xml is not well formed! PrnSrv");
+//			log.info("[0000]:AutoPrnCls : rateprtservice.xml is not well formed! PrnSrv");
+//			atlog.info(":AutoPrnCls : rateprtservice.xml is not well formed! PrnSrv");
 
 			if (list != null && list.size() > 0)
 			{

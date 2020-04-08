@@ -1,6 +1,8 @@
 package com.systex.sysgateii.gateway.prtCmd.Impl;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -15,6 +17,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class CS5240Impl implements Printer {
 	private static Logger log = LoggerFactory.getLogger(CS5240Impl.class);
 	private static Logger amlog = LoggerFactory.getLogger("amlog");
+	private static Logger atlog = LoggerFactory.getLogger("atlog");
+	private DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss:SSS");
+	private LocalDateTime now = LocalDateTime.now();
+	private String atptrn = "[TID:%s %s]:[%s]:%s";
+
 	private byte ESQ = (byte) 0x1b;
 	private byte ENQ = (byte) 0x05;
 	private byte ACK = (byte) 0x06;
@@ -217,6 +224,11 @@ public class CS5240Impl implements Printer {
 		this.p_fun_flag.set(false);
 	}
 
+	private void ODSTrace(String s) {
+		atlog.info(String.format(atptrn, "0" + brws.substring(0, 4), dtf.format(LocalDateTime.now()), brws.substring(3), s));
+		return;
+	}
+
 	@Override
 	public boolean OpenPrinter(boolean conOpen) {
 		// TODO Auto-generated method stub
@@ -229,6 +241,7 @@ public class CS5240Impl implements Printer {
 			this.curState = ResetPrinterInit_START;
 		if (this.curState < OpenPrinter_START) {
 			if (!ResetPrinterInit()) {
+				ODSTrace("S5240 : ConnectToRemote failed ret=[-1]");
 				return false;
 			} else {
 				log.debug("1 ===<><>{} chkChkState {} {}", this.curState, this.curChkState, data);
@@ -304,7 +317,8 @@ public class CS5240Impl implements Printer {
 		// TODO Auto-generated method stub
 //		byte[] data = null;
 		log.debug("PurgeBuffer curState={} curPurState={}", this.curState, this.curPurState);
-		this.curPurState = PorgeStatus_FINISH;
+		pc.clientMessageBuf.clear();
+//		this.curPurState = PorgeStatus_FINISH;
 		return 0;
 	}
 
@@ -321,6 +335,7 @@ public class CS5240Impl implements Printer {
 			return -3;
 		try {
 			pc.sendBytes(buff);
+			ODSTrace(String.format("S5240 : Send_Data[%d]-[%s]", buff.clone().length,new String(buff)));
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -866,6 +881,7 @@ public class CS5240Impl implements Printer {
 			} else {
 				this.curState = MS_Read_FINISH;
 				log.debug("MS_Read 3 ===<><>{} chkChkState {}", this.curState, this.curChkState);
+				ODSTrace(String.format("S5240 : ms_read data=[%s]",new String(this.curmsdata)));
 				return this.curmsdata;
 			}
 		}
@@ -897,7 +913,8 @@ public class CS5240Impl implements Printer {
 		log.debug("{} {} {} DetectPaper curState={} iCnt={}", brws, "", "", this.curState, this.iCnt);
 		if (this.curState == DetectPaper_START) {
 			//20200325 clear buffer before send data
-			clearBuffer();
+//			clearBuffer();
+			PurgeBuffer();
 			GetPaper();
 			log.debug("{} {} {} DetectPaper GetPaper curState={}", brws, "", "", this.curState);
 		}
@@ -925,6 +942,7 @@ public class CS5240Impl implements Printer {
 					return false;
 				}
 			} else {
+				ODSTrace(String.format("S5240 : first data is %s",Arrays.toString(data)));
 				//20060714 V116 , In p201/p101/p80 case , if read msr but the pr2-(e) replies '1' --> paper jame
 				// and Driver send ESC '0' to reset printer , but in vain.
 				// So after Open printer , if meed some errors like '1' -- paper jam , '8' -- command error, 'a' -- hw error ,
@@ -954,7 +972,8 @@ public class CS5240Impl implements Printer {
 					this.iCnt = 0;
 				} else if (data[2] == (byte)'4') {
 					this.curChkState = CheckStatus_START;
-					clearBuffer();
+					//clearBuffer();
+					PurgeBuffer();
 					log.debug("{} {} {} get '4' paper in chasis curState={}  curChkState={} ", brws, wsno, "",this.curState,  this.curChkState);
 					this.iCnt = 0;
 				} else {
@@ -998,6 +1017,7 @@ public class CS5240Impl implements Printer {
 						amlog.info("[{}][{}][{}]94硬體故障", brws, "        ", "            ");
 						break;
 					}
+					ODSTrace(String.format("S5240 : first data is %s",new String(data)));
 				}
 			}
 		}
@@ -1628,10 +1648,11 @@ public class CS5240Impl implements Printer {
 			return false;
 		case 0x00:
 			log.debug("[{}]:S5240 : Error Reset[0x00]", String.format(outptrn2, wsno));
-
+			ODSTrace("S5240 : Error [0x00]");
 			return false;
 		default:
 			log.debug("[{}]:S5240 : Error Reset[{}]", String.format(outptrn2, wsno), String.format(outptrn3, data[2]));
+			ODSTrace(String.format("S5240 : Error Reset[{}]", String.format(outptrn3, data[2])));
 			ResetPrinter();
 			return false;
 		}
@@ -1715,10 +1736,12 @@ public class CS5240Impl implements Printer {
 			return false;
 		case (byte) 0x00:
 			log.debug("[{}]:S5240 : Error Reset[0x00]", String.format(outptrn2, wsno));
+			ODSTrace("S5240 : Error [0x00]");
 			Send_hData(S5240_CANCEL);  //special for S5020
 			return false;
 		default:
 			log.debug("[{}]:S5240 : Error Reset[{}]", String.format(outptrn2, wsno), String.format(outptrn3, data[2]));
+			ODSTrace(String.format("S5240 : Error Reset[{}]", String.format(outptrn3, data[2])));
 			Send_hData(S5240_CANCEL);  //special for S5020
 			return false;
 		}
@@ -1906,6 +1929,7 @@ public class CS5240Impl implements Printer {
 				S5240_OFF_SIGNAL[3] = (byte)0xff;
 				if ( Send_hData(S5240_OFF_SIGNAL) < 0 ) {
 					log.debug("[{}]:S5240 : SetSignal() -- OFF Signal Failed!!", String.format(outptrn2, wsno));
+					ODSTrace("[{}]:S5240 : SetSignal() -- OFF Signal Failed!!");
 					return false;
 				}
 				this.curState = SetSignal_2;
@@ -1933,6 +1957,7 @@ public class CS5240Impl implements Printer {
 				S5240_SET_SIGNAL[3] = light1;
 				if ( Send_hData(S5240_SET_SIGNAL) < 0 ) {
 					log.debug("[{}]:S5240 : SetSignal() -- OFF Signal Failed!!", String.format(outptrn2, wsno));
+					ODSTrace("S5240 : SetSignal() -- OFF Signal Failed!!");
 					return false;
 				}
 //20200331 test for speed				Sleep(100);
@@ -1959,10 +1984,11 @@ public class CS5240Impl implements Printer {
 					S5240_SET_BLINK[2] = blink1;
 					S5240_SET_BLINK[3] = blink2;
 					//20200403  test
-					clearBuffer();
+//					clearBuffer();
 					//----
 					if ( Send_hData(S5240_SET_BLINK) < 0 ) {
 						log.debug("[{}]:S5240 : SetSignal() -- OFF Signal Failed!!", String.format(outptrn2, wsno));
+						ODSTrace("S5240 : SetSignal() -- OFF Signal Failed!!");
 						return false;
 					}
 //20200403  test	Sleep(1000);

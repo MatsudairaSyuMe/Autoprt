@@ -104,6 +104,28 @@
                 <charset class="java.nio.charset.Charset">UTF-8</charset>
         </encoder>
     </appender>
+
+    <appender name="AT_LOG"
+              class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <Append>true</Append>
+        <file>${logs.dir}/${ATCONTEXT_NAME}${byDate}.log</file>
+        <filter class = "ch.qos.logback.classic.filter.ThresholdFilter" >
+        		<level>INFO</level>
+        </filter>
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+		    <fileNamePattern>${logs.dir}/archive/${ATCONTEXT_NAME}${byDate}%d{yyyy-MM-dd}.%i.log.zip</fileNamePattern>
+		    <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+		    	<maxFileSize>${maxSize}</maxFileSize>
+		    </timeBasedFileNamingAndTriggeringPolicy>
+  			<maxHistory>3</maxHistory>	
+			<cleanHistoryOnStart>true</cleanHistoryOnStart>
+		</rollingPolicy>
+        <encoder>
+        		<pattern>%msg%n</pattern>
+                <charset class="java.nio.charset.Charset">UTF-8</charset>
+        </encoder>
+    </appender>
+
 	<!-- 特殊的<logger>元素，是根logger。只有一個level屬性，應為已經被命名為"root". level:設置列印級別，大小寫無關：TRACE, 
 		DEBUG, INFO, WARN, ERROR, ALL 和 OFF，不能設置為INHERITED或者同義詞NULL。預設是DEBUG。
 		<root>可以包含零個或多個<appender-ref>元素，標識這個appender將會添加到這個loger。 -->
@@ -126,6 +148,9 @@
     </logger>
     <logger name="amlog" level="ALL" additivity="false">
         <appender-ref ref="AM_LOG"/>
+    </logger>
+    <logger name="atlog" level="ALL" additivity="false">
+        <appender-ref ref="AT_LOG"/>
     </logger>
 
 
