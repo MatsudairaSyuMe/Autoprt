@@ -2201,6 +2201,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					tital.setValue("pseudo", "1");
 					if (!new String(this.fepdd).equals("  "))
 						tital.setValue("fepdd", this.fepdd);
+					ODSTrace(String.format("fepdd=[%s]",this.fepdd));
 					if (ifun == TXP.INQ) {
 						if (this.iCount == 0) {
 							log.debug("{} {} {} 03中心存摺補登資料讀取中...", brws, catagory, account);
@@ -2211,6 +2212,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 						this.resultmsg = null;
 						resultmsg = DataINQ(TXP.SENDTHOST, iflg, this.dCount, con);
 						if (resultmsg == null || resultmsg.length == 0) {
+							ODSTrace("TxFlow : Send_Recv() -- DataINQ -- iMsgLen = 0");
+							amlog.info("[{}][{}][{}]31傳送之訊息長度為０！", brws, pasname, this.account);							
 							rtn = -1;
 						}
 					} else {
@@ -2219,6 +2222,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 						this.resultmsg = null;
 						resultmsg = DataDEL(TXP.SENDTHOST, iflg, mbal);
 						if (resultmsg == null || resultmsg.length == 0) {
+							ODSTrace("TxFlow : Send_Recv() -- DataINQ -- iMsgLen = 0");
+							amlog.info("[{}][{}][{}]31傳送之訊息長度為０！", brws, pasname, this.account);							
 							rtn = -1;
 						}
 					}
@@ -2226,6 +2231,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					//20200403
 					SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0010000000");
 					//----
+					ODSTrace(String.format("SendBio() -- TITA_TEXT=[%s]",new String(resultmsg)));
 					if (SetSignal(firstOpenConn, !firstOpenConn, "0000000000", "0010000000")) {
 						this.curState = RECVTLM;
 						log.debug("{} {} {} AutoPrnCls : --change start process telegram", brws, catagory, account);
@@ -2337,6 +2343,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 									} else {
 										log.debug("{} {} {} AutoPrnCls : --change ", brws, catagory, account);
 									}
+									ODSTrace("TxFlow : RecvBio() Failed ! iRtncd=[-1]");
 									rtn = -1;
 									break;
 								}
@@ -2345,6 +2352,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 								log.debug("iCon={} iCon={} iLine={} (iLine - 1 + iCount)={}", iCount, iCon, iLine,
 										(iLine - 1 + iCount));
 								if ((iLine - 1 + iCount) >= 24) {
+									ODSTrace(String.format("TxFlow : RecvBio() -- [%d] TOTA_TEXT=[%s]", resultmsg.length, new String(resultmsg)));
 									log.debug("{} {} {} 55存摺補登資料接收成功！", brws, catagory, account);
 									amlog.info("[{}][{}][{}]55存摺補登資料接收成功！", brws, pasname, this.account);
 									this.curState = STARTPROCTLM;

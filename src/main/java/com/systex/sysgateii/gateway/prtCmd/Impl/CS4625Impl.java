@@ -1966,6 +1966,7 @@ public class CS4625Impl implements Printer {
 					S4625_SET_BLINK[3] = blink2;
 					//20200403  test
 //					clearBuffer();
+					PurgeBuffer();
 					//----
 					if ( Send_hData(S4625_SET_BLINK) < 0 ) {
 						log.debug("[{}]:S4625 : SetSignal() -- OFF Signal Failed!!", String.format(outptrn2, wsno));

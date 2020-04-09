@@ -1985,6 +1985,7 @@ public class CS5240Impl implements Printer {
 					S5240_SET_BLINK[3] = blink2;
 					//20200403  test
 //					clearBuffer();
+					PurgeBuffer();
 					//----
 					if ( Send_hData(S5240_SET_BLINK) < 0 ) {
 						log.debug("[{}]:S5240 : SetSignal() -- OFF Signal Failed!!", String.format(outptrn2, wsno));
