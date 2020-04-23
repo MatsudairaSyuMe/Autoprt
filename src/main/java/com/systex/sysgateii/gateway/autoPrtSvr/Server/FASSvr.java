@@ -6,7 +6,9 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -14,10 +16,14 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
+import com.systex.sysgateii.gateway.comm.Constants;
 import com.systex.sysgateii.comm.pool.fas.FASSocketChannel;
 import com.systex.sysgateii.gateway.comm.TXP;
 import com.systex.sysgateii.gateway.listener.MessageListener;
+import com.systex.sysgateii.gateway.ratesvr.Server.ServerProducer;
+import com.systex.sysgateii.gateway.util.CharsetCnv;
 import com.systex.sysgateii.gateway.util.dataUtil;
 
 import io.netty.buffer.ByteBuf;
@@ -34,6 +40,7 @@ import io.netty.channel.Channel;
  */
 public class FASSvr implements MessageListener<byte[]>, Runnable {
 	private static Logger log = LoggerFactory.getLogger(FASSvr.class);
+	private Logger faslog = LoggerFactory.getLogger("faslog");
 	static FASSvr server;
 
 	static String[] NODES = { "" };
@@ -48,10 +55,22 @@ public class FASSvr implements MessageListener<byte[]>, Runnable {
 	private String header2 = "";
 	private int setSeqNo = 0;
 	private String getSeqStr = "";
+	private String fasSendPtrn = "-->FAS len %4d :[............%s]";
+	private String fasRecvPtrn = "<--FAS len %4d :[............%s]";
+	private CharsetCnv charcnv = new CharsetCnv();
+	int bufferSize;
+	int tsKeepAlive;
+	int tsIdleTimeout;
+	String bindAddr;
+	ConcurrentHashMap<String, String> map;
 
-
-	public FASSvr() {
+	public FASSvr(ConcurrentHashMap<String, String> map) {
 		log.info("FASSvr start");
+		bufferSize = Constants.DEF_CHANNEL_BUFFER_SIZE;
+		tsKeepAlive = Constants.DEF_KEEP_ALIVE;
+		tsIdleTimeout = Constants.DEF_IDLE_TIMEOUT;
+		bindAddr = Constants.DEF_SERVER_ADDRESS;
+		this.map = map;
 	}
 
 	@Override
@@ -66,7 +85,52 @@ public class FASSvr implements MessageListener<byte[]>, Runnable {
 		long pid = Long.valueOf(jvmName.split("@")[0]);
 		log.info("FASSvr MainThreadId={}", pid);
 		try {
-			this.ec2 = new FASSocketChannel(NODES);
+			//----20200422 test
+			bindAddr = map.get("system.ip");
+			int port = Integer.parseInt(map.get("system.port"));
+			log.info("port=" + port);
+			String tmps = map.get("boards.board.ip");
+			log.info("boards.board.ip=" + tmps);
+			if (tmps.startsWith("["))
+				tmps = tmps.substring(1);
+			if (tmps.endsWith("]"))
+				tmps = tmps.substring(0, tmps.length() - 1);
+			String[] localary = tmps.split(",");
+			ServerProducer producer = new ServerProducer(map.get("system.port"), bindAddr, port, bufferSize,
+					tsKeepAlive, tsIdleTimeout);
+			List<String> wsnos = new ArrayList<String>();
+			wsnos.add(addLeftZeroForNum(98, 4));
+			for (String cs : localary) {
+				producer.getIpList().add(cs.trim());
+				String[] p = cs.trim().split("\\.");
+				wsnos.add(addLeftZeroForNum(Integer.valueOf(p[3]), 4));
+			}
+			List<String> brnos = new ArrayList<String>();
+			tmps = map.get("boards.board.brno");
+			if (tmps.startsWith("["))
+				tmps = tmps.substring(1);
+			if (tmps.endsWith("]"))
+				tmps = tmps.substring(0, tmps.length() - 1);
+			localary = tmps.split(",");
+			for (String cs : localary)
+				brnos.add(cs.trim());
+			//20200215
+			producer.getBrnoList().addAll(brnos);
+			for (int j = 0; j < brnos.size(); j++) {
+				if (producer.getBrnoaddrGrp().containsKey(brnos.get(j)))
+					producer.getBrnoaddrGrp().get(brnos.get(j)).add(producer.getIpList().get((j)));
+				else {
+					List<String> subbrnoList = new ArrayList<String>();
+					subbrnoList.add(producer.getIpList().get((j)));
+					producer.getBrnoaddrGrp().put(brnos.get(j), subbrnoList);
+				}
+			}
+			//----
+			Thread thread = new Thread(producer);
+			thread.start();
+			this.ec2 = new FASSocketChannel(NODES, producer, brnos, wsnos);
+			//----
+//			this.ec2 = new FASSocketChannel(NODES);
 		} catch (Exception e) {
 			e.printStackTrace();
 			log.error(e.getMessage());
@@ -77,15 +141,17 @@ public class FASSvr implements MessageListener<byte[]>, Runnable {
 		log.debug("Enter stop");
 	}
 
-	public static void createServer(String cfgNodes) {
+	public static void createServer(ConcurrentHashMap<String, String> _map) {
 		log.debug("Enter createServer");
-		NODES = cfgNodes.split(",");
-		for (int i = 0; i < NODES.length; i++) {
-			NODES[i] = NODES[i].trim();
-			log.debug("Enter createServer {}", NODES[i]);
+		if (_map != null) {
+			NODES = _map.get("svrsubport.svrip").split(",");
+			for (int i = 0; i < NODES.length; i++) {
+				NODES[i] = NODES[i].trim();
+				log.debug("Enter createServer {}", NODES[i]);
+			}
+			log.debug("Enter createServer size={}", NODES.length);
+			server = new FASSvr(_map);
 		}
-		log.debug("Enter createServer size={}", NODES.length);
-		server = new FASSvr();
 	}
 
 	public static void startServer() {
@@ -132,9 +198,13 @@ public class FASSvr implements MessageListener<byte[]>, Runnable {
 			}
 			if (this.currConn != null) {
 				try {
-					InetSocketAddress sock = (InetSocketAddress) this.currConn.localAddress();
+					InetSocketAddress localsock = (InetSocketAddress) this.currConn.localAddress();
+					InetSocketAddress remotsock = (InetSocketAddress) this.currConn.remoteAddress();
+					MDC.put("SERVER_ADDRESS", (String) remotsock.getAddress().toString());
+					MDC.put("SERVER_PORT", String.valueOf(remotsock.getPort()));
+					MDC.put("LOCAL_ADDRESS", (String) localsock.getAddress().toString());
+					MDC.put("LOCAL_PORT", String.valueOf(localsock.getPort()));
 					int sendlen = TXP.CONTROL_BUFFER_SIZE + telmsg.length;
-//					String p = String.format("%s:%d", new String(telmsg), sock.getPort());
 					this.currSeqMap = this.ec2.getseqfMap();
 					this.currSeqF = this.currSeqMap.get(this.currConn);
 					try {
@@ -153,6 +223,9 @@ public class FASSvr implements MessageListener<byte[]>, Runnable {
 					req.writeBytes(dataUtil.to3ByteArray(sendlen));
 					req.writeBytes(header2.getBytes());
 					req.writeBytes(telmsg);
+					//---
+					faslog.debug(String.format(fasSendPtrn, header1.getBytes().length  + dataUtil.to3ByteArray(sendlen).length + header2.getBytes().length + telmsg.length, charcnv.BIG5bytesUTF8str(telmsg)));
+					//----
 					this.currConn.writeAndFlush(req.retain()).sync();
 					this.setTITA_TOTA_START(true);
 					rtn = true;
@@ -193,13 +266,17 @@ public class FASSvr implements MessageListener<byte[]>, Runnable {
 						this.currSeqF = this.currSeqMap.get(this.currConn);
 						try {
 							FileUtils.writeStringToFile(this.currSeqF, this.getSeqStr, Charset.defaultCharset());
+							rtn = new byte[telmbyteary.length - TXP.CONTROL_BUFFER_SIZE];
+							System.arraycopy(telmbyteary, TXP.CONTROL_BUFFER_SIZE, rtn, 0,
+									telmbyteary.length - TXP.CONTROL_BUFFER_SIZE);
+							// ----
+							faslog.debug(String.format(fasRecvPtrn, telmbyteary.length, charcnv.BIG5bytesUTF8str(rtn)));
+							// ----
+							rtn = remove03(rtn);
+							log.debug("get rtn len= {}", rtn.length);
 						} catch (Exception e) {
 							log.warn("WORNING!!! update new seq number string {} error {}",this.getSeqStr, e.getMessage());
 						}
-						rtn = new byte[telmbyteary.length - TXP.CONTROL_BUFFER_SIZE];
-						System.arraycopy(telmbyteary, TXP.CONTROL_BUFFER_SIZE, rtn, 0, telmbyteary.length - TXP.CONTROL_BUFFER_SIZE);
-						rtn = remove03(rtn);
-						log.debug("get rtn len= {}", rtn.length);
 						this.setTITA_TOTA_START(false);
 //						break;
 					}// else
@@ -228,6 +305,24 @@ public class FASSvr implements MessageListener<byte[]>, Runnable {
 			log.debug("remove03");
 		}
 		return source;
+	}
+	private String addLeftZeroForNum(int num, int strLength) {
+		return addLeftZeroForNum(Integer.toString(num), strLength);
+	}
+
+	private String addLeftZeroForNum(String str, int strLength) {
+		int strLen = str.length();
+		if (strLen < strLength) {
+			while (strLen < strLength) {
+				StringBuffer sb = new StringBuffer();
+				// sb.append(appn).append("0");// 左補0
+				sb.append(str).append("0");// 右補0
+				str = sb.toString();
+				strLen = str.length();
+			}
+		}
+
+		return str;
 	}
 
 	public boolean isTITA_TOTA_START() {

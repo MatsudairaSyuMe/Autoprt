@@ -1,6 +1,7 @@
 package com.systex.sysgateii.gateway;
 
 import java.io.File;
+import java.lang.management.ManagementFactory;
 
 /**
  * 
@@ -12,7 +13,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.systex.sysgateii.gateway.autoPrtSvr.Server.FASSvr;
 import com.systex.sysgateii.gateway.autoPrtSvr.Server.PrnSvr;
 import com.systex.sysgateii.gateway.conf.DynamicProps;
@@ -23,16 +23,16 @@ public class Server {
 	private static Logger log = null;
 	private static AtomicBoolean isShouldShutDown = new AtomicBoolean(false);
 	private static final long TEST_TIME_SECONDS = 3;
+	
 
 	public static void main(String[] args) {
 		System.setProperty(ContextInitializer.CONFIG_FILE_PROPERTY, "." + File.separator + "logback.xml");
 		log = LoggerFactory.getLogger(Server.class);
-
 		try {
 			log.info("sysgateii server start...");
 			DynamicProps dcf = new DynamicProps("rateprtservice.xml");
 
-			FASSvr.createServer(dcf.getConHashMap().get("svrsubport.svrip"));
+			FASSvr.createServer(dcf.getConHashMap());
 			FASSvr.startServer();
 
 			PrnSvr.createServer(dcf);

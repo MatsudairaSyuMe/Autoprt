@@ -4,18 +4,22 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import com.systex.sysgateii.gateway.telegram.S004;
+import com.systex.sysgateii.gateway.util.CharsetCnv;
 import com.systex.sysgateii.gateway.util.dataUtil;
+import com.systex.sysgateii.gateway.listener.ActorStatusListener;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -33,6 +37,8 @@ import io.netty.util.CharsetUtil;
 
 public class FASClientChannelHandler extends ChannelInboundHandlerAdapter {
 	private static Logger log = LoggerFactory.getLogger(FASClientChannelHandler.class);
+	private Logger faslog = LoggerFactory.getLogger("faslog");
+
 	private static final ByteBuf HEARTBEAT_SEQUENCE = Unpooled
 			.unreleasableBuffer(Unpooled.copiedBuffer("hb_request", CharsetUtil.UTF_8));
 	private static final String FASACTIVES004ID = "S004";
@@ -52,7 +58,37 @@ public class FASClientChannelHandler extends ChannelInboundHandlerAdapter {
 	private String showBrno = "999";  //default for broadcast
 	private String verhbrno = "984";
 	private String verhwsno = "80";
+	private String clientId = "";
+	private String fasSendPtrn = "-->FAS len %4d :[............%s]";
+	private String fasRecvPtrn = "<--FAS len %4d :[............%s]";
+	private CharsetCnv charcnv = new CharsetCnv();
+	private final static AtomicBoolean isConnected = new AtomicBoolean(false);
 
+	List<ActorStatusListener> actorStatusListeners = new ArrayList<ActorStatusListener>();
+
+	public List<ActorStatusListener> getActorStatusListeners() {
+		return actorStatusListeners;
+	}
+
+	public void setActorStatusListeners(List<ActorStatusListener> actorStatusListeners) {
+		this.actorStatusListeners = actorStatusListeners;
+	}
+
+	public List<String> getBrnoList() {
+		return this.brnoList;
+	}
+
+	public void setBrnoList(List<String> brnoList) {
+		this.brnoList = brnoList;
+	}
+
+	public List<String> getWsnoList() {
+		return this.wsnoList;
+	}
+
+	public void setWsnoList(List<String> wsnoList) {
+		this.wsnoList = wsnoList;
+	}
 
 	public FASClientChannelHandler(ByteBuf rcvBuf) {
 		this.clientMessageBuf = rcvBuf;
@@ -63,13 +99,26 @@ public class FASClientChannelHandler extends ChannelInboundHandlerAdapter {
 		this.seqf_map = seqfmap;
 	}
 
+	public FASClientChannelHandler(ByteBuf rcvBuf, ConcurrentHashMap<Channel, File> seqfmap, List<String> brnolist, List<String> wsnolist) {
+		this.clientMessageBuf = rcvBuf;
+		this.seqf_map = seqfmap;
+		this.brnoList = brnolist;
+		this.wsnoList = wsnolist;
+	}
 
 	@Override
 	public void channelActive(ChannelHandlerContext ctx) throws Exception {
 		log.debug("channelActive============");
 		clientMessageBuf.clear();
-		InetSocketAddress sock = (InetSocketAddress) ctx.channel().localAddress();
-		seqNoFile = new File("SEQNO", "SEQNO_" + sock.getPort());
+		Channel currConn = ctx.channel();
+		InetSocketAddress localsock = (InetSocketAddress) currConn.localAddress();
+		InetSocketAddress remotsock = (InetSocketAddress) currConn.remoteAddress();
+		MDC.put("SERVER_ADDRESS", (String) remotsock.getAddress().toString());
+		MDC.put("SERVER_PORT", String.valueOf(remotsock.getPort()));
+		MDC.put("LOCAL_ADDRESS", (String) localsock.getAddress().toString());
+		MDC.put("LOCAL_PORT", String.valueOf(localsock.getPort()));
+		clientId = String.valueOf(localsock.getPort());
+		seqNoFile = new File("SEQNO", "SEQNO_" + clientId);
 		log.debug("seqNoFile local=" + seqNoFile.getAbsolutePath());
 		if (seqNoFile.exists() == false) {
 			File parent = seqNoFile.getParentFile();
@@ -82,6 +131,7 @@ public class FASClientChannelHandler extends ChannelInboundHandlerAdapter {
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
+				log.error("error while create seqNofile : {}",e.getMessage());
 			}
 		}
 		this.seqf_map.put(ctx.channel(), seqNoFile);
@@ -110,6 +160,14 @@ public class FASClientChannelHandler extends ChannelInboundHandlerAdapter {
 				if (buf.isReadable()) {
 					log.debug("readable");
 					int size = buf.readableBytes();
+					Channel currConn = ctx.channel();
+					InetSocketAddress localsock = (InetSocketAddress) currConn.localAddress();
+					InetSocketAddress remotsock = (InetSocketAddress) currConn.remoteAddress();
+					MDC.put("SERVER_ADDRESS", (String) remotsock.getAddress().toString());
+					MDC.put("SERVER_PORT", String.valueOf(remotsock.getPort()));
+					MDC.put("LOCAL_ADDRESS", (String) localsock.getAddress().toString());
+					MDC.put("LOCAL_PORT", String.valueOf(localsock.getPort()));
+
 					log.debug("readableBytes={} barray={}", size, buf.hasArray());
 					if (buf.isReadable() && !buf.hasArray()) {
 						// it is long raw telegram
@@ -136,6 +194,9 @@ public class FASClientChannelHandler extends ChannelInboundHandlerAdapter {
 										log.debug("read {} byte(s) from clientMessageBuf after {}", size, clientMessageBuf.readableBytes());
 										getSeqStr = new String(telmbyteary, 7, 3);
 										FileUtils.writeStringToFile(seqNoFile, getSeqStr, Charset.defaultCharset());
+										//----
+										faslog.debug(String.format(fasRecvPtrn, telmbyteary.length, charcnv.BIG5bytesUTF8str(Arrays.copyOfRange(telmbyteary, 12, telmbyteary.length))));
+										//----
 										List<String> rlist = cnvS004toR0061(dataUtil.remove03(telmbyteary));
 										if (rlist != null && rlist.size() > 0) {
 											for (String l : rlist) {
@@ -143,7 +204,7 @@ public class FASClientChannelHandler extends ChannelInboundHandlerAdapter {
 												buf = ctx.channel().alloc().buffer().writeBytes(telmbyteary);
 												//20200215
 												// modofy for brodcst dnd F0304
-/////												publishactorSendmessage(this.showBrno, buf);
+												publishactorSendmessage(this.showBrno, buf);
 												//----
 											}
 											try {
@@ -191,6 +252,21 @@ public class FASClientChannelHandler extends ChannelInboundHandlerAdapter {
 
 	public void sendBytes(ChannelHandlerContext ctx, byte[] msg) throws IOException {
 		if (ctx.channel() != null && ctx.channel().isActive()) {
+			// ----
+			Channel currConn = ctx.channel();
+			InetSocketAddress localsock = (InetSocketAddress) currConn.localAddress();
+			InetSocketAddress remotsock = (InetSocketAddress) currConn.remoteAddress();
+			MDC.put("SERVER_ADDRESS", (String) remotsock.getAddress().toString());
+			MDC.put("SERVER_PORT", String.valueOf(remotsock.getPort()));
+			MDC.put("LOCAL_ADDRESS", (String) localsock.getAddress().toString());
+			MDC.put("LOCAL_PORT", String.valueOf(localsock.getPort()));
+			try {
+				faslog.debug(String.format(fasSendPtrn, msg.length, charcnv.BIG5bytesUTF8str(Arrays.copyOfRange(msg, 12, msg.length))));
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			// ----
 			ByteBuf buf = ctx.channel().alloc().buffer().writeBytes(msg);
 			ctx.channel().writeAndFlush(buf);
 		} else {
@@ -215,7 +291,7 @@ public class FASClientChannelHandler extends ChannelInboundHandlerAdapter {
 					} else if (src[32] == (byte) '1') {
 						this.S004Start = false;
 					}
-					log.debug("S004 {} telegram", src[32] == (byte) '0' ? "" : "last");
+					log.debug("S004 {}telegram", src[32] == (byte) '0' ? "" : "last ");
 					rtn = new byte[src.length - 47];
 					System.arraycopy(src, 47, rtn, 0, src.length - 51);
 					this.s004tele.setData(rtn);
@@ -254,10 +330,50 @@ public class FASClientChannelHandler extends ChannelInboundHandlerAdapter {
 			e.printStackTrace();
 		}
 	}
+	//20200215
+	// modify for broadcasting and F0304
+	public void publishactorSendmessage(String actorId, Object eventObj) {
+		log.debug(actorId + " publish message to listener");
+		for (ActorStatusListener listener : actorStatusListeners) {
+			log.debug(actorId + " publish message to listener {}", listener);
+			//20200215
+			if (actorId.equals("999")) {
+				log.debug("{} publish message to ALL IP", actorId);
+			} else {
+				if (this.brnoList.indexOf(actorId.trim()) > -1)
+					log.debug("{} publish message to target IP", actorId);
+			}
+			//----
+			listener.actorSendmessage(actorId, eventObj);
+		}
 
-	private String date() {
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-		return sdf.format(new Date());
+		log.debug("-publish end-");
+	}
+    //----
+	public synchronized void addActorStatusListener(ActorStatusListener listener) {
+		log.debug(clientId + " actor status listener add");
+		actorStatusListeners.add(listener);
+	}
+
+	public synchronized void removeActorStatusListener(ActorStatusListener listener) {
+		log.debug(clientId + " actor status listener remove");
+		actorStatusListeners.remove(listener);
+	}
+	public void publishShutdownEvent() {
+		log.debug(clientId + " publish shutdown event to listener");
+		log.debug("-publish end-");
+	}
+
+	public void publishActiveEvent() {
+		log.debug(clientId + " publish active event to listener");
+		this.isConnected.set(true);
+		log.debug("-publish end-");
+	}
+
+	public void publishInactiveEvent() {
+		log.debug(clientId + " publish Inactive event to listener");
+		this.isConnected.set(false);
+		log.debug("-publish end-");
 	}
 
 }

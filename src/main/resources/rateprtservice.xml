@@ -22,9 +22,19 @@
 			<stop>1700</stop>
 		</board>
 		<board>
-			<brno>981</brno>
+			<brno>983</brno>
 			<id>3</id>
-			<ip>10.24.1.231</ip>
+			<ip>127.0.0.1</ip>
+			<port>1024</port>
+			<enable>1</enable>
+			<status>0</status>
+			<start>0800</start>
+			<stop>1700</stop>
+		</board>
+		<board>
+			<brno>984</brno>
+			<id>4</id>
+			<ip>10.24.1.230</ip>
 			<port>1024</port>
 			<enable>1</enable>
 			<status>0</status>
@@ -33,19 +43,20 @@
 		</board>
 	</boards>
 	<validDevice>
- <!--        <dev type="AUTO46" brws="9838902" ip="10.24.1.230:4001=10.24.1.230:3301" autoturnpage="false"/>-->
-         <dev type="AUTO52" brws="9838902" ip="10.24.1.96:4001=10.24.1.230:3301" autoturnpage="false"/>
+         <dev type="AUTO46" brws="9838902" ip="10.24.1.230:4001=10.24.1.230:3301" autoturnpage="false"/>
+ <!--        <dev type="AUTO52" brws="9838902" ip="10.24.1.96:4001=10.24.1.230:3301" autoturnpage="false"/>-->
  <!--        <dev type="AUTO46" brws="9838902" ip="10.24.1.95:4001=10.24.1.230:3301" autoturnpage="false"/>-->
  <!--    <dev type="AUTO52" brws="9838903" ip="10.24.1.94:4001=10.24.1.230:3301" autoturnpage="false"/>-->
 	</validDevice>
 	<system>
-		<ip>10.24.1.231</ip>
+		<ip>10.24.1.230</ip>
 		<port>12000</port>
 		<logpath>/home/scotthong/tmp</logpath>
 		<user>scotthong</user>
 	</system>
 	<svrsubport>
-		<svrip>10.24.1.230:15000=10.24.1.230:15101, 10.24.1.230:15000=10.24.1.230:15102,10.24.1.230:15000=10.24.1.230:15103</svrip>
+<!--		<svrip>10.24.1.230:15000=10.24.1.230:15101, 10.24.1.230:15000=10.24.1.230:15102,10.24.1.230:15000=10.24.1.230:15103</svrip>-->
+		<svrip>10.24.1.230:15000=10.24.1.230:15101</svrip>
 		<svrport>15000</svrport>
 		<localip>10.24.1.230</localip>
 		<localport>15010</localport>

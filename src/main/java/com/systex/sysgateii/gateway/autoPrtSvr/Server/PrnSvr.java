@@ -26,46 +26,45 @@ import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
+
 import com.systex.sysgateii.gateway.autoPrtSvr.Client.PrtCli;
 import com.systex.sysgateii.gateway.conf.DynamicProps;
 import com.systex.sysgateii.gateway.listener.MessageListener;
 
 public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 	private static Logger log = LoggerFactory.getLogger(PrnSvr.class);
-	private static Logger atlog = LoggerFactory.getLogger("atlog");
+//	private static Logger atlog = LoggerFactory.getLogger("atlog");
 	static PrnSvr server;
+	public static String logPath = "";
 	static FASSvr fasDespacther;
 	static ConcurrentHashMap<String, Object> cfgMap = null;
 	static List<ConcurrentHashMap<String, Object>> list = null;
-	private DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss:SSS");
-	private LocalDateTime now = LocalDateTime.now();
-	private String atptrn = "[TID:%s %s]:[%s]:%s";
 
 	public PrnSvr() {
 		log.info("[0000]:=============[Start]=============");
-		ODSTrace("=============[Start]=============");
+		MDC.put("WSNO", "0000");
+//		atlog.info("=============[Start]=============");
 	}
-	private void ODSTrace(String s) {
-		atlog.info(String.format(atptrn, "00000", dtf.format(LocalDateTime.now()), "0000", s));
-		return;
-	}
+
 	@Override
 	public void messageReceived(String serverId, byte[] msg) {
 		// TODO Auto-generated method stub
-		log.debug(" ms");
+		log.debug("mrg received");
 	}
 
 	public void run() {
 		RuntimeMXBean bean = ManagementFactory.getRuntimeMXBean();
 		String jvmName = bean.getName();
-		long pid = Long.valueOf(jvmName.split("@")[0]);
+		String pid = jvmName.split("@")[0];
+		MDC.put("WSNO", "0000");
 		log.info("[0000]:------MainThreadId={}------", pid);
-		ODSTrace(String.format("------MainThreadId=%d------", pid));
+//		atlog.info("------MainThreadId={}------", pid);
 		try {
 			Thread thread;
 			PrtCli conn;
 			log.info("[0000]:------Call MaintainLog OK------");
-			ODSTrace("------Call MaintainLog OK------");
+//			atlog.info("------Call MaintainLog OK------");
 
 			// Load Uniconv.dll
 //			log.info("[0000]:AutoPrnCls : rateprtservice.xml is not well formed! PrnSrv");
@@ -95,6 +94,7 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 		log.debug("Enter createServer");
 		cfgMap = null;
 		list = cfg.getCfgPrtMapList();
+		logPath = cfg.getConHashMap().get("system.logpath");
 		log.debug("Enter createServer size={}", list.size());
 		server = new PrnSvr();
 	}

@@ -2,16 +2,18 @@ package com.systex.sysgateii.gateway.autoPrtSvr.Client;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
 //import java.io.UnsupportedEncodingException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Timer;
@@ -24,8 +26,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import com.systex.sysgateii.gateway.autoPrtSvr.Server.FASSvr;
+import com.systex.sysgateii.gateway.autoPrtSvr.Server.PrnSvr;
 import com.systex.sysgateii.gateway.data.Constants;
 import com.systex.sysgateii.gateway.comm.TXP;
 import com.systex.sysgateii.gateway.conf.DscptMappingTable;
@@ -41,6 +45,7 @@ import com.systex.sysgateii.gateway.telegram.Q0880TEXT;
 import com.systex.sysgateii.gateway.telegram.Q98TEXT;
 import com.systex.sysgateii.gateway.telegram.TITATel;
 import com.systex.sysgateii.gateway.telegram.TOTATel;
+import com.systex.sysgateii.gateway.util.LogUtil;
 import com.systex.sysgateii.gateway.util.dataUtil;
 import com.systex.sysgateii.gateway.util.ipAddrPars;
 
@@ -71,17 +76,18 @@ import io.netty.util.ReferenceCountUtil;
 @Sharable // 因為通道只有一組 handler instance 只有一個，所以可以 share
 public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	private static Logger log = LoggerFactory.getLogger(PrtCli.class);
-	private static Logger aslog = LoggerFactory.getLogger("aslog");
-	private static Logger amlog = LoggerFactory.getLogger("amlog");
-	private static Logger atlog = LoggerFactory.getLogger("atlog");
-	private DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss:SSS");
-	private LocalDateTime now = LocalDateTime.now();
-	private String atptrn = "[TID:%s %s]:[%s]:%s";
+
+	private static Logger aslog = null;
+	public Logger amlog = null;
+//	private static Logger atlog = LoggerFactory.getLogger("atlog");
+	public Logger atlog = null;
+	public String pid = "";
 
 	private static final ByteBuf HEARTBEAT_SEQUENCE = Unpooled
 			.unreleasableBuffer(Unpooled.copiedBuffer("hb_request", CharsetUtil.UTF_8));
 
-	String clientId;
+	private String clientId = "";       // brno from set up XML file
+	private String byDate = "";
 	// for ChannelDuplexHandler function
 	ChannelHandlerContext currentContext;
 	Channel clientChannel;
@@ -98,8 +104,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	private InetSocketAddress localaddr = null;
 	private Channel channel_;
 	private Timer timer_;
-	private String brws = null;
-	private String type = null;
+	private String brws = null;      // BRNO + WSNO from set up XML file
+	private String type = null;      // printer type from set up XML file
 	private String autoturnpage = null;
 	private String getSeqStr = "";
 	private int setSeqNo = 0;
@@ -208,7 +214,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 //	private String cbkseq = "";
 	private static final boolean firstOpenConn = true;
 	private String account = "";
-	private String catagory = "";
+	private String catagory = "";   // working passbook workstation no
 	private byte[] cusid = null;
 	private FASSvr dispatcher;
 	private boolean alreadySendTelegram = false;
@@ -239,34 +245,43 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	}
 
 	public PrtCli(ConcurrentHashMap<String, Object> map, FASSvr dispatcher, Timer timer) {
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+		this.setByDate(sdf.format(new Date()));
+
 		this.brws = (String) map.get("brws");
 		this.type = (String) map.get("type");
 		this.autoturnpage = (String) map.get("autoturnpage");
 		this.autoturnpage = this.autoturnpage.toLowerCase();
 		this.timer_ = timer;
-		this.clientId = this.brws;
+		this.clientId = this.brws.substring(0, 3);
 		this.iRetry = 1;
 		this.curState = SESSIONBREAK;
 		this.iFirst = 0;
 		this.dispatcher = dispatcher;
 		this.descm = new DscptMappingTable();
+		pid = ManagementFactory.getRuntimeMXBean().getName().split("@")[0];
+		MDC.put("WSNO", this.brws.substring(3));
+		MDC.put("PID", pid);
+
+		amlog = LogUtil.getDailyLogger(PrnSvr.logPath, this.clientId + "_AM" + byDate, "info", "[%d{yyyy/MM/dd HH:mm:ss:SSS}]%msg%n");
+		aslog = LogUtil.getDailyLogger(PrnSvr.logPath, this.clientId + "_AS" + this.brws.substring(3) + byDate, "info", "TIME     [0000]:%d{yyyy.MM.dd HH:mm:ss:SSS} %msg%n");
+		atlog = LogUtil.getDailyLogger(PrnSvr.logPath, this.clientId + "_AT" + byDate, "info", "[TID:%X{PID} %d{yyyy/MM/dd HH:mm:ss:SSS}]:[%X{WSNO}]:[%thread]:[%class{30} %M|%L]:%msg%n");
+		atlog.info("=============[Start]=============");
+		atlog.info("------MainThreadId={}------", pid);
+		atlog.info("------Call MaintainLog OK------");
+
 		if (this.type.equals("AUTO28")) {
-			log.debug("[0000]:AutoPrnCls : load Auto Printer type AUTO28");
-			ODSTrace("AutoPrnCls : load Auto Printer type AUTO28");
+			atlog.info("load Auto Printer type AUTO28");
 		} else if (this.type.equals("AUTO20")) {
-			log.debug("[0000]:AutoPrnCls : load Auto Printer type AUTO20");
-			ODSTrace("AutoPrnCls : load Auto Printer type AUTO20");
+			atlog.info("load Auto Printer type AUTO20");
 		} else if (this.type.equals("AUTO46")) {
 			this.prt = new CS4625Impl(this, this.brws, this.type, this.autoturnpage);
-			log.debug("[0000]:AutoPrnCls : load Auto Printer type AUTO46");
-			ODSTrace("AutoPrnCls : load Auto Printer type AUTO46");
+			atlog.info("load Auto Printer type AUTO46");
 		} else if (this.type.equals("AUTO52")) {
 			this.prt = new CS5240Impl(this, this.brws, this.type, this.autoturnpage);
-			log.debug("[0000]:AutoPrnCls : load Auto Printer type AUTO52");
-			ODSTrace("AutoPrnCls : load Auto Printer type AUTO52");
+			atlog.info("load Auto Printer type AUTO52");
 		} else {
-			log.error("[0000]:AutoPrnCls : Auto Printer type define error!");
-			ODSTrace("AutoPrnCls : Auto Printer type define error!");
+			atlog.info("Auto Printer type define error!");
 			return;
 		}
 		log.info("=================={} {}",this.brws.substring(0, 5), this.brws.substring(3));
@@ -291,14 +306,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		}
 	}
 	
-	private void ODSTrace(String s) {
-		atlog.info(String.format(atptrn, "0" + brws.substring(0, 4), dtf.format(LocalDateTime.now()), brws.substring(3), s));
-		return;
-	}
-
 	public void sendBytes(byte[] msg) throws IOException {
 		if (channel_ != null && channel_.isActive()) {
-			aslog.debug(String.format("SEND %s[%04d]:%s", this.brws.substring(3), msg.length, new String(msg)));
+			aslog.info(String.format("SEND %s[%04d]:%s", this.brws.substring(3), msg.length, new String(msg)));
 			ByteBuf buf = channel_.alloc().buffer().writeBytes(msg);
 			channel_.writeAndFlush(buf);
 		} else {
@@ -309,7 +319,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	public void close() {
 		try {
 			channel_.close().sync();
-			aslog.debug(String.format("DIS  %s[%04d]:", this.brws.substring(3), 0));
+			aslog.info(String.format("DIS  %s[%04d]:", this.brws.substring(3), 0));
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
@@ -334,9 +344,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 							iRetry = MAXDELAY;
 //						final int _newwait = iRetry * RECONNECT * 1000;
 						final int _newwait = iRetry * RECONNECT * 100;
-						log.debug("{} {} {} 99補摺機斷線，請檢查線路！", brws, "", "");
-						amlog.info(brws.substring(0, 5), brws.substring(3),"[{}][{}][{}]99補摺機斷線，請檢查線路！", brws, pasname, "            ");
-						ODSTrace(String.format("AutoPrnCls : OpenPrinter() -- Error , please check ... [%s:%d:%d]", rmtaddr.getAddress().toString(), rmtaddr.getPort(), localaddr.getPort()));
+						amlog.info(brws.substring(0, 5), brws.substring(3),"[{}][{}][{}]:99補摺機斷線，請檢查線路！", brws, pasname, "            ");
+						atlog.info("Error , please check ... [{}:{}:{}]", rmtaddr.getAddress().toString(), rmtaddr.getPort(), localaddr.getPort());
 						clientMessageBuf.clear();
 						if (!future.channel().isActive()) {
 							prtcliFSM(firstOpenConn);
@@ -437,7 +446,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		this.clientChannel = this.currentContext.channel();
 		publishActiveEvent();
 		super.channelActive(ctx);
-		aslog.debug(String.format("CON  %s[%04d]:", this.brws.substring(3), 0));
+		MDC.put("WSNO", this.brws.substring(3));
+		MDC.put("PID", pid);
+		aslog.info(String.format("CON  %s[%04d]:", this.brws.substring(3), 0));
 		prtcliFSM(!firstOpenConn);
 		prt.getIsShouldShutDown().set(false);
 		this.seqNoFile = new File("SEQNO", "SEQNO_" + this.brws);
@@ -466,7 +477,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		super.channelInactive(ctx);
 		prt.getIsShouldShutDown().set(true);
 		prt.ClosePrinter();
-		aslog.debug(String.format("DIS  %s[%04d]:", this.brws.substring(3), 0));
+		aslog.info(String.format("DIS  %s[%04d]:", this.brws.substring(3), 0));
 		this.clientMessageBuf.clear();
 		prtcliFSM(firstOpenConn);
 	}
@@ -483,7 +494,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					byte[] asary = new byte[buf.readableBytes()];
 					ByteBuf dup = buf.duplicate();
 					dup.readBytes(asary);
-					aslog.debug(String.format("RECV %s[%04d]:%s", this.brws.substring(3), buf.readableBytes(), new String(asary)));
+					aslog.info(String.format("RECV %s[%04d]:%s", this.brws.substring(3), buf.readableBytes(), new String(asary)));
 					if (clientMessageBuf.readerIndex() > (clientMessageBuf.capacity() / 2)) {
 						clientMessageBuf.discardReadBytes();
 						log.debug("adjustment clientMessageBuf readerindex ={}" + clientMessageBuf.readableBytes());
@@ -543,7 +554,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			prt.getIsShouldShutDown().set(true);
 			prt.ClosePrinter();
 			this.clientMessageBuf.clear();
-			aslog.debug(String.format("ERR  %s[%04d]:", this.brws.substring(3), 0));
+			aslog.info(String.format("ERR  %s[%04d]:", this.brws.substring(3), 0));
 		}
 	}
 
@@ -719,9 +730,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		if (chkdg == (short) cussrc[TXP.ACTNO_LEN - 1] - 48)
 			rtn = true;
 		else {
-			log.debug("{}:TxFlow : chk_Account() -- actno[{}] chkdg[{}] error!", this.brws.substring(2),
-					new String(cussrc), chkdg);
-			ODSTrace(String.format("TxFlow : chk_Account() -- actno[%s] chkdg[%d] error!", new String(cussrc), chkdg));
+			atlog.info("actno[{}] chkdg[{}] error!", new String(cussrc), chkdg);
 		}
 		return rtn;
 	}
@@ -768,8 +777,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		this.account = new String(cussrc, 0, TXP.ACTNO_LEN);
 		if (!chk_Account(cussrc)) {
 			rtn = false;
-			log.debug("{} {} {} 13存摺帳號錯誤！[{}]", brws, catagory, account, new String(cussrc));
-			amlog.info("[{}][{}][{}]13存摺帳號錯誤！", brws, "        ", this.account);
+			amlog.info("[{}][{}][{}]:13存摺帳號錯誤！", brws, "        ", this.account);
 			
 			SetSignal(firstOpenConn, !firstOpenConn, "0000000000", "0000000001");
 			return rtn;
@@ -778,8 +786,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		/*************** check MSR's apno ***************/
 		if (iEnd == 1) {
 			//
-			log.debug("{} {} {} 13存摺帳號錯誤！[{}]", brws, catagory, account, new String(cussrc));
-			amlog.info("[{}][{}][{}]13存摺帳號錯誤！", brws, pasname, this.account);
+			amlog.info("[{}][{}][{}]:13存摺帳號錯誤！", brws, pasname, this.account);
 			rtn = false;
 			return rtn;
 		}
@@ -802,9 +809,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			this.cpage = new String(cussrc, TXP.ACTNO_LEN + TXP.ACFILLER_LEN + TXP.MSRBAL_LEN + TXP.LINE_LEN, TXP.PAGE_LEN); // !< 頁次 MSR for PB/FC/GL len 2
 			this.bkseq = new String(cussrc,
 					TXP.ACTNO_LEN + TXP.ACFILLER_LEN + TXP.MSRBAL_LEN + TXP.LINE_LEN + TXP.PAGE_LEN, TXP.BKSEQ_LEN); // !< 領用序號 MSR for PB len 1, FC len 2
-			log.debug("[{}]:TxFlow : MS_Check() -- 台幣存摺 PB_MSR [{}]/[{}]/[{}]/[{}]/[{}]/[{}]", this.brws.substring(2),
-					account, actfiller, msrbal, cline, cpage, bkseq);
-			ODSTrace(String.format("TxFlow : MS_Check() -- 台幣存摺 PB_MSR [%s]/[%s]/[%s]/[%s]/[%s]/[%s]", account, actfiller, msrbal, cline, cpage, bkseq));
+			atlog.info("台幣存摺 PB_MSR [{}]/[{}]/[{}]/[{}]/[{}]/[{}]", account, actfiller, msrbal, cline, cpage, bkseq);
 			iFig = TXP.PBTYPE;
 			break;
 		// 外幣存摺
@@ -818,13 +823,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			this.cline = new String(cussrc, TXP.ACTNO_LEN + TXP.ACFILLER_LEN + TXP.MSRBAL_LEN, TXP.LINE_LEN); // !< 行次 MSR for PB/FC/GL len 2
 			this.cpage = new String(cussrc, TXP.ACTNO_LEN + TXP.ACFILLER_LEN + TXP.MSRBAL_LEN + TXP.LINE_LEN,
 					TXP.PAGE_LEN); // !< 頁次 MSR for PB/FC/GL len 2
-//			this.bkseq = new String(cussrc,
-//					TXP.ACTNO_LEN + TXP.ACFILLER_LEN + TXP.MSRBAL_LEN + TXP.LINE_LEN + TXP.PAGE_LEN, TXP.PBVER_LEN); // !< 領用序號 MSR for PB len 1, FC len 2
 			this.pbver = new String(cussrc,
 					TXP.ACTNO_LEN + TXP.ACFILLER_LEN + TXP.MSRBAL_LEN + TXP.LINE_LEN + TXP.PAGE_LEN, TXP.PBVER_LEN); // !< 領用序號 MSR for PB len 1, FC len 2
-			log.debug("[{}]:TxFlow : MS_Check() -- 外幣存摺 PB_MSR [{}]/[{}]/[{}]/[{}]/[{}]/[{}]", this.brws.substring(2),
-					account, actfiller, msrbal, cline, cpage, bkseq);
-			ODSTrace(String.format("TxFlow : MS_Check() -- 外幣存摺 PB_MSR [%s]/[%s]/[%s]/[%s]/[%s]/[%s]", account, actfiller, msrbal, cline, cpage, bkseq));
+			atlog.info("外幣存摺 FC_MSR [{}]/[{}]/[{}]/[{}]/[{}]/[{}]", account, actfiller, msrbal, cline, cpage, pbver);
 			iFig = TXP.FCTYPE;
 			break;
 		// 黃金存摺
@@ -834,17 +835,12 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			this.cline = new String(cussrc, TXP.ACTNO_LEN + TXP.MSRBALGL_LEN, TXP.LINE_LEN); // !< 行次 MSR for PB/FC/GL len 2
 			this.cpage = new String(cussrc, TXP.ACTNO_LEN + TXP.MSRBALGL_LEN + TXP.LINE_LEN, TXP.PAGE_LEN); // !< 頁次 MSR for PB/FC/GL len 2
 			this.no = new String(cussrc, TXP.ACTNO_LEN + TXP.MSRBALGL_LEN + TXP.LINE_LEN + TXP.PAGE_LEN, TXP.NO_LEN); // !< 存摺號碼 MSR for GL len 9
-			log.debug("[{}]:TxFlow : MS_Check() -- 黃金存摺 PB_MSR [{}]/[{}]/[{}]/[{}]/[{}]/[{}]", this.brws.substring(2),
-					account, msrbal, "", cline, cpage, no);
-			ODSTrace(String.format("TxFlow : MS_Check() -- 黃金存摺 PB_MSR [%s]/[%s]/[%s]/[%s]/[%s]/[%s]", account, msrbal, "", cline, cpage, no));
+			atlog.info("黃金存摺 GL_MSR [{}]/[{}]/[{}]/[{}]/[{}]", account, msrbal, cline, cpage, no);
 			iFig = TXP.GLTYPE;
 			break;
 		default:
-			log.debug("{} {} {} 13存摺帳號錯誤！[{}](非台幣/外幣/黃金存摺)", brws, catagory, account);
-			amlog.info("[{}][{}][{}]13存摺帳號錯誤！[{}](非台幣/外幣/黃金存摺)", brws, pasname, this.account);
-			log.debug("[{}]:TxFlow : MS_Check() -- PB_MSR [{}]/[{}]/[{}]/[{}]/[{}]/[{}]", this.brws.substring(2),
-					account, "", "", cline, cpage, bkseq);
-			ODSTrace(String.format("TxFlow : MS_Check() -- PB_MSR [%s]/[%s]/[%s]/[%s]/[%s]/[%s]", account, "", "", cline, cpage, bkseq));
+			amlog.info("[{}][{}][{}]:13存摺帳號錯誤！[{}](非台幣/外幣/黃金存摺)", brws, pasname, this.account);
+			atlog.info("ERROR!! PB_MSR [{}]/[{}]/[{}]/[{}]/[{}]/[{}]", account, "", "", cline, cpage, bkseq);
 			iFig = 0;
 			rtn = false;
 			break;
@@ -1065,8 +1061,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					}
 					pr_data = "                                                     請翻下頁繼續補登\n";
 					this.iEnd = 1;
-					log.debug("{} {} {} 62請翻下頁繼續補登...", brws, catagory, account);
-					amlog.info("[{}][{}][{}]62請翻下頁繼續補登..", brws, pasname, this.account);
+					amlog.info("[{}][{}][{}]:62請翻下頁繼續補登..", brws, pasname, this.account);
 					if (prt.Prt_Text(pr_data.getBytes()) == false)
 						return false;
 				}
@@ -1220,8 +1215,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					}
 					pr_data = "                                                     請翻下頁繼續補登\n";
 					this.iEnd = 1;
-					log.debug("{} {} {} 62請翻下頁繼續補登...", brws, catagory, account);
-					amlog.info("[{}][{}][{}]62請翻下頁繼續補登..", brws, pasname, this.account);
+					amlog.info("[{}][{}][{}]:62請翻下頁繼續補登..", brws, pasname, this.account);
 					if (prt.Prt_Text(pr_data.getBytes()) == false)
 						return false;
 				}
@@ -1390,8 +1384,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					}
 					pr_data = "                                                     請翻下頁繼續補登\n";
 					this.iEnd = 1;
-					log.debug("{} {} {} 62請翻下頁繼續補登...", brws, catagory, account);
-					amlog.info("[{}][{}][{}]62請翻下頁繼續補登..", brws, pasname, this.account);
+					amlog.info("[{}][{}][{}]:62請翻下頁繼續補登..", brws, pasname, this.account);
 					if (prt.Prt_Text(pr_data.getBytes()) == false)
 						return false;
 				}
@@ -1632,10 +1625,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					else
 						tital.setValue("crdb", "0");
 					String sm = this.msrbal.substring(1);
-					ODSTrace(String.format("TxFlow : DataDEL() -- pArr[0]=[%s]",sm));
+					atlog.info("pArr[0]=[{}]",sm);
 					sm = tital.FilterMsr(sm, '-', '0');
 					tital.setValue("txamt", sm);
-					ODSTrace(String.format("TxFlow :TxFlow : DataDEL() -- TITA_BASIC.txamt=[%s]",sm));
+					atlog.info("TITA_BASIC.txamt=[{}]",sm);
 					tital.setValue("ver", "02");
 					p85text.setValue("bkseq", this.bkseq);
 					if (tital.ChkCrdb(this.msrbal) > 0)    ///check 20200224
@@ -1667,10 +1660,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					tital.setValue("nbcd", "3");
 					log.debug("fc_arr size() - 1={} [{}]", fc_arr.size() - 1, new String(fc_arr.get(fc_arr.size() - 1)));
 					String sm = this.msrbal.substring(1);
-					ODSTrace(String.format("TxFlow : DataDEL() -- fArr[0]=[%s]",sm));
+					atlog.info("fArr[0]=[{}]",sm);
 					tital.setValue("txamt", sm);
-					log.debug("txamt[{}]", sm);
-					ODSTrace(String.format("TxFlow :TxFlow : DataDEL() -- TITA_BASIC.txamt=[%s]",sm));
+					atlog.info("TITA_BASIC.txamt=[{}]",sm);
 					q98text.setValue("newseq", tx_area.get("txseq"));
 					q98text.setValue("oldseq", tx_area.get("txseq"));
 					q98text.setValue("oldwsno", "00000");
@@ -1709,10 +1701,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					tital.setValue("nbcd", "8");
 					log.debug("fc_arr size() - 1={} [{}]", gl_arr.size() - 1, new String(gl_arr.get(gl_arr.size() - 1)));
 					String sm = "0" + this.msrbal;
-					ODSTrace(String.format("TxFlow : DataDEL() -- gArr[0]=[%s]",sm));
+					atlog.info("gArr[0]=[{}]",sm);
 					tital.setValue("txamt", sm);
 					log.debug("txamt[{}]", sm);
-					ODSTrace(String.format("TxFlow :TxFlow : DataDEL() -- TITA_BASIC.txamt=[%s]",sm));
+					atlog.info("TITA_BASIC.txamt=[{}]",sm);
 					p1885text.setValueLtoRfill("glcomm", "00", (byte)' ');
 					if (tital.ChkCrdb(tx_area.get("avebal")) > 0)
 						p1885text.setValue("snpbbal", "+");
@@ -1794,8 +1786,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					// 要求筆數(若該頁剩餘筆數 < 6，則為"剩餘筆數")
 					if ((inqiLine - 1 + begin) + 6 > 24) {
 						int reqcnt = 24 - (inqiLine - 1 + begin);
-						log.debug("TxFlow : DataINQ() -- reqcnt 1 ={}", Integer.toString(reqcnt));
-						ODSTrace(String.format("TxFlow : DataINQ() -- reqcnt = [%d]",reqcnt));
+						atlog.info("reqcnt = [{}]",reqcnt);
 						p0080text.setValueRtoLfill("reqcnt", Integer.toString(reqcnt), (byte) '0');
 					} else {
 						// 若剩餘要求之未登摺筆數 < 6，則為"剩餘之未登摺筆數"，否則為6
@@ -1924,14 +1915,12 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 						//if (全部未登摺之資料筆數 > 存摺總剩餘可列印之資料筆數) Eject!
 						SetSignal(firstOpenConn, !firstOpenConn, "0000000000","0000000001");
 						Sleep(1000);
-						log.debug("{} {} {} 54全部未登摺之資料筆數[{}] > 存摺總剩餘可列印之資料筆數[{}]！", brws, catagory, account, con, this.pbavCnt);
-						amlog.info("[{}][{}][{}]54全部未登摺之資料筆數[{}] > 存摺總剩餘可列印之資料筆數[{}]！", brws, pasname, this.account, con, this.pbavCnt);
+						amlog.info("[{}][{}][{}]:54全部未登摺之資料筆數[{}] > 存摺總剩餘可列印之資料筆數[{}]！", brws, pasname, this.account, con, this.pbavCnt);
 						rtn = new byte[0];
 					} else {
 						int nCnt = Integer.parseInt(new String(p0080text.getHeadValue("nbdelcnt")));
 						int iCnt = Integer.parseInt(dCount);
-						log.debug("{} {} {} :TxFlow : () -- iCnt=[{}] nCnt=[{}]", brws, catagory, account, iCnt, nCnt);
-						ODSTrace(String.format("TxFlow : () -- iCnt=[%d] nCnt=[%d]", iCnt, nCnt));
+						atlog.info("iCnt=[{}] nCnt=[{}]", iCnt, nCnt);
 						if (opttotatext.length > texthead.length) {
 							int j = 0;
 							byte[] text = Arrays.copyOfRange(opttotatext, p0080text.getP0080TotaheadtextLen(), opttotatext.length);
@@ -1946,8 +1935,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 									double dTxamt = Double.parseDouble(new String(p0080text.getTotaTextValue("txamt", i))) / 100.0;
 									if (dTxamt == 0)
 										p0080text.setTotaTextValue("stxamt", plus, i);
-									log.debug("{} {} {} :TxFlow : after () -- i={} txamt={} dTxamt={} stxamt={} text=[{}]", brws, catagory, account, i, new String(p0080text.getTotaTextValue("txamt", i)), dTxamt, new String(p0080text.getTotaTextValue("stxamt", i)), new String(p0080text.getTotaTexOc(i)));
-									ODSTrace(String.format(":TxFlow : after () -- i=%d txamt=%s dTxamt=%s stxamt=%s text=[%s]", i, new String(p0080text.getTotaTextValue("txamt", i)), dTxamt, new String(p0080text.getTotaTextValue("stxamt", i)), new String(p0080text.getTotaTexOc(i))));
+									atlog.info("i={} txamt={} dTxamt={} stxamt={} text=[{}]", i, new String(p0080text.getTotaTextValue("txamt", i)), dTxamt, new String(p0080text.getTotaTextValue("stxamt", i)), new String(p0080text.getTotaTexOc(i)));
 								}
 								this.pb_arr.addAll(p0080text.getTotaTextLists());
 								rtn = text;
@@ -1973,14 +1961,11 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 						//if (全部未登摺之資料筆數 > 存摺總剩餘可列印之資料筆數) Eject!
 						SetSignal(firstOpenConn, !firstOpenConn, "0000000000","0000000001");
 						Sleep(1000);
-						log.debug("{} {} {} 54全部未登摺之資料筆數[{}] > 存摺總剩餘可列印之資料筆數[{}]！", brws, catagory, account, con, this.pbavCnt);
-						amlog.info("[{}][{}][{}]54全部未登摺之資料筆數[{}] > 存摺總剩餘可列印之資料筆數[{}]！", brws, pasname, this.account, con, this.pbavCnt);
+						amlog.info("[{}][{}][{}]:54全部未登摺之資料筆數[{}] > 存摺總剩餘可列印之資料筆數[{}]！", brws, pasname, this.account, con, this.pbavCnt);
 						rtn = new byte[0];
 					} else {
 						totCnt = Integer.parseInt(con);
-						log.debug("{} {} {} :TxFlow : () -- begin=[{}] totCnt=[{}]", brws, catagory, account, begin,
-								totCnt);
-						ODSTrace(String.format("TxFlow : () -- begin=[%d] totCnt=[%d]", begin,	totCnt));
+						atlog.info("begin=[{}] totCnt=[{}]", begin,	totCnt);
 						if (opttotatext.length > texthead.length) {
 							int j = 0;
 							byte[] text = Arrays.copyOfRange(opttotatext, q0880text.getQ0880TotaheadtextLen(),
@@ -2004,9 +1989,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 									iCur = iLine + begin;
 									iLeft = 25 - iCur;
 									dataCnt = (dataCnt < iLeft) ? dataCnt : iLeft;
-									log.debug("{} {} {} :TxFlow : () -- dataCnt=[{}]", brws, catagory, account,
-											dataCnt);
-									ODSTrace(String.format("TxFlow : () -- dataCnt=[%d]",dataCnt));
+									atlog.info("dataCnt=[{}]",dataCnt);
 									int i = 0;
 									for (i = 0; i < dataCnt; i++) {
 										// 20080923 , txday[0] == '0'
@@ -2017,22 +2000,16 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 														new String(q0880text.getTotaTextValue("totatxday", i))) == 0)
 											break;
 										this.fc_arr.add(q0880text.getTotaTexOc(i));
-										log.debug("[{} {} {} :TxFlow : DataINQ() -- m_fArr[{}]=[{}]", brws, catagory,
-												account, begin + i, new String(q0880text.getTotaTexOc(i)));
-										ODSTrace(String.format("TxFlow : DataINQ() -- m_fArr[%d]=[%s]", begin + i, new String(q0880text.getTotaTexOc(i))));
+										atlog.info("m_fArr[{}]=[{}]", begin + i, new String(q0880text.getTotaTexOc(i)));
 
 									}
 									if (i == 0) {
-										log.debug("[{} {} {} TxFlow : DataINQ() -- m_fArr data null", brws, catagory,
-												account);
-										ODSTrace("TxFlow : DataINQ() -- m_fArr data null");
+										atlog.info("m_fArr data null");
 									} else {
 										tx_area.put("txday", new String(q0880text.getTotaTextValue("totatxday", i - 1)));
 										tx_area.put("txseq", new String(q0880text.getTotaTextValue("totatxseq", i - 1)));
 										tx_area.put("pbbal", new String(q0880text.getTotaTextValue("pbbal", i - 1)));
-										log.debug("[{} {} {} : DataINQ() -- tx_area->txday=[{}] tx_area->txseq=[{}] tx_area->pbbal=[{}]",
-												brws, catagory, account, tx_area.get("txday"), tx_area.get("txseq"), tx_area.get("pbbal"));
-										ODSTrace(String.format("[DataINQ() -- tx_area->txday=[%s] tx_area->txseq=[%s]",tx_area.get("txday"), tx_area.get("txseq")));
+										atlog.info("tx_area->txday=[{}] tx_area->txseq=[{}]",tx_area.get("txday"), tx_area.get("txseq"));
 										rtn = text;
 										log.debug("{} {} {} :TxFlow : () -- fc_arr.size={}", brws, catagory, account,
 												fc_arr.size());
@@ -2059,14 +2036,11 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 						//if (全部未登摺之資料筆數 > 存摺總剩餘可列印之資料筆數) Eject!
 						SetSignal(firstOpenConn, !firstOpenConn, "0000000000","0000000001");
 						Sleep(1000);
-						log.debug("{} {} {} 54全部未登摺之資料筆數[{}] > 存摺總剩餘可列印之資料筆數[{}]！", brws, catagory, account, con, this.pbavCnt);
-						amlog.info("[{}][{}][{}]54全部未登摺之資料筆數[{}] > 存摺總剩餘可列印之資料筆數[{}]！", brws, pasname, this.account, con, this.pbavCnt);
+						amlog.info("[{}][{}][{}]:54全部未登摺之資料筆數[{}] > 存摺總剩餘可列印之資料筆數[{}]！", brws, pasname, this.account, con, this.pbavCnt);
 						rtn = new byte[0];
 					} else {
 						totCnt = Integer.parseInt(con);
-						log.debug("{} {} {} :TxFlow : () -- begin=[{}] totCnt=[{}]", brws, catagory, account, begin,
-								totCnt);
-						ODSTrace(String.format("TxFlow : () -- begin=[%d] totCnt=[%d]",begin,totCnt));
+						atlog.info("begin=[{}] totCnt=[{}]",begin,totCnt);
 						if (opttotatext.length > texthead.length) {
 							int j = 0;
 							byte[] text = Arrays.copyOfRange(opttotatext, p0880text.getP0880TotaheadtextLen(),
@@ -2090,9 +2064,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 									iCur = iLine + begin;
 									iLeft = 25 - iCur;
 									dataCnt = (dataCnt < iLeft) ? dataCnt : iLeft;
-									log.debug("{} {} {} :TxFlow : () -- dataCnt=[{}]", brws, catagory, account,
-											dataCnt);
-									ODSTrace(String.format("TxFlow : () -- dataCnt=[%d]",dataCnt));
+									atlog.info("dataCnt=[{}]",dataCnt);
 									int i = 0;
 									for (i = 0; i < dataCnt; i++) {
 										// 20080923 , txday[0] == '0'
@@ -2103,14 +2075,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 														new String(p0880text.getTotaTextValue("txday", i))) == 0)
 											break;
 										this.gl_arr.add(p0880text.getTotaTexOc(i));
-										log.debug("[{} {} {} :TxFlow : DataINQ() -- m_fArr[{}]=[{}]", brws, catagory,
-												account, begin + i, new String(p0880text.getTotaTexOc(i)));
-										ODSTrace(String.format("TxFlow : DataINQ() -- m_fArr[%d]=[%s]",begin + i, new String(p0880text.getTotaTexOc(i))));
+										atlog.info("m_fArr[{}]=[{}]",begin + i, new String(p0880text.getTotaTexOc(i)));
 									}
 									if (i == 0) {
-										log.debug("[{} {} {} TxFlow : DataINQ() -- m_fArr data null", brws, catagory,
-												account);
-										ODSTrace("TxFlow : DataINQ() -- m_fArr data null");
+										atlog.info("m_fArr data null");
 									} else {
 										tx_area.put("txday", new String(p0880text.getTotaTextValue("txday", i - 1)));
 										tx_area.put("nbseq", new String(p0880text.getTotaTextValue("nbseq", i - 1)));
@@ -2201,29 +2169,27 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					tital.setValue("pseudo", "1");
 					if (!new String(this.fepdd).equals("  "))
 						tital.setValue("fepdd", this.fepdd);
-					ODSTrace(String.format("fepdd=[%s]",this.fepdd));
+					atlog.info("fepdd=[{}]",this.fepdd);
 					if (ifun == TXP.INQ) {
 						if (this.iCount == 0) {
-							log.debug("{} {} {} 03中心存摺補登資料讀取中...", brws, catagory, account);
-							amlog.info("[{}][{}][{}]03中心存摺補登資料讀取中...", brws, pasname, this.account);
+							amlog.info("[{}][{}][{}]:03中心存摺補登資料讀取中...", brws, pasname, this.account);
 						}
 
 						// Send Inquiry Request
 						this.resultmsg = null;
 						resultmsg = DataINQ(TXP.SENDTHOST, iflg, this.dCount, con);
 						if (resultmsg == null || resultmsg.length == 0) {
-							ODSTrace("TxFlow : Send_Recv() -- DataINQ -- iMsgLen = 0");
-							amlog.info("[{}][{}][{}]31傳送之訊息長度為０！", brws, pasname, this.account);							
+							atlog.info("iMsgLen = 0");
+							amlog.info("[{}][{}][{}]:31傳送之訊息長度為０！", brws, pasname, this.account);							
 							rtn = -1;
 						}
 					} else {
-						log.debug("{} {} {} 04中心存摺已補登資料刪除中...", brws, catagory, account);
-						amlog.info("[{}][{}][{}]04中心存摺已補登資料刪除中..", brws, pasname, this.account);
+						amlog.info("[{}][{}][{}]:04中心存摺已補登資料刪除中..", brws, pasname, this.account);
 						this.resultmsg = null;
 						resultmsg = DataDEL(TXP.SENDTHOST, iflg, mbal);
 						if (resultmsg == null || resultmsg.length == 0) {
-							ODSTrace("TxFlow : Send_Recv() -- DataINQ -- iMsgLen = 0");
-							amlog.info("[{}][{}][{}]31傳送之訊息長度為０！", brws, pasname, this.account);							
+							atlog.info("iMsgLen = 0");
+							amlog.info("[{}][{}][{}]:31傳送之訊息長度為０！", brws, pasname, this.account);							
 							rtn = -1;
 						}
 					}
@@ -2231,7 +2197,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					//20200403
 					SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0010000000");
 					//----
-					ODSTrace(String.format("SendBio() -- TITA_TEXT=[%s]",new String(resultmsg)));
+					atlog.info("TITA_TEXT=[{}]",new String(resultmsg));
 					if (SetSignal(firstOpenConn, !firstOpenConn, "0000000000", "0010000000")) {
 						this.curState = RECVTLM;
 						log.debug("{} {} {} AutoPrnCls : --change start process telegram", brws, catagory, account);
@@ -2258,8 +2224,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					//not yet send telegram send firstly
 					alreadySendTelegram = dispatcher.sendTelegram(resultmsg);
 					if (ifun == 1 && iCount == 0) {
-						log.debug("{} {} {} 05中心存摺補登資料接收中...", brws, catagory, account);
-						amlog.info("[{}][{}][{}]05中心存摺補登資料接收中...", brws, pasname, this.account);
+						amlog.info("[{}][{}][{}]:05中心存摺補登資料接收中...", brws, pasname, this.account);
 					}
 					this.curState = RECVTLM;
 				} else if (dispatcher.isTITA_TOTA_START() && alreadySendTelegram) {
@@ -2297,8 +2262,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 								// "A665" & "X665" 無補登摺資料、"A104" 該戶無未登摺資料
 								if (mno == 665 || mno == 104) {
 									if (SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000100")) {
-										log.debug("{} {} {} 52 {} {} {}", brws, catagory, account, mt, mno, cMsg);
-										amlog.info("[{}][{}][{}]52{}{}{}!", brws, pasname, this.account,mt,mno, cMsg);
+										amlog.info("[{}][{}][{}]:52{}{}{}!", brws, pasname, this.account,mt,mno, cMsg);
 									} else {
 										log.debug("{} {} {} {} {} {} AutoPrnCls : --change ", brws, catagory, account,
 												mt, mno, cMsg);
@@ -2307,16 +2271,14 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 								// E194 , 補登資料超過可印行數, 應至服務台換摺
 								else if (mno == 194) {
 									if (SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000001000")) {
-										log.debug("{} {} {} 52 {} {} {}", brws, catagory, account, mt, mno, cMsg);
-										amlog.info("[{}][{}][{}]52{}{}{}!", brws, pasname, this.account,mt,mno, cMsg);
+										amlog.info("[{}][{}][{}]:52{}{}{}!", brws, pasname, this.account,mt,mno, cMsg);
 									} else {
 										log.debug("{} {} {} {} {} {} AutoPrnCls : --change ", brws, catagory, account,
 												mt, mno, cMsg);
 									}
 								} else {
 									if (SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000001")) {
-										log.debug("{} {} {} 52 {} {} {}", brws, catagory, account, mt, mno, cMsg);
-										amlog.info("[{}][{}][{}]52{}{}{}!", brws, pasname, this.account,mt,mno, cMsg);
+										amlog.info("[{}][{}][{}]:52{}{}{}!", brws, pasname, this.account,mt,mno, cMsg);
 									} else {
 										log.debug("{} {} {} {} {} {} AutoPrnCls : --change ", brws, catagory, account,
 												mt, mno, cMsg);
@@ -2338,12 +2300,11 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 								resultmsg = DataINQ(TXP.RECVFHOST, iflg, this.dCount, con, totatext);
 								if (resultmsg == null || resultmsg.length == 0) {
 									if (SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000001")) {
-										log.debug("{} {} {} 34接收資料錯誤！", brws, catagory, account);
-										amlog.info("[{}][{}][{}]34接收資料錯誤！", brws, pasname, this.account);
+										amlog.info("[{}][{}][{}]:34接收資料錯誤！", brws, pasname, this.account);
 									} else {
 										log.debug("{} {} {} AutoPrnCls : --change ", brws, catagory, account);
 									}
-									ODSTrace("TxFlow : RecvBio() Failed ! iRtncd=[-1]");
+									atlog.info("Failed ! iRtncd=[-1]");
 									rtn = -1;
 									break;
 								}
@@ -2352,17 +2313,15 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 								log.debug("iCon={} iCon={} iLine={} (iLine - 1 + iCount)={}", iCount, iCon, iLine,
 										(iLine - 1 + iCount));
 								if ((iLine - 1 + iCount) >= 24) {
-									ODSTrace(String.format("TxFlow : RecvBio() -- [%d] TOTA_TEXT=[%s]", resultmsg.length, new String(resultmsg)));
-									log.debug("{} {} {} 55存摺補登資料接收成功！", brws, catagory, account);
-									amlog.info("[{}][{}][{}]55存摺補登資料接收成功！", brws, pasname, this.account);
+									atlog.info("[{}] TOTA_TEXT=[{}]", resultmsg.length, new String(resultmsg));
+									amlog.info("[{}][{}][{}]:55存摺補登資料接收成功！", brws, pasname, this.account);
 									this.curState = STARTPROCTLM;
 									break;
 								}
 							} else {
 								// Receive Delete Result
 								DataDEL(TXP.RECVFHOST, iflg, "");
-								log.debug("{} {} {} 56存摺已補登資料刪除成功！", brws, catagory, account);
-								amlog.info("[{}][{}][{}]56存摺已補登資料刪除成功！", brws, pasname, this.account);
+								amlog.info("[{}][{}][{}]:56存摺已補登資料刪除成功！", brws, pasname, this.account);
 								this.curState = SNDANDRCVDELTLMCHKEND;
 								break;
 							}
@@ -2372,9 +2331,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 							log.error("ERROR while get total label mtype {}" + e.getMessage());
 						}
 					} else {
-						log.debug("{} {} {} 51資料接收失敗！", brws, catagory, account);
-						log.debug("21存摺頁次錯誤！[{}]", rpage);
-						amlog.info("[{}][{}][{}]21存摺頁次錯誤！[{}]", brws, pasname, this.account, rpage);
+						amlog.info("[{}][{}][{}]:21存摺頁次錯誤！[{}]", brws, pasname, this.account, rpage);
 						if (SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000001")) {
 							log.debug(
 									"{} {} {} AutoPrnCls : --ckeep cheak barcode after Set Signal after check barcode",
@@ -2478,10 +2435,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		case ENTERPASSBOOKSIG:
 			if (SetSignal(!firstOpenConn, firstOpenConn, "1100000000", "0000000000")) {
 				this.curState = CAPTUREPASSBOOK;
-				log.debug("{} {} {} ****************************", brws, "", "");
 				amlog.info("[{}][{}][{}]****************************", brws, "        ", "            ");
-				log.debug("{} {} {} 00請插入存摺...", brws, "", "");
-				amlog.info("[{}][{}][{}]00請插入存摺...", brws, pasname, "            ");
+				amlog.info("[{}][{}][{}]:00請插入存摺...", brws, pasname, "            ");
 				prt.DetectPaper(firstOpenConn, 0);
 			}
 			log.debug("after {}=>{}=====check prtcliFSM", before, this.curState);
@@ -2491,8 +2446,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			if (this.iFirst == 0 || this.autoturnpage.equals("false")) {
 				if (this.iFirst == 1) {
 					SetSignal(firstOpenConn, firstOpenConn, "1100000000", "0000010000");
-					log.debug("{} {} {} 62等待請翻下頁繼續補登...", brws, catagory, account);
-					amlog.info("[{}][{}][{}]62等待請翻下頁繼續補登...", brws, pasname, account);
+					amlog.info("[{}][{}][{}]:62等待請翻下頁繼續補登...", brws, pasname, account);
 				} else {
 					if (prt.DetectPaper(!firstOpenConn, 0)) {
 						this.curState = GETPASSBOOKSHOWSIG;
@@ -2541,7 +2495,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 						cusid[i] = cusid[i] == (byte) '<' ? (byte) '-' : cusid[i];
 					setpasname(cusid);
 					log.debug("{} {} {} 12存摺磁條讀取成功！", brws, catagory, new String(cusid, 0, TXP.ACTNO_LEN));
-					amlog.info("[{}][{}][{}]12存摺磁條讀取成功！", brws, pasname, new String(cusid, 0, TXP.ACTNO_LEN));
+					amlog.info("[{}][{}][{}]:12存摺磁條讀取成功！", brws, pasname, new String(cusid, 0, TXP.ACTNO_LEN));
 				}
 				log.debug("{} {} {} AutoPrnCls : --start Read MSR", brws, catagory, account);
 			}
@@ -2554,9 +2508,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				this.curState = CHKACTNO;
 				for (int i = 0; i < cusid.length; i++)
 					cusid[i] = cusid[i] == (byte) '<' ? (byte) '-' : cusid[i];
-				log.debug("{} {} {} 12存摺磁條讀取成功！", brws, catagory, new String(cusid, 0, TXP.ACTNO_LEN));
 				setpasname(cusid);
-				amlog.info("[{}][{}][{}]12存摺磁條讀取成功！", brws, pasname, new String(cusid, 0, TXP.ACTNO_LEN));
+				amlog.info("[{}][{}][{}]:12存摺磁條讀取成功！", brws, pasname, new String(cusid, 0, TXP.ACTNO_LEN));
 				log.debug("{} {} {} AutoPrnCls : --start check Account", brws, catagory, account);
 			}
 			log.debug("after {}=>{}=====check prtcliFSM", before, this.curState);
@@ -2584,15 +2537,12 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				this.curState = CHKBARCODE;
 				log.debug("{} {} {} tx_area {} iFig={} AutoPrnCls : --start check barcode", brws, catagory, account,
 						tx_area, iFig);
-				log.debug("{} {} {} 02檢查存摺頁次...", brws, catagory, account);
-				amlog.info("[{}][{}][{}]02檢查存摺頁次...", brws, pasname, account);
+				amlog.info("[{}][{}][{}]:02檢查存摺頁次...", brws, pasname, account);
 				if ((this.rpage = prt.ReadBarcode(firstOpenConn, (short) 2)) > 0) {
 					log.debug("{} {} {} AutoPrnCls : --start telegram get rpage={} npage={}", brws, catagory, account,
 							this.rpage, this.npage);
 					if (npage == rpage) {
-						log.debug("{} {} {} 02檢查存摺頁次正確...正確頁次={} 插入頁次={} 行次={}", brws, catagory, account, npage, rpage,
-								nline);
-						amlog.info("[{}][{}][{}]02檢查存摺頁次正確...正確頁次={} 插入頁次={} 行次={}", brws, pasname, account, npage, rpage, nline);
+						amlog.info("[{}][{}][{}]:02檢查存摺頁次正確...正確頁次={} 插入頁次={} 行次={}", brws, pasname, account, npage, rpage, nline);
 
 						if (SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0010000000")) {
 							this.curState = SNDANDRCVTLM;
@@ -2603,8 +2553,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 									account);
 						}
 					} else {
-						log.debug("21存摺頁次錯誤！[{}]", rpage);
-						amlog.info("[{}][{}][{}]21存摺頁次錯誤！[{}]", brws, pasname, account, rpage);
+						amlog.info("[{}][{}][{}]:21存摺頁次錯誤！[{}]", brws, pasname, account, rpage);
 						if (SetSignal(firstOpenConn, firstOpenConn, "0000000000","0000100000")) {
 							this.curState = SETSIGAFTERCHKBARCODE;
 							log.debug(
@@ -2632,9 +2581,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				log.debug("{} {} {} AutoPrnCls : --start telegram get rpage={} npage={}", brws, catagory, account,
 						this.rpage, this.npage);
 				if (npage == rpage) {
-					log.debug("{} {} {} 02檢查存摺頁次正確...正確頁次={} 插入頁次={} 行次={}", brws, catagory, account, npage, rpage,
-							nline);
-					amlog.info("[{}][{}][{}]02檢查存摺頁次正確...正確頁次={} 插入頁次={} 行次={}", brws, pasname, account, npage, rpage, nline);
+					amlog.info("[{}][{}][{}]:02檢查存摺頁次正確...正確頁次={} 插入頁次={} 行次={}", brws, pasname, account, npage, rpage, nline);
 					if (SetSignal(firstOpenConn, !firstOpenConn, "0000000000", "0010000000")) {
 						this.curState = SNDANDRCVTLM;
 						log.debug("{} {} {} AutoPrnCls : --change process telegram", brws, catagory, account);
@@ -2644,8 +2591,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 								account);
 					}
 				} else {
-					log.debug("21存摺頁次錯誤！[{}]", rpage);
-					amlog.info("[{}][{}][{}]21存摺頁次錯誤！[{}]", brws, pasname, account, rpage);
+					amlog.info("[{}][{}][{}]:21存摺頁次錯誤！[{}]", brws, pasname, account, rpage);
 //					WMSRFormat(true, rpage);
 //					WMSRFormat(true, rpage);
 					if (SetSignal(firstOpenConn, firstOpenConn, "0000000000","0000100000")) {
@@ -2671,8 +2617,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					log.debug("{} {} {} AutoPrnCls : --change process telegram", brws, catagory, account);
 				}
 			} else {
-				log.debug("22存摺頁次不符...正確頁次={} 插入頁次={}]", npage, rpage);
-				amlog.info("[{}][{}][{}]22存摺頁次不符...正確頁次={} 插入頁次={}", brws, pasname, account, npage, rpage);
+				amlog.info("[{}][{}][{}]:22存摺頁次不符...正確頁次={} 插入頁次={}", brws, pasname, account, npage, rpage);
 				if (SetSignal(!firstOpenConn, firstOpenConn, "0000000000","0000100000")) {
 					this.curState = EJECTAFTERPAGEERROR;
 					log.debug(
@@ -2683,7 +2628,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			if (this.rpage < 0) {
 				SetSignal(!firstOpenConn, firstOpenConn, "0000000000","0000100000");
 				this.curState = SESSIONBREAK;
-				amlog.info("[{}][{}][{}]21存摺頁次錯誤！[{}]", brws, pasname, account, rpage);
+				amlog.info("[{}][{}][{}]:21存摺頁次錯誤！[{}]", brws, pasname, account, rpage);
 				close();
 			}
 			
@@ -2714,8 +2659,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			if ((r = Send_Recv(this.iFig, TXP.INQ, "0", "0")) != 0) {
 				if (r < 0) {
 					this.curState = SESSIONBREAK;
-					log.debug("{} {} {} 61存摺資料補登失敗！", brws, catagory, account);
-					amlog.info("[{}][{}][{}]61存摺資料補登失敗！", brws, pasname, account);
+					amlog.info("[{}][{}][{}]:61存摺資料補登失敗！", brws, pasname, account);
 				}
 			}
 			switch (this.iFig) {
@@ -2747,16 +2691,14 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				if ((r = Send_Recv(this.iFig, TXP.INQ, "0", "0")) != 0) {
 					if (r < 0) {
 						this.curState = SESSIONBREAK;
-						log.debug("{} {} {} 61存摺資料補登失敗！", brws, catagory, account);
-						amlog.info("[{}][{}][{}]61存摺資料補登失敗！", brws, pasname, account);
+						amlog.info("[{}][{}][{}]:61存摺資料補登失敗！", brws, pasname, account);
 					}
 				}
 			} else {
 				if (Send_Recv(this.iFig, TXP.DEL, "", tx_area.get("mbal")) != 0) {
 					if (r < 0) {
 						this.curState = SESSIONBREAK;
-						log.debug("{} {} {} 61存摺資料補登失敗！", brws, catagory, account);
-						amlog.info("[{}][{}][{}]61存摺資料補登失敗！", brws, pasname, account);
+						amlog.info("[{}][{}][{}]:61存摺資料補登失敗！", brws, pasname, account);
 					}
 				}
 			}
@@ -2786,8 +2728,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			break;
 
 		case STARTPROCTLM:
-			log.debug("{} {} {} 06存摺資料補登中...", brws, catagory, account);
-			amlog.info("[{}][{}][{}]06存摺資料補登中..", brws, pasname, account);
+			amlog.info("[{}][{}][{}]:06存摺資料補登中..", brws, pasname, account);
 			switch (this.iFig) {
 				case TXP.PBTYPE:
 					log.debug("STARTPROCTLM pb_arr.size=>{}=====check prtcliFSM", pb_arr.size());
@@ -2838,8 +2779,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 
 		case FORMATPRTDATAERROR:
 			log.debug("{} {} {} ORMATPRTDATAERROR :AutoPrnCls : XXDataFormat() -- Print Data Error!", brws, catagory, account);
-			log.debug("{} {} {} 61存摺資料補登失敗！", brws, catagory, account);
-			amlog.info("[{}][{}][{}]61存摺資料補登失敗！", brws, pasname, account);
+			amlog.info("[{}][{}][{}]:61存摺資料補登失敗！", brws, pasname, account);
 			SetSignal(firstOpenConn, firstOpenConn, "0000000000","0000000001");
 			prt.Eject(firstOpenConn);
 			Sleep(2 * 1000);
@@ -2862,8 +2802,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		case WRITEMSRWAITCONFIRM:
 			log.debug("{} {} {} :AutoPrnCls : process WRITEMSRWAITCONFIRM", brws, catagory, account);
 			if (WMSRFormat(!firstOpenConn)) {
-				log.debug("{} {} {}72存摺資料補登成功！",brws, catagory, account);
-				amlog.info("[{}][{}][{}]72存摺資料補登成功！", brws, pasname, account);				
+				amlog.info("[{}][{}][{}]:72存摺資料補登成功！", brws, pasname, account);				
 				this.curState = SNDANDRCVDELTLM;
 			}
 			log.debug("after {}=>{}=====check prtcliFSM", before, this.curState);
@@ -2883,8 +2822,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					this.iFirst = 0;
 
 					this.curState = SESSIONBREAK;
-					log.debug("{} {} {} 73存摺資料補登刪除失敗！", brws, catagory, account);
-					amlog.info("[{}][{}][{}]73存摺資料補登刪除失敗！", brws, pasname, account);				
+					amlog.info("[{}][{}][{}]:73存摺資料補登刪除失敗！", brws, pasname, account);				
 				}
 			}
 			log.debug("SNDANDRCVDELTLM r = {} pb_arr.size()=>{}=====check prtcliFSM", r, pb_arr.size());
@@ -2983,5 +2921,19 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			break;
 		}
 		return;
+	}
+	public String getClientId() {
+		return this.clientId;
+	}
+	public void setClientId(String clientId) {
+		this.clientId = clientId;
+	}
+
+	public String getByDate() {
+		return byDate;
+	}
+
+	public void setByDate(String byDate) {
+		this.byDate = byDate;
 	}
 }

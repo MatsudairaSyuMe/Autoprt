@@ -71,6 +71,7 @@ public class DynamicProps {
 							Map.Entry entry : cfg.entrySet()) {
 								log.info("ConfProc info! {}, {}", entry.getKey(), entry.getValue());
 								if (entry.getKey().equals("system.ip") || entry.getKey().equals("system.port")
+										|| entry.getKey().equals("system.logpath")
 										|| entry.getKey().equals("svrsubport.svrip")
 										|| entry.getKey().equals("svrsubport.svrport")
 										|| entry.getKey().equals("svrsubport.localip")
@@ -172,8 +173,11 @@ public class DynamicProps {
 			cfg.entrySet();
 			for (@SuppressWarnings("rawtypes")
 			Map.Entry entry : cfg.entrySet()) {
-				log.info("ConfProc info! {}, {} len={}", entry.getKey(), entry.getValue(), entry.getKey().toString());
+				//20200420 add logpath
+				log.info("ConfProc info! {}, {} len={}", entry.getKey(), entry.getValue().toString(),
+						entry.getValue().toString().length());
 				if (entry.getKey().equals("system.ip") || entry.getKey().equals("system.port")
+						|| entry.getKey().equals("system.logpath")
 						|| entry.getKey().equals("svrsubport.svrip") || entry.getKey().equals("svrsubport.svrport")
 						|| entry.getKey().equals("svrsubport.localip") || entry.getKey().equals("svrsubport.localport")
 						|| entry.getKey().equals("svrsubport.verhbrno") || entry.getKey().equals("svrsubport.verhwsno")

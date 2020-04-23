@@ -2,6 +2,7 @@ package com.systex.sysgateii.comm.pool.fas;
 
 import com.systex.sysgateii.comm.pool.MultiNodeConnPoolImpl;
 import com.systex.sysgateii.comm.pool.NonBlockingConnPool;
+import com.systex.sysgateii.gateway.ratesvr.Server.ServerProducer;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
@@ -16,6 +17,7 @@ import static org.junit.Assert.assertEquals;
 import java.io.Closeable;
 import java.io.File;
 import java.net.ConnectException;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -51,11 +53,23 @@ public class FASSocketChannel {
 	private NonBlockingConnPool connPool;
 	EventLoopGroup group;
 
-	public FASSocketChannel(String nodes[]) throws ConnectException, IllegalArgumentException, InterruptedException {
+	public FASSocketChannel(String nodes[], ServerProducer producer, List<String> brnolist, List<String> wsnolist) throws ConnectException, IllegalArgumentException, InterruptedException {
 		group = new NioEventLoopGroup();
 		final Bootstrap bootstrap = new Bootstrap().group(group).channel(NioSocketChannel.class);
 //		setConnPool(new MultiNodeConnPoolImpl(nodes, bootstrap, CPH, DEFAULT_PORT, 0, 1, TimeUnit.SECONDS, 3000));
 //		getConnPool().preConnect(nodes.length);
+		//---- 20200422 test
+		((FASChannelPoolHandler)CPH).setProducer(producer);
+		((FASChannelPoolHandler)CPH).setBrnoList(brnolist);
+		((FASChannelPoolHandler)CPH).setWsnoList(wsnolist);
+		//----
+		connPool = new MultiNodeConnPoolImpl(nodes, bootstrap, CPH, DEFAULT_PORT, 0, 1, TimeUnit.SECONDS, 3000);
+		connPool.preConnect(nodes.length);
+	}
+
+	public FASSocketChannel(String nodes[]) throws ConnectException, IllegalArgumentException, InterruptedException {
+		group = new NioEventLoopGroup();
+		final Bootstrap bootstrap = new Bootstrap().group(group).channel(NioSocketChannel.class);
 		connPool = new MultiNodeConnPoolImpl(nodes, bootstrap, CPH, DEFAULT_PORT, 0, 1, TimeUnit.SECONDS, 3000);
 		connPool.preConnect(nodes.length);
 	}

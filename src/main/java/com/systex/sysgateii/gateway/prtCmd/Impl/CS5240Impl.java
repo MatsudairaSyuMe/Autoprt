@@ -1,6 +1,7 @@
 package com.systex.sysgateii.gateway.prtCmd.Impl;
 
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
@@ -9,19 +10,19 @@ import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import com.systex.sysgateii.gateway.autoPrtSvr.Client.PrtCli;
+import com.systex.sysgateii.gateway.autoPrtSvr.Server.PrnSvr;
 import com.systex.sysgateii.gateway.prtCmd.Printer;
+import com.systex.sysgateii.gateway.util.LogUtil;
+
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class CS5240Impl implements Printer {
 	private static Logger log = LoggerFactory.getLogger(CS5240Impl.class);
-	private static Logger amlog = LoggerFactory.getLogger("amlog");
-	private static Logger atlog = LoggerFactory.getLogger("atlog");
-	private DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss:SSS");
-	private LocalDateTime now = LocalDateTime.now();
-	private String atptrn = "[TID:%s %s]:[%s]:%s";
-
+	private Logger amlog = null;
+	private Logger atlog = null;
 	private byte ESQ = (byte) 0x1b;
 	private byte ENQ = (byte) 0x05;
 	private byte ACK = (byte) 0x06;
@@ -222,11 +223,10 @@ public class CS5240Impl implements Printer {
 		this.nLPI = 0;
 		this.m_bColorRed.set(false);
 		this.p_fun_flag.set(false);
-	}
-
-	private void ODSTrace(String s) {
-		atlog.info(String.format(atptrn, "0" + brws.substring(0, 4), dtf.format(LocalDateTime.now()), brws.substring(3), s));
-		return;
+		MDC.put("WSNO", this.brws.substring(3));
+		MDC.put("PID", pc.pid);
+		amlog = pc.amlog;
+		atlog = pc.atlog;
 	}
 
 	@Override
@@ -241,7 +241,7 @@ public class CS5240Impl implements Printer {
 			this.curState = ResetPrinterInit_START;
 		if (this.curState < OpenPrinter_START) {
 			if (!ResetPrinterInit()) {
-				ODSTrace("S5240 : ConnectToRemote failed ret=[-1]");
+				atlog.info("ConnectToRemote failed ret=[-1]");
 				return false;
 			} else {
 				log.debug("1 ===<><>{} chkChkState {} {}", this.curState, this.curChkState, data);
@@ -322,12 +322,6 @@ public class CS5240Impl implements Printer {
 		return 0;
 	}
 
-	private void clearBuffer() {
-		log.debug("cleanBuffer curState={} curPurState={}", this.curState, this.curPurState);
-		pc.clientMessageBuf.clear();
-		return;
-	}
-
 	@Override
 	public int Send_hData(byte[] buff) {
 		// TODO Auto-generated method stub
@@ -335,7 +329,7 @@ public class CS5240Impl implements Printer {
 			return -3;
 		try {
 			pc.sendBytes(buff);
-			ODSTrace(String.format("S5240 : Send_Data[%d]-[%s]", buff.clone().length,new String(buff)));
+			atlog.info("[{}]-[{}]", buff.clone().length,new String(buff));
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -411,8 +405,7 @@ public class CS5240Impl implements Printer {
 			data = Rcv_Data(3);
 			//20200330 change iCnt from 3 to 20
 			if (data == null && iCnt > 20) {
-				log.debug("{} {} {} {} 95補摺機無回應！", iCnt, brws, "", "");
-				amlog.info("[{}][{}][{}]95補摺機無回應！", brws, "        ", "            ");
+				amlog.info("[{}][{}][{}]:95補摺機無回應！", brws, "        ", "            ");
 				this.curChkState = CheckStatus_FINISH;
 				pc.close();
 			} else if (data != null && !new String(data).equals("DIS"))
@@ -772,8 +765,7 @@ public class CS5240Impl implements Printer {
 				return false;
 
 			if (!CheckError(data)) {
-				log.debug("{} {} {}95補摺機硬體錯誤！(EJT)", brws, "", "");
-				amlog.info("[{}][{}][{}]95補摺機硬體錯誤！(EJT)", brws, "        ", "            ");
+				amlog.info("[{}][{}][{}]:95補摺機硬體錯誤！(EJT)", brws, "        ", "            ");
 				return false;
 			} else {
 				log.debug("2 ===<><>{} chkChkState {} {}", this.curState, this.curChkState, data);
@@ -782,8 +774,7 @@ public class CS5240Impl implements Printer {
 		}
 		log.debug("3 ===<><>{} chkChkState {}", this.curState, this.curChkState);
 		if (curState == Eject_FINISH) {
-			log.debug("{} {} {} 06存摺退出成功！", brws, "", "");
-			amlog.info("[{}][{}][{}]06存摺退出成功！", brws, "        ", "            ");
+			amlog.info("[{}][{}][{}]:06存摺退出成功！", brws, "        ", "            ");
 			return true;
 		} else
 			return false;
@@ -820,8 +811,7 @@ public class CS5240Impl implements Printer {
 			this.iCnt++;
 			data = Rcv_Data();
 			if (data == null && iCnt > 40) {
-				log.debug("{} {} {} {} 94補摺機狀態錯誤！(MSR-2)", iCnt, brws, "", "");
-				amlog.info("[{}][{}][{}]94補摺機狀態錯誤！(MSR-2)", brws, "        ", "            ");
+				amlog.info("[{}][{}][{}]:94補摺機狀態錯誤！(MSR-2)", brws, "        ", "            ");
 				this.curState = ResetPrinterInit_START;
 				ResetPrinterInit();
 				pc.close();
@@ -829,8 +819,7 @@ public class CS5240Impl implements Printer {
 				if (data[1] == (byte)'s') {
 					if (data[2] == (byte)(0x7f & 0xff)) {
 						iCnt = 0;
-						log.debug("{} {} {} {} 94補摺機狀態錯誤！", iCnt, brws, "", "");
-						amlog.info("[{}][{}][{}]94補摺機狀態錯誤！", brws, "        ", "            ");
+						amlog.info("[{}][{}][{}]:94補摺機狀態錯誤！", brws, "        ", "            ");
 						this.curState = ResetPrinterInit_START;
 						ResetPrinterInit();
 						this.curmsdata = null;
@@ -847,8 +836,7 @@ public class CS5240Impl implements Printer {
 					System.gc();
 					} else {
 						iCnt = 0;
-						log.debug("{} {} {} {} 94補摺機狀態錯誤！(MSR-1)", iCnt, brws, "", "");
-						amlog.info("[{}][{}][{}]94補摺機狀態錯誤！(MSR-1)", brws, "        ", "            ");
+						amlog.info("[{}][{}][{}]:94補摺機狀態錯誤！(MSR-1)", brws, "        ", "            ");
 						this.curState = ResetPrinterInit_START;
 						ResetPrinterInit();
 						pc.close();
@@ -857,8 +845,7 @@ public class CS5240Impl implements Printer {
 					}
 				} else {
 					iCnt = 0;
-					log.debug("{} {} {} {} 94補摺機狀態錯誤！(MSR-1)", iCnt, brws, "", "");
-					amlog.info("[{}][{}][{}]94補摺機狀態錯誤！(MSR-1)", brws, "        ", "            ");
+					amlog.info("[{}][{}][{}]:94補摺機狀態錯誤！(MSR-1)", brws, "        ", "            ");
 					this.curState = ResetPrinterInit_START;
 					ResetPrinterInit();
 					pc.close();
@@ -881,7 +868,7 @@ public class CS5240Impl implements Printer {
 			} else {
 				this.curState = MS_Read_FINISH;
 				log.debug("MS_Read 3 ===<><>{} chkChkState {}", this.curState, this.curChkState);
-				ODSTrace(String.format("S5240 : ms_read data=[%s]",new String(this.curmsdata)));
+				atlog.info("ms_read data=[{}]",new String(this.curmsdata));
 				return this.curmsdata;
 			}
 		}
@@ -928,8 +915,7 @@ public class CS5240Impl implements Printer {
 			if (this.detectTimeout > 0) {
 				currentTime = System.currentTimeMillis();
 				if (((currentTime - this.detectStartTimeout) / 1000) > this.detectTimeout) {
-					log.debug("{} {} {} 96超過時間尚未重新插入存摺！", brws, "", "");
-					amlog.info("[{}][{}][{}]96超過時間尚未重新插入存摺！", brws, "        ", "            ");
+					amlog.info("[{}][{}][{}]:96超過時間尚未重新插入存摺！", brws, "        ", "            ");
 					this.curState = DetectPaper_FINISH;
 					return false;
 				}
@@ -942,7 +928,7 @@ public class CS5240Impl implements Printer {
 					return false;
 				}
 			} else {
-				ODSTrace(String.format("S5240 : first data is %s",Arrays.toString(data)));
+				atlog.info("first data is {}",Arrays.toString(data));
 				//20060714 V116 , In p201/p101/p80 case , if read msr but the pr2-(e) replies '1' --> paper jame
 				// and Driver send ESC '0' to reset printer , but in vain.
 				// So after Open printer , if meed some errors like '1' -- paper jam , '8' -- command error, 'a' -- hw error ,
@@ -962,8 +948,7 @@ public class CS5240Impl implements Printer {
 				//         0xd0 --> S4265 , status not in initial config
 
 				if (data[2] == (byte)'P') {
-					log.debug("{} {} {} 01偵測到存摺插入！", brws, "", "");
-					amlog.info("[{}][{}][{}]01偵測到存摺插入！", brws, "        ", "            ");
+					amlog.info("[{}][{}][{}]:01偵測到存摺插入！", brws, "        ", "            ");
 					this.curState = DetectPaper_FINISH;
 					return true;
 				} else if (data[2] == (byte)'A') {
@@ -979,45 +964,37 @@ public class CS5240Impl implements Printer {
 				} else {
 					switch (data[2]) {
 					case (byte) '1': // 20060619 paper jam
-						log.debug("{} {} {} 94請重試一下,否則有卡紙現象", brws, wsno, "");
-						amlog.info("[{}][{}][{}]94請重試一下,否則有卡紙現象", brws, "        ", "            ");
+						amlog.info("[{}][{}][{}]:94請重試一下,否則有卡紙現象", brws, "        ", "            ");
 						this.curChkState = CheckStatus_START;
 						this.iCnt = 0;
 						break;
 					case (byte) '8':
-						log.debug("{} {} {} 94指令錯誤", brws, wsno, "");
-						amlog.info("[{}][{}][{}]94指令錯誤", brws, "        ", "            ");
+						amlog.info("[{}][{}][{}]:94指令錯誤", brws, "        ", "            ");
 						break;
 					case (byte) 'q':
-						log.debug("{} {} {} 94寫磁條錯檢查磁頭", brws, wsno, "");
-						amlog.info("[{}][{}][{}]94寫磁條錯檢查磁頭", brws, "        ", "            ");
+						amlog.info("[{}][{}][{}]:94寫磁條錯檢查磁頭", brws, "        ", "            ");
 						break;
 					case (byte) 'r':
-						log.debug("{} {} {} 94空白磁條,請重建磁條", brws, wsno, "");
-						amlog.info("[{}][{}][{}]94空白磁條,請重建磁條", brws, "        ", "            ");
+						amlog.info("[{}][{}][{}]:94空白磁條,請重建磁條", brws, "        ", "            ");
 						break;
 					case (byte) 'X':
-						log.debug("{} {} {} 94傳票稍短,超出可列印範圍", brws, wsno, "");
-						amlog.info("[{}][{}][{}]94傳票稍短,超出可列印範圍", brws, "        ", "            ");
+						amlog.info("[{}][{}][{}]:94傳票稍短,超出可列印範圍", brws, "        ", "            ");
 						break;
 					case (byte) 'a':
 						log.debug("{} {} {} 94紙張插歪 或 錯誤資料格式", brws, wsno, "");
-						amlog.info("[{}][{}][{}]94紙張插歪 或 錯誤資料格式", brws, "        ", "            ");
+						amlog.info("[{}][{}][{}]:94紙張插歪 或 錯誤資料格式", brws, "        ", "            ");
 						break;
 					case (byte) 0x90:
-						log.debug("{} {} {} 94硬體媒介故障", brws, wsno, "");
-						amlog.info("[{}][{}][{}]94硬體媒介故障", brws, "        ", "            ");
+						amlog.info("[{}][{}][{}]:94硬體媒介故障", brws, "        ", "            ");
 						break;
 					case (byte) 0x80:
-						log.debug("{} {} {} 94補摺機無法運作", brws, wsno, "");
-						amlog.info("[{}][{}][{}]94補摺機無法運作", brws, "        ", "            ");
+						amlog.info("[{}][{}][{}]:94補摺機無法運作", brws, "        ", "            ");
 						break;
 					default:
-						log.debug("{} {} {} 94硬體故障", brws, wsno, "");
-						amlog.info("[{}][{}][{}]94硬體故障", brws, "        ", "            ");
+						amlog.info("[{}][{}][{}]:94硬體故障", brws, "        ", "            ");
 						break;
 					}
-					ODSTrace(String.format("S5240 : first data is %s",new String(data)));
+					atlog.info("first data is {}",new String(data));
 				}
 			}
 		}
@@ -1039,8 +1016,7 @@ public class CS5240Impl implements Printer {
 		// TODO Auto-generated method stub
 		log.debug("{} {} {} ResetPrinterInit curState={}", brws, "", "", this.curState);
 		if (this.curState == ResetPrinterInit_START) {
-			log.debug("{} {} {} 00補摺機重置中...", brws, "", "");
-			amlog.info("[{}][{}][{}]00補摺機重置中...", brws, "        ", "            ");
+			amlog.info("[{}][{}][{}]:00補摺機重置中...", brws, "        ", "            ");
 			if (Send_hData(S5240_PINIT) != 0)
 				return false;
 		}
@@ -1064,8 +1040,7 @@ public class CS5240Impl implements Printer {
 		}
 		log.debug("5 ===<><>{} chkChkState {}", this.curState, this.curChkState);
 		if (curState == ResetPrinterInit_FINISH) {
-			log.debug("{} {} {} 00補摺機重置完成！", brws, "", "");
-			amlog.info("[{}][{}][{}]00補摺機重置完成！", brws, "        ", "            ");
+			amlog.info("[{}][{}][{}]:00補摺機重置完成！", brws, "        ", "            ");
 			return true;
 		} else
 			return false;
@@ -1118,8 +1093,7 @@ public class CS5240Impl implements Printer {
 			log.debug("1 ===<><>{} SetCPI {} {} iCnt={}", this.curState, this.curChkState, data, this.iCnt);
 			if (CheckDis(data) != 0) {
 				if (!pc.connectStatus()) {
-					log.debug("{} {} {} 94補摺機斷線！", brws, "", "");
-					amlog.info("[{}][{}][{}]94補摺機斷線！", brws, "        ", "            ");
+					amlog.info("[{}][{}][{}]:94補摺機斷線！", brws, "        ", "            ");
 					return false;
 				}
 				return false;
@@ -1203,8 +1177,7 @@ public class CS5240Impl implements Printer {
 			log.debug("1 ===<><>{} SetLPI {} {} iCnt={}", this.curState, this.curChkState, data, this.iCnt);
 			if (CheckDis(data) != 0) {
 				if (!pc.connectStatus()) {
-					log.debug("{} {} {} 94補摺機斷線！", brws, "", "");
-					amlog.info("[{}][{}][{}]94補摺機斷線！", brws, "        ", "            ");
+					amlog.info("[{}][{}][{}]:94補摺機斷線！", brws, "        ", "            ");
 					return false;
 				}
 				return false;
@@ -1356,14 +1329,12 @@ public class CS5240Impl implements Printer {
 			if (CheckDis(data) != 0) {
 				this.curChkState = CheckStatus_FINISH;
 				if (!pc.connectStatus()) {
-					log.debug("{} {} {} 94補摺機斷線！", brws, account, "");
-					amlog.info("[{}][{}][{}]94補摺機斷線！", brws, pasname, account);
+					amlog.info("[{}][{}][{}]:94補摺機斷線！", brws, pasname, account);
 					return false;
 				}
 			}
 			if (data != null && !CheckError(data)) {
-				log.debug("{} {} {}95補摺機硬體錯誤！(EJT)", brws, account, "");
-				amlog.info("[{}][{}][{}]95補摺機硬體錯誤！(EJT)", brws, pasname, account);
+				amlog.info("[{}][{}][{}]:95補摺機硬體錯誤！(EJT)", brws, pasname, account);
 				this.curChkState = CheckStatus_FINISH;
 				return false;
 			} else {
@@ -1374,8 +1345,7 @@ public class CS5240Impl implements Printer {
 		}
 		if (this.curState == MS_Write_START_2) {
 			this.curChkState = CheckStatus_FINISH;
-			log.debug("{} {} {}07存摺磁條寫入中...", brws, account, "");
-			amlog.info("[{}][{}][{}]07存摺磁條寫入中...", brws, pasname, account);
+			amlog.info("[{}][{}][{}]:07存摺磁條寫入中...", brws, pasname, account);
 			Send_hData(this.curmsdata);
 
 			// actual ms write
@@ -1400,8 +1370,7 @@ public class CS5240Impl implements Printer {
 					rtn = true;
 					break;
 				} else if (data[2] == (byte) 's') {
-					log.debug("{} {} {} {} 94補摺機狀態錯誤！(MSW)", iCnt, brws, account, "");
-					amlog.info("[{}][{}][{}]94補摺機狀態錯誤！(MSW)", brws, pasname, account);
+					amlog.info("[{}][{}][{}]:94補摺機狀態錯誤！(MSW)", brws, pasname, account);
 					this.curState = ResetPrinterInit_START;
 					ResetPrinterInit();
 					pc.close();
@@ -1416,8 +1385,7 @@ public class CS5240Impl implements Printer {
 							return false;
 						Sleep(50);
 						data = Rcv_Data(5);
-						log.debug("{} {} {} 94補摺機狀態錯誤！(MSW) ERROR:[{}]", iCnt, brws, account, data);
-						amlog.info("[{}][{}][{}]94補摺機狀態錯誤！(MSW) ERROR:[{}]", brws, pasname, account, data);
+						amlog.info("[{}][{}][{}]:94補摺機狀態錯誤！(MSW) ERROR:[{}]", brws, pasname, account, data);
 						this.curState = ResetPrinterInit_START;
 						ResetPrinterInit();
 						break;
@@ -1426,8 +1394,7 @@ public class CS5240Impl implements Printer {
 							return false;
 						Sleep(50);
 						data = Rcv_Data(5);
-						log.debug("{} {} {} 94補摺機狀態錯誤！(MSW) ERROR:[{}]", iCnt, brws, account, data);
-						amlog.info("[{}][{}][{}]94補摺機狀態錯誤！(MSW) ERROR:[{}]", brws, pasname, account, data);
+						amlog.info("[{}][{}][{}]:94補摺機狀態錯誤！(MSW) ERROR:[{}]", brws, pasname, account, data);
 						// 20060706 , if write eorror , retry 3 times
 						/*
 						 * iRetryCnt++; if ( iRetryCnt < 1 ) { unsigned char S5240_PCLEAR[2]={0x7f,0};
@@ -1438,8 +1405,7 @@ public class CS5240Impl implements Printer {
 						ResetPrinterInit();
 						return false;
 					case '8':
-						log.debug("{} {} {} 94補摺機指令錯誤！(MSW)", iCnt, brws, account);
-						amlog.info("[{}][{}][{}]94補摺機指令錯誤！(MSW)", brws, pasname, account);
+						amlog.info("[{}][{}][{}]:94補摺機指令錯誤！(MSW)", brws, pasname, account);
 						this.curState = ResetPrinterInit_START;
 						ResetPrinterInit();
 						return false;
@@ -1450,8 +1416,7 @@ public class CS5240Impl implements Printer {
 						return false;
 					}
 				} else if (iCnt > 40) {
-					log.debug("{} {} {} {} 94補摺機狀態錯誤！(MSR-2)", iCnt, brws, "", "");
-					amlog.info("[{}][{}][{}]94補摺機狀態錯誤！(MSR-2)", brws, pasname, account);
+					amlog.info("[{}][{}][{}]:94補摺機狀態錯誤！(MSR-2)", brws, pasname, account);
 					this.curState = ResetPrinterInit_START;
 					ResetPrinterInit();
 					pc.close();
@@ -1582,8 +1547,7 @@ public class CS5240Impl implements Printer {
 			Sleep(50);
 			data = Rcv_Data(5);
 			// 20091002 , show error code
-			log.debug("{} {} {} 95硬體錯誤代碼1[{}]", brws, "", "", String.format(outptrn1, data));
-			amlog.info("[{}][{}][{}]95硬體錯誤代碼1[{}]", brws, "        ", "            ", String.format(outptrn1, data));		
+			amlog.info("[{}][{}][{}]:95硬體錯誤代碼1[{}]", brws, "        ", "            ", String.format(outptrn1, data));		
 
 			ResetPrinter();
 			this.curState = ResetPrinterInit_START;
@@ -1603,8 +1567,7 @@ public class CS5240Impl implements Printer {
 			Sleep(50);
 			data = Rcv_Data(5);
 			// 20091002 , show error code
-			log.debug("{} {} {} 95硬體錯誤代碼2[{}]", brws, "", "", String.format(outptrn1, data));
-			amlog.info("[{}][{}][{}]95硬體錯誤代碼2[{}]", brws, "        ", "            ", String.format(outptrn1, data));		
+			amlog.info("[{}][{}][{}]:95硬體錯誤代碼2[{}]", brws, "        ", "            ", String.format(outptrn1, data));		
 
 			ResetPrinter();
 			return false;
@@ -1613,8 +1576,7 @@ public class CS5240Impl implements Printer {
 			Sleep(50);
 			data = Rcv_Data(5);
 			// 20091002 , show error code
-			log.debug("{} {} {} 95硬體錯誤代碼3[{}]", brws, "", "", String.format(outptrn1, data));
-			amlog.info("[{}][{}][{}]95硬體錯誤代碼3[{}]", brws, "        ", "            ", String.format(outptrn1, data));		
+			amlog.info("[{}][{}][{}]:95硬體錯誤代碼3[{}]", brws, "        ", "            ", String.format(outptrn1, data));		
 
 			ResetPrinter();
 			return true;
@@ -1626,8 +1588,7 @@ public class CS5240Impl implements Printer {
 			Sleep(50);
 			data = Rcv_Data(5);
 			// 20091002 , show error code
-			log.debug("{} {} {} 95硬體錯誤代碼4[{}]", brws, "", "", String.format(outptrn1, data));
-			amlog.info("[{}][{}][{}]95硬體錯誤代碼4[{}]", brws, "        ", "            ", String.format(outptrn1, data));		
+			amlog.info("[{}][{}][{}]:95硬體錯誤代碼4[{}]", brws, "        ", "            ", String.format(outptrn1, data));		
 
 			ResetPrinter();
 			this.curState = ResetPrinterInit_START;
@@ -1639,8 +1600,7 @@ public class CS5240Impl implements Printer {
 			Sleep(50);
 			data = Rcv_Data(5);
 			// 20091002 , show error code
-			log.debug("{} {} {} 95硬體錯誤代碼5{}]", brws, "", "", String.format(outptrn1, data));
-			amlog.info("[{}][{}][{}]95硬體錯誤代碼5[{}]", brws, "        ", "            ", String.format(outptrn1, data));		
+			amlog.info("[{}][{}][{}]:95硬體錯誤代碼5[{}]", brws, "        ", "            ", String.format(outptrn1, data));		
 
 			ResetPrinter();
 			this.curState = ResetPrinterInit_START;
@@ -1648,11 +1608,10 @@ public class CS5240Impl implements Printer {
 			return false;
 		case 0x00:
 			log.debug("[{}]:S5240 : Error Reset[0x00]", String.format(outptrn2, wsno));
-			ODSTrace("S5240 : Error [0x00]");
+			atlog.info("Error [0x00]");
 			return false;
 		default:
-			log.debug("[{}]:S5240 : Error Reset[{}]", String.format(outptrn2, wsno), String.format(outptrn3, data[2]));
-			ODSTrace(String.format("S5240 : Error Reset[{}]", String.format(outptrn3, data[2])));
+			atlog.info("Error Reset[{}]", String.format(outptrn3, data[2]));
 			ResetPrinter();
 			return false;
 		}
@@ -1690,14 +1649,12 @@ public class CS5240Impl implements Printer {
 			Send_hData(S5240_PERRCODE_REQ);
 			Sleep(50);
 			data = Rcv_Data(5);
-			log.debug("{} {} {} 95硬體錯誤代碼Reset-1[{}]", brws, "", "", String.format(outptrn1, data));
-			amlog.info("[{}][{}][{}]95硬體錯誤代碼Reset-1[{}]", brws, "        ", "            ", String.format(outptrn1, data));		
+			amlog.info("[{}][{}][{}]:95硬體錯誤代碼Reset-1[{}]", brws, "        ", "            ", String.format(outptrn1, data));		
 			Send_hData(S5240_CANCEL);  //special for S5020
 			return false;
 		case (byte) 'a': // 20060801 hardware error ,ESCra , this may need resetInit()
 		case (byte) 'b':
-			log.debug("{} {} {} 95硬體錯誤代碼Reset-a[{}]", brws, "", "", String.format(outptrn1, data));
-			amlog.info("[{}][{}][{}]95硬體錯誤代碼Reset-a[{}]", brws, "        ", "            ", String.format(outptrn1, data));		
+			amlog.info("[{}][{}][{}]:95硬體錯誤代碼Reset-a[{}]", brws, "        ", "            ", String.format(outptrn1, data));		
 			Send_hData(S5240_CANCEL);  //special for S5020
 			return false;
 		case (byte) '8':
@@ -1705,24 +1662,21 @@ public class CS5240Impl implements Printer {
 			Send_hData(S5240_PERRCODE_REQ);
 			Sleep(50);
 			data = Rcv_Data(5);
-			log.debug("{} {} {} 95硬體錯誤代碼Reset-2[{}]", brws, "", "", String.format(outptrn1, data));
-			amlog.info("[{}][{}][{}]95硬體錯誤代碼Reset-2[{}]", brws, "        ", "            ", String.format(outptrn1, data));		
+			amlog.info("[{}][{}][{}]:95硬體錯誤代碼Reset-2[{}]", brws, "        ", "            ", String.format(outptrn1, data));		
 			Send_hData(S5240_CANCEL);  //special for S5020
 			return false;
 		case (byte) 'X': // Warning , paper lower
 			Send_hData(S5240_PERRCODE_REQ);
 			Sleep(50);
 			data = Rcv_Data(5);
-			log.debug("{} {} {} 95硬體錯誤代碼Reset-3[{}]", brws, "", "", String.format(outptrn1, data));
-			amlog.info("[{}][{}][{}]95硬體錯誤代碼Reset-3[{}]", brws, "        ", "            ", String.format(outptrn1, data));		
+			amlog.info("[{}][{}][{}]:95硬體錯誤代碼Reset-3[{}]", brws, "        ", "            ", String.format(outptrn1, data));		
 			return true;
 		case (byte) 'q': // read/write error of MS
 		case (byte) 'r': // read error of MS
 			Send_hData(S5240_PERRCODE_REQ);
 			Sleep(50);
 			data = Rcv_Data(5);
-			log.debug("{} {} {} 95硬體錯誤代碼Reset-4[{}]", brws, "", "", String.format(outptrn1, data));
-			amlog.info("[{}][{}][{}]95硬體錯誤代碼Reset-4[{}]", brws, "        ", "            ", String.format(outptrn1, data));		
+			amlog.info("[{}][{}][{}]:95硬體錯誤代碼Reset-4[{}]", brws, "        ", "            ", String.format(outptrn1, data));		
 			Send_hData(S5240_CANCEL);  //special for S5020			
 			return false;
 		case (byte) 0x21:
@@ -1730,18 +1684,15 @@ public class CS5240Impl implements Printer {
 			Send_hData(S5240_PERRCODE_REQ);
 			Sleep(50);
 			data = Rcv_Data(5);
-			log.debug("{} {} {} 95硬體錯誤代碼Reset-5[{}]", brws, "", "", String.format(outptrn1, data));
-			amlog.info("[{}][{}][{}]95硬體錯誤代碼Reset-5[{}]", brws, "        ", "            ", String.format(outptrn1, data));		
+			amlog.info("[{}][{}][{}]:95硬體錯誤代碼Reset-5[{}]", brws, "        ", "            ", String.format(outptrn1, data));		
 			Send_hData(S5240_CANCEL);  //special for S5020
 			return false;
 		case (byte) 0x00:
-			log.debug("[{}]:S5240 : Error Reset[0x00]", String.format(outptrn2, wsno));
-			ODSTrace("S5240 : Error [0x00]");
+			atlog.info("Error [0x00]");
 			Send_hData(S5240_CANCEL);  //special for S5020
 			return false;
 		default:
-			log.debug("[{}]:S5240 : Error Reset[{}]", String.format(outptrn2, wsno), String.format(outptrn3, data[2]));
-			ODSTrace(String.format("S5240 : Error Reset[{}]", String.format(outptrn3, data[2])));
+			atlog.info("Error Reset[{}]", String.format(outptrn3, data[2]));
 			Send_hData(S5240_CANCEL);  //special for S5020
 			return false;
 		}
@@ -1805,14 +1756,12 @@ public class CS5240Impl implements Printer {
 			}
 			if (data[2] != (byte)'4' && data[2] != (byte)'P' && data[2] != (byte)'2') {
 				if (new String(data).equals("DIS")) {
-					log.debug("{} {} {} 94補摺機斷線", brws, "", "");
-					amlog.info("[{}][{}][{}]94補摺機斷線", brws, "        ", "            ");		
+					amlog.info("[{}][{}][{}]:94補摺機斷線", brws, "        ", "            ");		
 					this.curChkState = CheckStatus_FINISH;
 					return 0;
 				}
 				if (!CheckError(data)) {
-					log.debug("{} {} {} 95補摺機硬體錯誤！(SIG)", brws, "", "");
-					amlog.info("[{}][{}][{}]95補摺機硬體錯誤！(SIG)", brws, "        ", "            ");		
+					amlog.info("[{}][{}][{}]:95補摺機硬體錯誤！(SIG)", brws, "        ", "            ");		
 					this.curChkState = CheckStatus_FINISH;
 					ResetPrinter();
 					return 0;
@@ -1840,8 +1789,7 @@ public class CS5240Impl implements Printer {
 					log.debug("ReadBarcode 3 ===<><>{} chkChkState {}", this.curState, this.curChkState);
 				} else if (data[1] == (byte)'s') {
 					if (data[2] == (byte)0x7f) { // barcode error , blank paper etc
-						log.debug("{} {} {} {} 94補摺機狀態錯誤！(讀空白頁)", iCnt, brws, "", "");
-						amlog.info("[{}][{}][{}]94補摺機狀態錯誤！(讀空白頁)", brws, "        ", "            ");		
+						amlog.info("[{}][{}][{}]:94補摺機狀態錯誤！(讀空白頁)", brws, "        ", "            ");		
 						this.curState = ResetPrinterInit_START;
 						return -1;
 //						ResetPrinterInit();
@@ -1854,8 +1802,7 @@ public class CS5240Impl implements Printer {
 						return (short)(this.curbarcodedata[0] - 0x30);
 					}
 				} else if (iCnt > 40) {
-					log.debug("{} {} {} {} 94補摺機狀態錯誤！(MSR-2)", iCnt, brws, "", "");
-					amlog.info("[{}][{}][{}]94補摺機狀態錯誤！(MSR-2)", brws, "        ", "            ");		
+					amlog.info("[{}][{}][{}]:94補摺機狀態錯誤！(MSR-2)", brws, "        ", "            ");		
 					this.curState = ResetPrinterInit_START;
 					ResetPrinterInit();
 					pc.close();
@@ -1929,7 +1876,7 @@ public class CS5240Impl implements Printer {
 				S5240_OFF_SIGNAL[3] = (byte)0xff;
 				if ( Send_hData(S5240_OFF_SIGNAL) < 0 ) {
 					log.debug("[{}]:S5240 : SetSignal() -- OFF Signal Failed!!", String.format(outptrn2, wsno));
-					ODSTrace("[{}]:S5240 : SetSignal() -- OFF Signal Failed!!");
+					atlog.info("OFF Signal Failed!!");
 					return false;
 				}
 				this.curState = SetSignal_2;
@@ -1957,7 +1904,7 @@ public class CS5240Impl implements Printer {
 				S5240_SET_SIGNAL[3] = light1;
 				if ( Send_hData(S5240_SET_SIGNAL) < 0 ) {
 					log.debug("[{}]:S5240 : SetSignal() -- OFF Signal Failed!!", String.format(outptrn2, wsno));
-					ODSTrace("S5240 : SetSignal() -- OFF Signal Failed!!");
+					atlog.info("OFF Signal Failed!!");
 					return false;
 				}
 //20200331 test for speed				Sleep(100);
@@ -1989,7 +1936,7 @@ public class CS5240Impl implements Printer {
 					//----
 					if ( Send_hData(S5240_SET_BLINK) < 0 ) {
 						log.debug("[{}]:S5240 : SetSignal() -- OFF Signal Failed!!", String.format(outptrn2, wsno));
-						ODSTrace("S5240 : SetSignal() -- OFF Signal Failed!!");
+						atlog.info("OFF Signal Failed!!");
 						return false;
 					}
 //20200403  test	Sleep(1000);
@@ -2002,8 +1949,7 @@ public class CS5240Impl implements Printer {
 			if (CheckDis(data) != 0) 
 				return false;
 			if (!CheckError(data)) {
-				log.debug("{} {} {} 95補摺機硬體錯誤！(SIG)", brws, "", "");
-				amlog.info("[{}][{}][{}]95補摺機硬體錯誤！(SIG)", brws, "        ", "            ");		
+				amlog.info("[{}][{}][{}]:95補摺機硬體錯誤！(SIG)", brws, "        ", "            ");		
 				return false;
 			} else 
 				this.curState = SetSignal_FINISH;
@@ -2031,8 +1977,7 @@ public class CS5240Impl implements Printer {
 		if (data == null || data.length == 0)
 			return -1;
 		if (new String(data).contains("DIS")) {
-			log.debug("{} {} {} 94補摺機斷線！", brws, "", "");
-			amlog.info("[{}][{}][{}]94補摺機斷線！", brws, "        ", "            ");		
+			amlog.info("[{}][{}][{}]:94補摺機斷線！", brws, "        ", "            ");		
 			return -2;
 		}
 		return 0;
