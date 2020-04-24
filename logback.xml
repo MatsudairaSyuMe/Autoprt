@@ -21,7 +21,7 @@
 
 	<!-- <appender>是<configuration>的子節點，是負責寫日誌的組件。有兩個必要屬性name和class。name指定appender名稱，
 	class指定appender的實現類。 -->
-	<appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
+	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
 		<!-- 對日誌進行格式化。 -->
 		<encoder>
 			<pattern>

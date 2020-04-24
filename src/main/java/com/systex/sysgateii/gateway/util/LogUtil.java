@@ -26,7 +26,9 @@ import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.rolling.FixedWindowRollingPolicy;
 import ch.qos.logback.core.rolling.RollingFileAppender;
+import ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP;
 import ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy;
+import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import ch.qos.logback.core.spi.AppenderAttachable;
 import ch.qos.logback.core.util.FileSize;
 
@@ -56,23 +58,35 @@ public class LogUtil {
 			fpn = "." + File.separator + logName + ".log";
 		rfAppender.setFile(fpn);
 
-		FixedWindowRollingPolicy rollingPolicy = new FixedWindowRollingPolicy();
+		TimeBasedRollingPolicy<ILoggingEvent> rollingPolicy = new TimeBasedRollingPolicy<>();
+////		FixedWindowRollingPolicy rollingPolicy = new FixedWindowRollingPolicy();
 		rollingPolicy.setContext(loggerContext);
 		// rolling policies need to know their parent
 		// it's one of the rare cases, where a sub-component knows about its parent
 		rollingPolicy.setParent(rfAppender);
 //		rollingPolicy.setFileNamePattern(logName + byDate + ".%i.log.zip");
 		if (pathname != null && pathname.trim().length() > 0)
-			fpn = pathname + File.separator + "archive" + File.separator + logName + ".%i.log.zip";
+			fpn = pathname + File.separator + "archive" + File.separator + logName + "-%d{yyyy-MM-dd-HH-mm}-.%i.log.zip";
 		else
-			fpn = "." + File.separator + "archive" + File.separator + logName + ".%i.log.zip";
+			fpn = "." + File.separator + "archive" + File.separator + logName + "-%d{yyyy-MM-dd-HH-mm}-.%i.log.zip";
 
 		rollingPolicy.setFileNamePattern(fpn );
+		rollingPolicy.setMaxHistory(5);
+		rollingPolicy.setCleanHistoryOnStart(true);
 		rollingPolicy.start();
 
-		SizeBasedTriggeringPolicy<ILoggingEvent> triggeringPolicy = new SizeBasedTriggeringPolicy<ILoggingEvent>();
-		triggeringPolicy.setMaxFileSize(FileSize.valueOf("5MB"));
+//		SizeBasedTriggeringPolicy<ILoggingEvent> triggeringPolicy = new SizeBasedTriggeringPolicy<ILoggingEvent>();
+		SizeAndTimeBasedFNATP<ILoggingEvent> triggeringPolicy = new SizeAndTimeBasedFNATP<ILoggingEvent>();
+		triggeringPolicy.setContext(loggerContext);
+		triggeringPolicy.setMaxFileSize(FileSize.valueOf("10MB"));
+		triggeringPolicy.setTimeBasedRollingPolicy(rollingPolicy);
 		triggeringPolicy.start();
+
+		//---
+		//add for SizeAndTimeBasedFNATP
+		rollingPolicy.setTimeBasedFileNamingAndTriggeringPolicy(triggeringPolicy);
+		rollingPolicy.start();
+		//---
 
 		PatternLayoutEncoder encoder = new PatternLayoutEncoder();
 		encoder.setContext(loggerContext);
