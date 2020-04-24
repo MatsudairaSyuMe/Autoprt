@@ -152,7 +152,6 @@ public class FASClientChannelHandler extends ChannelInboundHandlerAdapter {
 				ByteBuf buf = (ByteBuf) msg;
 				log.debug("capacity=" + buf.capacity() + " readableBytes=" + buf.readableBytes() + " barray="
 						+ buf.hasArray() + " nio=  " + buf.nioBufferCount());
-				log.debug("readableBytes={} barray={}", buf.readableBytes(), buf.hasArray());
 				if (clientMessageBuf.readerIndex() > (clientMessageBuf.capacity() / 2)) {
 					clientMessageBuf.discardReadBytes();
 					log.debug("adjustment clientMessageBuf readerindex ={}" + clientMessageBuf.readableBytes());
@@ -222,14 +221,13 @@ public class FASClientChannelHandler extends ChannelInboundHandlerAdapter {
 										}
 									} else
 										break;
-									
 								}
 								
 							}
 						}
 					}
 				} else // if
-					log.warn("not ByteBuf");
+					log.warn("not readable ByteBuf");
 			} else
 				log.error("not ByteBuf message");
 		} catch (Exception e) {

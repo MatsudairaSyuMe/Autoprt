@@ -69,6 +69,7 @@ public class FASChannelPoolHandler implements ChannelPoolHandler {
 		channel.config().setReuseAddress(true);
 //		channel.pipeline().addLast("log", new LoggingHandler(FASClientChannelHandler.class, LogLevel.INFO))
 //				.addLast(new IdleStateHandler(4, 0, 0, TimeUnit.SECONDS)).addLast(new FASClientChannelHandler());
+		//no heart beat check
 		channel.pipeline().addLast("log", new LoggingHandler(FASClientChannelHandler.class, LogLevel.INFO))
 //		.addLast(new FASClientChannelHandler(rcvBuf, seqf_map));
 		//----  20200422 test

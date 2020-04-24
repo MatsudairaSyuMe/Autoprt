@@ -116,6 +116,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	private static final int MAXDELAY = 6;
 	private static final int RECONNECT = 10;
 	private int iRetry = 0;
+	private boolean showStateMsg = false;
 
 	// Signal Number
 	private byte L1 = (byte) 0x01; // 1:0000001
@@ -342,9 +343,13 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 						future.channel().close();
 						if (iRetry > MAXDELAY)
 							iRetry = MAXDELAY;
-//						final int _newwait = iRetry * RECONNECT * 1000;
 						final int _newwait = iRetry * RECONNECT * 100;
-						amlog.info(brws.substring(0, 5), brws.substring(3),"[{}][{}][{}]:99補摺機斷線，請檢查線路！", brws, pasname, "            ");
+						if (curState == SESSIONBREAK && !showStateMsg) {
+							amlog.info("[{}][{}][{}]:99補摺機斷線，請檢查線路！", brws, "        ", "            ");
+							showStateMsg = true;
+						}
+						MDC.put("WSNO", brws.substring(3));
+						MDC.put("PID", pid);
 						atlog.info("Error , please check ... [{}:{}:{}]", rmtaddr.getAddress().toString(), rmtaddr.getPort(), localaddr.getPort());
 						clientMessageBuf.clear();
 						if (!future.channel().isActive()) {
@@ -354,6 +359,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 						iRetry += 1;
 						bootstrap.connect(rmtaddr, localaddr).addListener(this);
 					} else {// good, the connection is ok
+						showStateMsg = false;
 						channel_ = future.channel();
 						// add a listener to detect the connection lost
 						addCloseDetectListener(channel_);
@@ -413,7 +419,6 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		bootstrap.option(ChannelOption.SO_LINGER, 0);
 		bootstrap.option(ChannelOption.SO_REUSEADDR, true);
 		bootstrap.option(ChannelOption.TCP_NODELAY, true);
-//		bootstrap.option(ChannelOption.TCP_NODELAY, false);
 		bootstrap.option(ChannelOption.ALLOW_HALF_CLOSURE, false);
 		bootstrap.option(ChannelOption.SO_RCVBUF, bufferSize);
 		bootstrap.option(ChannelOption.SO_SNDBUF, bufferSize);
@@ -424,7 +429,6 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			@Override
 			public void initChannel(SocketChannel ch) throws Exception {
 				ch.pipeline().addLast("log", new LoggingHandler(PrtCli.class, LogLevel.INFO));
-//				ch.pipeline().addLast(new IdleStateHandler(1, 0, 0, TimeUnit.SECONDS));
 				ch.pipeline().addLast(new IdleStateHandler(500, 0, 0, TimeUnit.MILLISECONDS));
 				ch.pipeline().addLast(getHandler("PrtCli"));
 			}
@@ -448,6 +452,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		super.channelActive(ctx);
 		MDC.put("WSNO", this.brws.substring(3));
 		MDC.put("PID", pid);
+		showStateMsg = false;
 		aslog.info(String.format("CON  %s[%04d]:", this.brws.substring(3), 0));
 		prtcliFSM(!firstOpenConn);
 		prt.getIsShouldShutDown().set(false);
@@ -2617,8 +2622,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					log.debug("{} {} {} AutoPrnCls : --change process telegram", brws, catagory, account);
 				}
 			} else {
-				amlog.info("[{}][{}][{}]:22存摺頁次不符...正確頁次={} 插入頁次={}", brws, pasname, account, npage, rpage);
+//				amlog.info("[{}][{}][{}]:22存摺頁次不符...正確頁次={} 插入頁次={}", brws, pasname, account, npage, rpage);
 				if (SetSignal(!firstOpenConn, firstOpenConn, "0000000000","0000100000")) {
+					amlog.info("[{}][{}][{}]:22存摺頁次不符...正確頁次={} 插入頁次={}", brws, pasname, account, npage, rpage);
 					this.curState = EJECTAFTERPAGEERROR;
 					log.debug(
 							"{} {} {} AutoPrnCls : --eject passbook after check barcode page error!!",

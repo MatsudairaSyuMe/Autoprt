@@ -758,7 +758,8 @@ public class CS4625Impl implements Printer {
 				return false;
 
 			if (!CheckError(data)) {
-				amlog.info("[{}][{}][{}]:95補摺機硬體錯誤！(EJT)", brws, "        ", "            ");
+				if (data != null  && this.curState != 39 && this.curChkState != CheckStatus_START)
+					amlog.info("[{}][{}][{}]:95補摺機硬體錯誤！(EJT)", brws, "        ", "            ");
 				return false;
 			} else {
 				log.debug("2 ===<><>{} chkChkState {} {}", this.curState, this.curChkState, data);
