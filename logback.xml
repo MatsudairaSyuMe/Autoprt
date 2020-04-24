@@ -31,94 +31,68 @@
 		</encoder>
 	</appender>
 
-	<appender name="file" class="ch.qos.logback.core.rolling.RollingFileAppender">
-		<!-- 被寫入的文件名，可以是相對目錄，也可以是絕對目錄，如果上級目錄不存在會自動建立，沒有預設值。 -->
-		<file>${logs.dir}/${CONTEXT_NAME}.log</file>
-
-		<!-- 當發生滾動時的行為 -->
-		<rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
-			<!-- 必須包含“%i”例如，假設最小值和最大值分別為1和2，命名模式為 mylog%i.log,
-			會產生歸檔文件mylog1.log和mylog2.log。還可以指定文件壓縮選項，例如，mylog%i.log.gz 
-			或者 沒有log%i.log.zip -->
-			<FileNamePattern>${logs.dir}/${CONTEXT_NAME}.%i.log</FileNamePattern>
-			<!-- 窗口索引最小值 -->
-			<minIndex>1</minIndex>
-			<!-- 窗口索引最大值 -->
-			<maxIndex>1</maxIndex>
+    <appender name="file"
+              class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <Append>true</Append>
+        <file>${logs.dir}/${CONTEXT_NAME}.log</file>
+        <filter class = "ch.qos.logback.classic.filter.ThresholdFilter" >
+        		<level>DEBUG</level>
+        </filter>
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+		    <fileNamePattern>/${logs.dir}/archive/${CONTEXT_NAME}.%d{yyyy-MM-dd}.%i.log.zip</fileNamePattern>
+		    <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+		    	<maxFileSize>${maxSize}</maxFileSize>
+		    </timeBasedFileNamingAndTriggeringPolicy>
+  			<maxHistory>3</maxHistory>	
+			<cleanHistoryOnStart>true</cleanHistoryOnStart>
 		</rollingPolicy>
+        <encoder>
+        		<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS}|%level|%class{30}|%thread|%method|%line|%msg%n</pattern>
+        	<charset>${encoding}</charset>
+        </encoder>
+    </appender>
 
-		<!-- 啟動滾動的條件。 -->
-		<triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
-			<!-- 啟動文件的大小，預設值是10MB -->
-			<maxFileSize>30MB</maxFileSize>
-		</triggeringPolicy>
-
-		<!-- 對記錄事件進行格式化。 -->
-		<encoder>
-			<charset>${encoding}</charset>
-			<Pattern>
-				%d{yyyy-MM-dd HH:mm:ss.SSS}|%level|%class{30}|%thread|%method|%line|%msg%n
-			</Pattern>
-		</encoder>
-	</appender>
-
-	<appender name="FAS_LOG" class="ch.qos.logback.core.rolling.RollingFileAppender">
-		<!-- 被寫入的文件名，可以是相對目錄，也可以是絕對目錄，如果上級目錄不存在會自動建立，沒有預設值。 -->
-		<file>${logs.dir}/${FAS_NAME}.log</file>
-
-		<!-- 當發生滾動時的行為 -->
-		<rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
-			<!-- 必須包含“%i”例如，假設最小值和最大值分別為1和2，命名模式為 mylog%i.log,
-			會產生歸檔文件mylog1.log和mylog2.log。還可以指定文件壓縮選項，例如，mylog%i.log.gz 
-			或者 沒有log%i.log.zip -->
-			<FileNamePattern>${logs.dir}/${FAS_NAME}.%i.log</FileNamePattern>
-			<!-- 窗口索引最小值 -->
-			<minIndex>1</minIndex>
-			<!-- 窗口索引最大值 -->
-			<maxIndex>1</maxIndex>
+    <appender name="FAS_LOG"
+              class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <Append>true</Append>
+        <file>${logs.dir}/${FAS_NAME}.log</file>
+        <filter class = "ch.qos.logback.classic.filter.ThresholdFilter" >
+        		<level>DEBUG</level>
+        </filter>
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+		    <fileNamePattern>/${logs.dir}/archive/${FAS_NAME}.%d{yyyy-MM-dd}.%i.log.zip</fileNamePattern>
+		    <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+		    	<maxFileSize>${maxSize}</maxFileSize>
+		    </timeBasedFileNamingAndTriggeringPolicy>
+  			<maxHistory>3</maxHistory>	
+			<cleanHistoryOnStart>true</cleanHistoryOnStart>
 		</rollingPolicy>
+        <encoder>
+        		<pattern>${telegrampattern}</pattern>
+        	<charset>${encoding}</charset>
+        </encoder>
+    </appender>
 
-		<!-- 啟動滾動的條件。 -->
-		<triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
-			<!-- 啟動文件的大小，預設值是10MB -->
-			<maxFileSize>30MB</maxFileSize>
-		</triggeringPolicy>
-
-		<!-- 對記錄事件進行格式化。 -->
-		<encoder>
-			<charset>${encoding}</charset>
-			<Pattern>${telegrampattern}</Pattern>
-		</encoder>
-	</appender>
-
-	<appender name="RATE_LOG" class="ch.qos.logback.core.rolling.RollingFileAppender">
-		<!-- 被寫入的文件名，可以是相對目錄，也可以是絕對目錄，如果上級目錄不存在會自動建立，沒有預設值。 -->
-		<file>${logs.dir}/${RATE_NAME}.log</file>
-
-		<!-- 當發生滾動時的行為 -->
-		<rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
-			<!-- 必須包含“%i”例如，假設最小值和最大值分別為1和2，命名模式為 mylog%i.log,
-			會產生歸檔文件mylog1.log和mylog2.log。還可以指定文件壓縮選項，例如，mylog%i.log.gz 
-			或者 沒有log%i.log.zip -->
-			<FileNamePattern>${logs.dir}/${RATE_NAME}.%i.log</FileNamePattern>
-			<!-- 窗口索引最小值 -->
-			<minIndex>1</minIndex>
-			<!-- 窗口索引最大值 -->
-			<maxIndex>1</maxIndex>
+    <appender name="RATE_LOG"
+              class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <Append>true</Append>
+        <file>${logs.dir}/${RATE_NAME}.log</file>
+        <filter class = "ch.qos.logback.classic.filter.ThresholdFilter" >
+        		<level>DEBUG</level>
+        </filter>
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+		    <fileNamePattern>/${logs.dir}/archive/${RATE_NAME}.%d{yyyy-MM-dd}.%i.log.zip</fileNamePattern>
+		    <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+		    	<maxFileSize>${maxSize}</maxFileSize>
+		    </timeBasedFileNamingAndTriggeringPolicy>
+  			<maxHistory>3</maxHistory>	
+			<cleanHistoryOnStart>true</cleanHistoryOnStart>
 		</rollingPolicy>
-
-		<!-- 啟動滾動的條件。 -->
-		<triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
-			<!-- 啟動文件的大小，預設值是10MB -->
-			<maxFileSize>30MB</maxFileSize>
-		</triggeringPolicy>
-
-		<!-- 對記錄事件進行格式化。 -->
-		<encoder>
-			<charset>${encoding}</charset>
-			<Pattern>${telegrampattern}</Pattern>
-		</encoder>
-	</appender>
+        <encoder>
+        		<pattern>${telegrampattern}</pattern>
+        	<charset>${encoding}</charset>
+        </encoder>
+    </appender>
 
 	<!-- 特殊的<logger>元素，是根logger。只有一個level屬性，應為已經被命名為"root". level:設置列印級別，大小寫無關：TRACE, 
 		DEBUG, INFO, WARN, ERROR, ALL 和 OFF，不能設置為INHERITED或者同義詞NULL。預設是DEBUG。
@@ -137,6 +111,11 @@
 		additivity:是否向上級logger傳遞列印訊息。預設是true。(這個logger的上級就是上面的root)
 	<logger>可以包含零個或多個<appender-ref>元素，標識這個appender將會添加到這個logger。 -->
 <!--	<logger name=sysgateii-test level="DEBUG" additivity="true"></logger>-->
+    <logger name="com.systex" additivity="false" level="debug">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="file"/>
+    </logger> 
+
     <logger name="faslog" level="debug" additivity="false">
         <appender-ref ref="FAS_LOG"/>
     </logger>
