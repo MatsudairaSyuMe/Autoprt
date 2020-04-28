@@ -2264,10 +2264,13 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 									rtn = 622;
 									break;
 								}
+								//20200428 add for receive TOTA ERROR message
+								this.curState = EJECTAFTERPAGEERROR;
 								// "A665" & "X665" 無補登摺資料、"A104" 該戶無未登摺資料
 								if (mno == 665 || mno == 104) {
-									if (SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000100")) {
-										amlog.info("[{}][{}][{}]:52{}{}{}!", brws, pasname, this.account,mt,mno, cMsg);
+									SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000100");
+									if (SetSignal(!firstOpenConn, firstOpenConn, "0000000000", "0000000100")) {
+										amlog.info("[{}][{}][{}]:52[{}]{}{}!", brws, pasname, this.account,mt,mno, cMsg);
 									} else {
 										log.debug("{} {} {} {} {} {} AutoPrnCls : --change ", brws, catagory, account,
 												mt, mno, cMsg);
@@ -2275,15 +2278,17 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 								}
 								// E194 , 補登資料超過可印行數, 應至服務台換摺
 								else if (mno == 194) {
-									if (SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000001000")) {
-										amlog.info("[{}][{}][{}]:52{}{}{}!", brws, pasname, this.account,mt,mno, cMsg);
+									SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000001000");
+									if (SetSignal(!firstOpenConn, firstOpenConn, "0000000000", "0000001000")) {
+										amlog.info("[{}][{}][{}]:52[{}]{}{}!", brws, pasname, this.account,mt,mno, cMsg);
 									} else {
 										log.debug("{} {} {} {} {} {} AutoPrnCls : --change ", brws, catagory, account,
 												mt, mno, cMsg);
 									}
 								} else {
-									if (SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000001")) {
-										amlog.info("[{}][{}][{}]:52{}{}{}!", brws, pasname, this.account,mt,mno, cMsg);
+									SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000001");
+									if (SetSignal(!firstOpenConn, firstOpenConn, "0000000000", "0000000001")) {
+										amlog.info("[{}][{}][{}]:52[{}]{}{}!", brws, pasname, this.account,mt,mno, cMsg);
 									} else {
 										log.debug("{} {} {} {} {} {} AutoPrnCls : --change ", brws, catagory, account,
 												mt, mno, cMsg);
@@ -2352,7 +2357,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			}
 		} while (this.iCount < iCon);
 
-		if ((this.curState == STARTPROCTLM || this.curState == SNDANDRCVDELTLMCHKEND)
+		//20200428 add for receive error TOTA  ERROR message set to this.curState == EJECTAFTERPAGEERROR
+		if ((this.curState == STARTPROCTLM || this.curState == SNDANDRCVDELTLMCHKEND || this.curState == EJECTAFTERPAGEERROR)
 				&& !dispatcher.isTITA_TOTA_START() && alreadySendTelegram)
 			//relese channel
 			this.alreadySendTelegram = false;
@@ -2663,7 +2669,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			int r = 0;
 			this.Send_Recv_DATAInq = true;
 			if ((r = Send_Recv(this.iFig, TXP.INQ, "0", "0")) != 0) {
-				if (r < 0) {
+				//20200428 modify for receive TOTA ERROR message
+				if (r < 0 && r != -2) {
 					this.curState = SESSIONBREAK;
 					amlog.info("[{}][{}][{}]:61存摺資料補登失敗！", brws, pasname, account);
 				}
