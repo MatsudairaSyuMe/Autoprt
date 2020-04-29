@@ -78,9 +78,11 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	private static Logger log = LoggerFactory.getLogger(PrtCli.class);
 
 	private static Logger aslog = null;
-	public Logger amlog = null;
-//	private static Logger atlog = LoggerFactory.getLogger("atlog");
-	public Logger atlog = null;
+//	public Logger amlog = null;
+	private Logger amlog = null;
+
+//	public Logger atlog = null;
+	private Logger atlog = null;
 	public String pid = "";
 
 	private static final ByteBuf HEARTBEAT_SEQUENCE = Unpooled
@@ -2268,31 +2270,35 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 								this.curState = EJECTAFTERPAGEERROR;
 								// "A665" & "X665" 無補登摺資料、"A104" 該戶無未登摺資料
 								if (mno == 665 || mno == 104) {
-									SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000100");
-									if (SetSignal(!firstOpenConn, firstOpenConn, "0000000000", "0000000100")) {
-										amlog.info("[{}][{}][{}]:52[{}]{}{}!", brws, pasname, this.account,mt,mno, cMsg);
+//									SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000100");
+									if (SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000100")) {
+//										amlog.info("[{}][{}][{}]:52[{}]{}{}!", brws, pasname, this.account,mt,mno, cMsg);
 									} else {
 										log.debug("{} {} {} {} {} {} AutoPrnCls : --change ", brws, catagory, account,
 												mt, mno, cMsg);
 									}
+									amlog.info("[{}][{}][{}]:52[{}{}]{}!", brws, pasname, this.account,mt,mno, cMsg);
+
 								}
 								// E194 , 補登資料超過可印行數, 應至服務台換摺
 								else if (mno == 194) {
-									SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000001000");
+//									SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000001000");
 									if (SetSignal(!firstOpenConn, firstOpenConn, "0000000000", "0000001000")) {
-										amlog.info("[{}][{}][{}]:52[{}]{}{}!", brws, pasname, this.account,mt,mno, cMsg);
+										;
 									} else {
 										log.debug("{} {} {} {} {} {} AutoPrnCls : --change ", brws, catagory, account,
 												mt, mno, cMsg);
 									}
+									amlog.info("[{}][{}][{}]:52[{}{}]{}!", brws, pasname, this.account,mt,mno, cMsg);
 								} else {
-									SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000001");
+//									SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000001");
 									if (SetSignal(!firstOpenConn, firstOpenConn, "0000000000", "0000000001")) {
-										amlog.info("[{}][{}][{}]:52[{}]{}{}!", brws, pasname, this.account,mt,mno, cMsg);
+//										amlog.info("[{}][{}][{}]:52[{}]{}{}!", brws, pasname, this.account,mt,mno, cMsg);
 									} else {
 										log.debug("{} {} {} {} {} {} AutoPrnCls : --change ", brws, catagory, account,
 												mt, mno, cMsg);
 									}
+									amlog.info("[{}][{}][{}]:52[{}{}]{}!", brws, pasname, this.account,mt,mno, cMsg);
 								}
 								if (ifun == 1)
 									log.debug("[{}]:TxFlow : Send_Recv() -- INQ Data Failed ! msgid={}{}", brws, mt,
@@ -2702,7 +2708,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			r = 0;
 			if (this.Send_Recv_DATAInq) {
 				if ((r = Send_Recv(this.iFig, TXP.INQ, "0", "0")) != 0) {
-					if (r < 0) {
+					//20200428 modify for receive TOTA ERROR message
+					if (r < 0 && r != -2) {
 						this.curState = SESSIONBREAK;
 						amlog.info("[{}][{}][{}]:61存摺資料補登失敗！", brws, pasname, account);
 					}
@@ -2949,4 +2956,12 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	public void setByDate(String byDate) {
 		this.byDate = byDate;
 	}
+	public Logger getAmLog() {
+		return amlog;
+	}
+	public Logger getAtLog() {
+		return atlog;
+	}
+
+
 }

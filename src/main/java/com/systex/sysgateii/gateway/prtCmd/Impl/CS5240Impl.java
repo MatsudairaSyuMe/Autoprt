@@ -225,8 +225,8 @@ public class CS5240Impl implements Printer {
 		this.p_fun_flag.set(false);
 		MDC.put("WSNO", this.brws.substring(3));
 		MDC.put("PID", pc.pid);
-		amlog = pc.amlog;
-		atlog = pc.atlog;
+		amlog = pc.getAmLog();
+		atlog = pc.getAtLog();
 	}
 
 	@Override
@@ -798,6 +798,7 @@ public class CS5240Impl implements Printer {
 		if (this.curState == MS_Read_START) {
 			this.curState = MS_Read;
 			log.debug("MS_Read curState={} curChkState={}", this.curState, this.curChkState);
+			amlog.info("[{}][{}][{}]:01讀取存摺磁條中...", brws, "        ", "            ");
 			if (Send_hData(S5240_PMS_READ) != 0)
 				return (data);
 		}

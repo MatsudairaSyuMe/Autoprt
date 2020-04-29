@@ -66,9 +66,9 @@ public class LogUtil {
 		rollingPolicy.setParent(rfAppender);
 //		rollingPolicy.setFileNamePattern(logName + byDate + ".%i.log.zip");
 		if (pathname != null && pathname.trim().length() > 0)
-			fpn = pathname + File.separator + "archive" + File.separator + logName + "-%d{yyyy-MM-dd-HH-mm}-.%i.log.zip";
+			fpn = pathname + File.separator + "archive" + File.separator + logName + "-%d{yyyy-MM-dd-HH-mm}.%i.log.zip";
 		else
-			fpn = "." + File.separator + "archive" + File.separator + logName + "-%d{yyyy-MM-dd-HH-mm}-.%i.log.zip";
+			fpn = "." + File.separator + "archive" + File.separator + logName + "-%d{yyyy-MM-dd-HH-mm}.%i.log.zip";
 
 		rollingPolicy.setFileNamePattern(fpn );
 		rollingPolicy.setMaxHistory(5);
@@ -78,7 +78,7 @@ public class LogUtil {
 //		SizeBasedTriggeringPolicy<ILoggingEvent> triggeringPolicy = new SizeBasedTriggeringPolicy<ILoggingEvent>();
 		SizeAndTimeBasedFNATP<ILoggingEvent> triggeringPolicy = new SizeAndTimeBasedFNATP<ILoggingEvent>();
 		triggeringPolicy.setContext(loggerContext);
-		triggeringPolicy.setMaxFileSize(FileSize.valueOf("10MB"));
+		triggeringPolicy.setMaxFileSize(FileSize.valueOf("30MB"));
 		triggeringPolicy.setTimeBasedRollingPolicy(rollingPolicy);
 		triggeringPolicy.start();
 
