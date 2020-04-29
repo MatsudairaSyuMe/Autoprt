@@ -2284,7 +2284,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 								}
 								// E194 , 補登資料超過可印行數, 應至服務台換摺
 								else if (mno == 194) {
-//									SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000001000");
+									SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000001000");
 									if (SetSignal(!firstOpenConn, firstOpenConn, "0000000000", "0000001000")) {
 										;
 									} else {
@@ -2293,7 +2293,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 									}
 									amlog.info("[{}][{}][{}]:52[{}{}]{}!", brws, pasname, this.account,mt,mno, cMsg);
 								} else {
-//									SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000001");
+									SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000001");
 									if (SetSignal(!firstOpenConn, firstOpenConn, "0000000000", "0000000001")) {
 //										amlog.info("[{}][{}][{}]:52[{}]{}{}!", brws, pasname, this.account,mt,mno, cMsg);
 									} else {
