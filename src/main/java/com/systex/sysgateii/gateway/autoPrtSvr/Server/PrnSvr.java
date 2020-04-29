@@ -7,8 +7,10 @@ package com.systex.sysgateii.gateway.autoPrtSvr.Server;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Date;
 
 /*
  * PrnSvr
@@ -31,20 +33,37 @@ import org.slf4j.MDC;
 import com.systex.sysgateii.gateway.autoPrtSvr.Client.PrtCli;
 import com.systex.sysgateii.gateway.conf.DynamicProps;
 import com.systex.sysgateii.gateway.listener.MessageListener;
+import com.systex.sysgateii.gateway.util.LogUtil;
 
 public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 	private static Logger log = LoggerFactory.getLogger(PrnSvr.class);
 //	private static Logger atlog = LoggerFactory.getLogger("atlog");
+	private static Logger amlog = null;
+	private static Logger atlog = null;
+
+
 	static PrnSvr server;
 	public static String logPath = "";
 	static FASSvr fasDespacther;
 	static ConcurrentHashMap<String, Object> cfgMap = null;
 	static List<ConcurrentHashMap<String, Object>> list = null;
+	public static String verbrno = "";
 
 	public PrnSvr() {
 		log.info("[0000]:=============[Start]=============");
 		MDC.put("WSNO", "0000");
-//		atlog.info("=============[Start]=============");
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+		String byDate = sdf.format(new Date());
+
+		amlog = LogUtil.getDailyLogger(PrnSvr.logPath, verbrno + "_AM" + byDate, "info", "[%d{yyyy/MM/dd HH:mm:ss:SSS}]%msg%n");
+		atlog = LogUtil.getDailyLogger(PrnSvr.logPath, verbrno + "_AT" + byDate, "info", "[TID:%X{PID} %d{yyyy/MM/dd HH:mm:ss:SSS}]:[%X{WSNO}]:[%thread]:[%class{30} %M|%L]:%msg%n");
+
+		atlog.info("=============[Start]=============");
+	}
+
+	private void setByDate(String format) {
+		// TODO Auto-generated method stub
+		
 	}
 
 	@Override
@@ -59,12 +78,12 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 		String pid = jvmName.split("@")[0];
 		MDC.put("WSNO", "0000");
 		log.info("[0000]:------MainThreadId={}------", pid);
-//		atlog.info("------MainThreadId={}------", pid);
+		atlog.info("------MainThreadId={}------", pid);
 		try {
 			Thread thread;
 			PrtCli conn;
 			log.info("[0000]:------Call MaintainLog OK------");
-//			atlog.info("------Call MaintainLog OK------");
+			atlog.info("------Call MaintainLog OK------");
 
 			// Load Uniconv.dll
 //			log.info("[0000]:AutoPrnCls : rateprtservice.xml is not well formed! PrnSrv");
@@ -92,7 +111,9 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 	
 	public static void createServer(DynamicProps cfg) {
 		log.debug("Enter createServer");
+
 		cfgMap = null;
+		verbrno = cfg.getConHashMap().get("svrsubport.verhbrno");
 		list = cfg.getCfgPrtMapList();
 		logPath = cfg.getConHashMap().get("system.logpath");
 		log.debug("Enter createServer size={}", list.size());
@@ -121,4 +142,13 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 			e.printStackTrace();
 		}
 	}
+
+	public static Logger getAmlog() {
+		return amlog;
+	}
+
+	public static Logger getAtlog() {
+		return atlog;
+	}
+
 }

@@ -266,12 +266,14 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		MDC.put("WSNO", this.brws.substring(3));
 		MDC.put("PID", pid);
 
-		amlog = LogUtil.getDailyLogger(PrnSvr.logPath, this.clientId + "_AM" + byDate, "info", "[%d{yyyy/MM/dd HH:mm:ss:SSS}]%msg%n");
+//		amlog = LogUtil.getDailyLogger(PrnSvr.logPath, this.clientId + "_AM" + byDate, "info", "[%d{yyyy/MM/dd HH:mm:ss:SSS}]%msg%n");
+		amlog = PrnSvr.getAmlog();
 		aslog = LogUtil.getDailyLogger(PrnSvr.logPath, this.clientId + "_AS" + this.brws.substring(3) + byDate, "info", "TIME     [0000]:%d{yyyy.MM.dd HH:mm:ss:SSS} %msg%n");
-		atlog = LogUtil.getDailyLogger(PrnSvr.logPath, this.clientId + "_AT" + byDate, "info", "[TID:%X{PID} %d{yyyy/MM/dd HH:mm:ss:SSS}]:[%X{WSNO}]:[%thread]:[%class{30} %M|%L]:%msg%n");
-		atlog.info("=============[Start]=============");
-		atlog.info("------MainThreadId={}------", pid);
-		atlog.info("------Call MaintainLog OK------");
+//		atlog = LogUtil.getDailyLogger(PrnSvr.logPath, this.clientId + "_AT" + byDate, "info", "[TID:%X{PID} %d{yyyy/MM/dd HH:mm:ss:SSS}]:[%X{WSNO}]:[%thread]:[%class{30} %M|%L]:%msg%n");
+		atlog = PrnSvr.getAtlog();
+//		atlog.info("=============[Start]=============");
+//		atlog.info("------MainThreadId={}------", pid);
+//		atlog.info("------Call MaintainLog OK------");
 
 		if (this.type.equals("AUTO28")) {
 			atlog.info("load Auto Printer type AUTO28");
