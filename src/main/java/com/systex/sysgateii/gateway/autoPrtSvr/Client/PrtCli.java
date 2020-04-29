@@ -2272,7 +2272,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 								this.curState = EJECTAFTERPAGEERROR;
 								// "A665" & "X665" 無補登摺資料、"A104" 該戶無未登摺資料
 								if (mno == 665 || mno == 104) {
-//									SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000100");
+									SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000100");
 									if (SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000100")) {
 //										amlog.info("[{}][{}][{}]:52[{}]{}{}!", brws, pasname, this.account,mt,mno, cMsg);
 									} else {
