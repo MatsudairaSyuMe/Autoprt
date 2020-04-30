@@ -1945,7 +1945,6 @@ public class CS5240Impl implements Printer {
 				}
 				this.curState = SetSignal_4;
 				this.curChkState = CheckStatus_START;
-				this.iCnt = 0;  //20200401
 			}
 			data = CheckStatus();
 			if (CheckDis(data) != 0) 
