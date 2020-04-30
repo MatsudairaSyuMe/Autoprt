@@ -2273,7 +2273,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 								// "A665" & "X665" 無補登摺資料、"A104" 該戶無未登摺資料
 								if (mno == 665 || mno == 104) {
 									SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000100");
-									if (SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000100")) {
+									if (SetSignal(!firstOpenConn, firstOpenConn, "0000000000", "0000000100")) {
 //										amlog.info("[{}][{}][{}]:52[{}]{}{}!", brws, pasname, this.account,mt,mno, cMsg);
 									} else {
 										log.debug("{} {} {} {} {} {} AutoPrnCls : --change ", brws, catagory, account,
@@ -2456,6 +2456,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				this.curState = CAPTUREPASSBOOK;
 				amlog.info("[{}][{}][{}]****************************", brws, "        ", "            ");
 				amlog.info("[{}][{}][{}]:00請插入存摺...", brws, pasname, "            ");
+				log.info("DetectPaper [{}][{}][{}]:00請插入存摺...", brws, pasname, "            ");
 				prt.DetectPaper(firstOpenConn, 0);
 			}
 			log.debug("after {}=>{}=====check prtcliFSM", before, this.curState);

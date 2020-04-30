@@ -741,6 +741,9 @@ public class CS4625Impl implements Printer {
 
 		if (this.curState == Eject_START) {
 			log.debug("{} {} {} 存摺退出...", brws, "", "");
+			//20200430 for clean buffer
+			PurgeBuffer();
+
 			//20200331 modify for command
 //			Send_hData(S4625_PINIT)
 			if (Send_hData(S4625_PEJT) != 0)

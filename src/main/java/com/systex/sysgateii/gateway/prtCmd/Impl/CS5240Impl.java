@@ -748,6 +748,8 @@ public class CS5240Impl implements Printer {
 
 		if (this.curState == Eject_START) {
 			log.debug("{} {} {} 存摺退出...", brws, "", "");
+			//20200430 for clean buffer
+			PurgeBuffer();
 			//20200331 modify for command
 //			Send_hData(S5240_PINIT)
 			if (Send_hData(S5240_PEJT) != 0)
@@ -1909,7 +1911,7 @@ public class CS5240Impl implements Printer {
 					atlog.info("OFF Signal Failed!!");
 					return false;
 				}
-//20200331 test for speed				Sleep(100);
+//				Sleep(100);
 				this.curState = SetSignal_3;
 				this.curChkState = CheckStatus_START;
 			}
