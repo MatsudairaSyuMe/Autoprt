@@ -58,8 +58,8 @@ public class LogUtil {
 			fpn = "." + File.separator + logName + ".log";
 		rfAppender.setFile(fpn);
 
-		TimeBasedRollingPolicy<ILoggingEvent> rollingPolicy = new TimeBasedRollingPolicy<>();
-////		FixedWindowRollingPolicy rollingPolicy = new FixedWindowRollingPolicy();
+//mark20200430		TimeBasedRollingPolicy<ILoggingEvent> rollingPolicy = new TimeBasedRollingPolicy<>();
+		FixedWindowRollingPolicy rollingPolicy = new FixedWindowRollingPolicy();
 		rollingPolicy.setContext(loggerContext);
 		// rolling policies need to know their parent
 		// it's one of the rare cases, where a sub-component knows about its parent
@@ -71,21 +71,21 @@ public class LogUtil {
 			fpn = "." + File.separator + "archive" + File.separator + logName + "-%d{yyyy-MM-dd-HH-mm}.%i.log.zip";
 
 		rollingPolicy.setFileNamePattern(fpn );
-		rollingPolicy.setMaxHistory(5);
-		rollingPolicy.setCleanHistoryOnStart(true);
+//mark20200430		rollingPolicy.setMaxHistory(5);
+//mark20200430		rollingPolicy.setCleanHistoryOnStart(true);
 		rollingPolicy.start();
 
-//		SizeBasedTriggeringPolicy<ILoggingEvent> triggeringPolicy = new SizeBasedTriggeringPolicy<ILoggingEvent>();
-		SizeAndTimeBasedFNATP<ILoggingEvent> triggeringPolicy = new SizeAndTimeBasedFNATP<ILoggingEvent>();
+		SizeBasedTriggeringPolicy<ILoggingEvent> triggeringPolicy = new SizeBasedTriggeringPolicy<ILoggingEvent>();
+//mark20200430		SizeAndTimeBasedFNATP<ILoggingEvent> triggeringPolicy = new SizeAndTimeBasedFNATP<ILoggingEvent>();
 		triggeringPolicy.setContext(loggerContext);
 		triggeringPolicy.setMaxFileSize(FileSize.valueOf("30MB"));
-		triggeringPolicy.setTimeBasedRollingPolicy(rollingPolicy);
+//mark20200430		triggeringPolicy.setTimeBasedRollingPolicy(rollingPolicy);
 		triggeringPolicy.start();
 
 		//---
 		//add for SizeAndTimeBasedFNATP
-		rollingPolicy.setTimeBasedFileNamingAndTriggeringPolicy(triggeringPolicy);
-		rollingPolicy.start();
+//mark20200430		rollingPolicy.setTimeBasedFileNamingAndTriggeringPolicy(triggeringPolicy);
+//mark20200430		rollingPolicy.start();
 		//---
 
 		PatternLayoutEncoder encoder = new PatternLayoutEncoder();

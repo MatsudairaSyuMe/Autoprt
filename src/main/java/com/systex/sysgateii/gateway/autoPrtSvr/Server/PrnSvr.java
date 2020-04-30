@@ -38,8 +38,8 @@ import com.systex.sysgateii.gateway.util.LogUtil;
 public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 	private static Logger log = LoggerFactory.getLogger(PrnSvr.class);
 //	private static Logger atlog = LoggerFactory.getLogger("atlog");
-	private static Logger amlog = null;
-	private static Logger atlog = null;
+	public static Logger amlog = null;
+	public static Logger atlog = null;
 
 
 	static PrnSvr server;
@@ -51,19 +51,13 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 
 	public PrnSvr() {
 		log.info("[0000]:=============[Start]=============");
-		MDC.put("WSNO", "0000");
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
-		String byDate = sdf.format(new Date());
+//		MDC.put("WSNO", "0000");
+//		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+//		String byDate = sdf.format(new Date());
 
-		amlog = LogUtil.getDailyLogger(PrnSvr.logPath, verbrno + "_AM" + byDate, "info", "[%d{yyyy/MM/dd HH:mm:ss:SSS}]%msg%n");
-		atlog = LogUtil.getDailyLogger(PrnSvr.logPath, verbrno + "_AT" + byDate, "info", "[TID:%X{PID} %d{yyyy/MM/dd HH:mm:ss:SSS}]:[%X{WSNO}]:[%thread]:[%class{30} %M|%L]:%msg%n");
-
+//		amlog = LogUtil.getDailyLogger(PrnSvr.logPath, verbrno + "_AM" + byDate, "info", "[%d{yyyy/MM/dd HH:mm:ss:SSS}]%msg%n");
+//		atlog = LogUtil.getDailyLogger(PrnSvr.logPath, verbrno + "_AT" + byDate, "info", "[TID:%X{PID} %d{yyyy/MM/dd HH:mm:ss:SSS}]:[%X{WSNO}]:[%thread]:[%class{30} %M|%L]:%msg%n");
 		atlog.info("=============[Start]=============");
-	}
-
-	private void setByDate(String format) {
-		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
@@ -112,11 +106,17 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 	public static void createServer(DynamicProps cfg) {
 		log.debug("Enter createServer");
 
+
 		cfgMap = null;
 		verbrno = cfg.getConHashMap().get("svrsubport.verhbrno");
 		list = cfg.getCfgPrtMapList();
 		logPath = cfg.getConHashMap().get("system.logpath");
 		log.debug("Enter createServer size={}", list.size());
+		MDC.put("WSNO", "0000");
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+		String byDate = sdf.format(new Date());
+		amlog = LogUtil.getDailyLogger(PrnSvr.logPath, verbrno + "_AM" + byDate, "info", "[%d{yyyy/MM/dd HH:mm:ss:SSS}]%msg%n");
+		atlog = LogUtil.getDailyLogger(PrnSvr.logPath, verbrno + "_AT" + byDate, "info", "[TID:%X{PID} %d{yyyy/MM/dd HH:mm:ss:SSS}]:[%X{WSNO}]:[%thread]:[%class{30} %M|%L]:%msg%n");
 		server = new PrnSvr();
 	}
 
@@ -141,14 +141,6 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-	}
-
-	public static Logger getAmlog() {
-		return amlog;
-	}
-
-	public static Logger getAtlog() {
-		return atlog;
 	}
 
 }

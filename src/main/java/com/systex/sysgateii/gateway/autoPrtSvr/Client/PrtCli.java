@@ -79,10 +79,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 
 	private static Logger aslog = null;
 //	public Logger amlog = null;
-	private Logger amlog = null;
+	public static Logger amlog = null;
 
 //	public Logger atlog = null;
-	private Logger atlog = null;
+	public static Logger atlog = null;
 	public String pid = "";
 
 	private static final ByteBuf HEARTBEAT_SEQUENCE = Unpooled
@@ -267,10 +267,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		MDC.put("PID", pid);
 
 //		amlog = LogUtil.getDailyLogger(PrnSvr.logPath, this.clientId + "_AM" + byDate, "info", "[%d{yyyy/MM/dd HH:mm:ss:SSS}]%msg%n");
-		amlog = PrnSvr.getAmlog();
+		amlog = PrnSvr.amlog;
 		aslog = LogUtil.getDailyLogger(PrnSvr.logPath, this.clientId + "_AS" + this.brws.substring(3) + byDate, "info", "TIME     [0000]:%d{yyyy.MM.dd HH:mm:ss:SSS} %msg%n");
 //		atlog = LogUtil.getDailyLogger(PrnSvr.logPath, this.clientId + "_AT" + byDate, "info", "[TID:%X{PID} %d{yyyy/MM/dd HH:mm:ss:SSS}]:[%X{WSNO}]:[%thread]:[%class{30} %M|%L]:%msg%n");
-		atlog = PrnSvr.getAtlog();
+		atlog = PrnSvr.atlog;
 //		atlog.info("=============[Start]=============");
 //		atlog.info("------MainThreadId={}------", pid);
 //		atlog.info("------Call MaintainLog OK------");

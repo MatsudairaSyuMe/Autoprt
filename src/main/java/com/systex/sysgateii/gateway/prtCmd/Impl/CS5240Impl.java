@@ -21,8 +21,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class CS5240Impl implements Printer {
 	private static Logger log = LoggerFactory.getLogger(CS5240Impl.class);
-	private Logger amlog = null;
-	private Logger atlog = null;
+	public static  Logger amlog = null;
+	public static  Logger atlog = null;
 	private byte ESQ = (byte) 0x1b;
 	private byte ENQ = (byte) 0x05;
 	private byte ACK = (byte) 0x06;
@@ -225,8 +225,8 @@ public class CS5240Impl implements Printer {
 		this.p_fun_flag.set(false);
 		MDC.put("WSNO", this.brws.substring(3));
 		MDC.put("PID", pc.pid);
-		amlog = pc.getAmLog();
-		atlog = pc.getAtLog();
+		amlog = PrnSvr.amlog;
+		atlog = PrnSvr.atlog;
 	}
 
 	@Override
