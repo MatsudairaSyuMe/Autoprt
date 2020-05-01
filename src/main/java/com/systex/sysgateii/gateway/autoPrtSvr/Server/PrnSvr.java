@@ -37,7 +37,6 @@ import com.systex.sysgateii.gateway.util.LogUtil;
 
 public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 	private static Logger log = LoggerFactory.getLogger(PrnSvr.class);
-//	private static Logger atlog = LoggerFactory.getLogger("atlog");
 	public static Logger amlog = null;
 	public static Logger atlog = null;
 
@@ -63,7 +62,7 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 	@Override
 	public void messageReceived(String serverId, byte[] msg) {
 		// TODO Auto-generated method stub
-		log.debug("mrg received");
+		log.debug("msg received");
 	}
 
 	public void run() {

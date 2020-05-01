@@ -77,11 +77,8 @@ import io.netty.util.ReferenceCountUtil;
 public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	private static Logger log = LoggerFactory.getLogger(PrtCli.class);
 
-	private static Logger aslog = null;
-//	public Logger amlog = null;
+	private Logger aslog = null;
 	public static Logger amlog = null;
-
-//	public Logger atlog = null;
 	public static Logger atlog = null;
 	public String pid = "";
 
@@ -266,10 +263,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		MDC.put("WSNO", this.brws.substring(3));
 		MDC.put("PID", pid);
 
-//		amlog = LogUtil.getDailyLogger(PrnSvr.logPath, this.clientId + "_AM" + byDate, "info", "[%d{yyyy/MM/dd HH:mm:ss:SSS}]%msg%n");
 		amlog = PrnSvr.amlog;
 		aslog = LogUtil.getDailyLogger(PrnSvr.logPath, this.clientId + "_AS" + this.brws.substring(3) + byDate, "info", "TIME     [0000]:%d{yyyy.MM.dd HH:mm:ss:SSS} %msg%n");
-//		atlog = LogUtil.getDailyLogger(PrnSvr.logPath, this.clientId + "_AT" + byDate, "info", "[TID:%X{PID} %d{yyyy/MM/dd HH:mm:ss:SSS}]:[%X{WSNO}]:[%thread]:[%class{30} %M|%L]:%msg%n");
 		atlog = PrnSvr.atlog;
 //		atlog.info("=============[Start]=============");
 //		atlog.info("------MainThreadId={}------", pid);
