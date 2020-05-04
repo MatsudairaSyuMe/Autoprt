@@ -710,7 +710,22 @@ public class CS5240Impl implements Printer {
 	@Override
 	public boolean AddFont(int fontno) {
 		// TODO Auto-generated method stub
-		return false;
+		byte[] command = new byte[79];
+		command[0] = (byte)0x1b;
+		command[1] = (byte)0x25;
+		command[2] = (byte)0x43;
+		command[3] = (byte)'0';
+		command[4] = (byte)'0';
+		command[5] = (byte)'7';
+		command[6] = (byte)'2';
+		try {
+			System.arraycopy(PrnSvr.big5funt.getFontImageData((long) fontno), 0, command, 7, 72);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		Send_hData(command);
+		return true;
 	}
 
 	@Override
@@ -1504,7 +1519,23 @@ public class CS5240Impl implements Printer {
 	@Override
 	public boolean AddExtFont(byte high, byte low) {
 		// TODO Auto-generated method stub
-		return false;
+		byte[] command = new byte[79];
+		command[0] = (byte)0x1b;
+		command[1] = (byte)0x25;
+		command[2] = (byte)0x43;
+		command[3] = (byte)'0';
+		command[4] = (byte)'0';
+		command[5] = (byte)'7';
+		command[6] = (byte)'2';
+		long fontno = (long)((high & 0x00ff) << 8)+((long)(low & 0xff));
+		try {
+			System.arraycopy(PrnSvr.big5funt.getFontImageData((long) fontno), 0, command, 7, 72);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		Send_hData(command);
+		return true;
 	}
 
 	@Override

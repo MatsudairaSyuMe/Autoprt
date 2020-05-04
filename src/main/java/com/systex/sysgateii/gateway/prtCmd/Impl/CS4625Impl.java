@@ -188,6 +188,8 @@ public class CS4625Impl implements Printer {
 	public static final int MS_Write_START_2          = 44;
 	public static final int MS_WriteRecvData          = 45;
 	public static final int MS_Write_FINISH           = 46;
+	public static final int ADDFONT                   = 47;
+	public static final int ADDFONT_START             = 48;
 
 
 	public static final int CheckStatus_START         = 100;
@@ -718,7 +720,20 @@ public class CS4625Impl implements Printer {
 			e.printStackTrace();
 		}
 		Send_hData(command);
-		return false;
+/*		if (this.curState == ADDFONT_START || this.curState == ADDFONT) {
+			if (this.curState == ADDFONT_START) {
+				this.curChkState = CheckStatus_START;
+				this.curState = ADDFONT;
+			}
+			byte[] data = CheckStatus();
+			log.debug("2 ===<><>{} chkChkState {} {}", this.curState, this.curChkState, data);
+			if (!CheckError(data)) {
+			} else {
+				this.curState = ADDFONT;
+				Send_hData(S4625_PINIT_PRT);
+			}
+		}*/
+		return true;
 	}
 
 	@Override
@@ -1511,7 +1526,23 @@ public class CS4625Impl implements Printer {
 	@Override
 	public boolean AddExtFont(byte high, byte low) {
 		// TODO Auto-generated method stub
-		return false;
+		byte[] command = new byte[79];
+		command[0] = (byte)0x1b;
+		command[1] = (byte)0x25;
+		command[2] = (byte)0x43;
+		command[3] = (byte)'0';
+		command[4] = (byte)'0';
+		command[5] = (byte)'7';
+		command[6] = (byte)'2';
+		long fontno = (long)((high & 0x00ff) << 8)+((long)(low & 0xff));
+		try {
+			System.arraycopy(PrnSvr.big5funt.getFontImageData((long) fontno), 0, command, 7, 72);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		Send_hData(command);
+		return true;
 	}
 
 	@Override

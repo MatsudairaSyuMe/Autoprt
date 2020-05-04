@@ -2265,7 +2265,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 								for (int i = 0; i < totatext.length; i++)
 									if (totatext[i] == 0x7 || totatext[i] == 0x4 || totatext[i] == 0x3)
 										totatext[i] = 0x20;
-								cMsg = "-" + new String(totatext).trim();
+//								cMsg = "-" + new String(totatext).trim();
+								cMsg = "-" + charcnv.BIG5bytesUTF8str(totatext).trim();
 								log.debug("cMsg=[{}]", cMsg);
 								int mno = Integer.parseInt(new String(total.getValue("msgno")));
 								// 20100913 , E622:本次日不符 send C0099
@@ -2285,7 +2286,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 										log.debug("{} {} {} {} {} {} AutoPrnCls : --change ", brws, catagory, account,
 												mt, mno, cMsg);
 									}
-									amlog.info("[{}][{}][{}]:52[{}{}]{}!", brws, pasname, this.account,mt,mno, charcnv.BIG5UTF8str(cMsg));
+									amlog.info("[{}][{}][{}]:52[{}{}]{}!", brws, pasname, this.account,mt,mno, cMsg);
 
 								}
 								// E194 , 補登資料超過可印行數, 應至服務台換摺
@@ -2355,8 +2356,12 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 							log.error("ERROR while get total label mtype {}" + e.getMessage());
 						}
 					} else {
+						//20200504
+						this.curState = EJECTAFTERPAGEERROR;
 						amlog.info("[{}][{}][{}]:21存摺頁次錯誤！[{}]", brws, pasname, this.account, rpage);
-						if (SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000001")) {
+						SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000001");
+						//----
+						if (SetSignal(!firstOpenConn, firstOpenConn, "0000000000", "0000000001")) {
 							log.debug(
 									"{} {} {} AutoPrnCls : --ckeep cheak barcode after Set Signal after check barcode",
 									brws, catagory, account);
