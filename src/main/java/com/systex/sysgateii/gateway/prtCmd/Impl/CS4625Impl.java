@@ -15,6 +15,7 @@ import org.slf4j.MDC;
 import com.systex.sysgateii.gateway.autoPrtSvr.Client.PrtCli;
 import com.systex.sysgateii.gateway.autoPrtSvr.Server.PrnSvr;
 import com.systex.sysgateii.gateway.prtCmd.Printer;
+import com.systex.sysgateii.gateway.util.CharsetCnv;
 import com.systex.sysgateii.gateway.util.LogUtil;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -696,12 +697,27 @@ public class CS4625Impl implements Printer {
 	@Override
 	public boolean ChkAddFont(int fontno) {
 		// TODO Auto-generated method stub
-		return false;
+		return CharsetCnv.ChkAddFont(fontno);
 	}
 
 	@Override
 	public boolean AddFont(int fontno) {
 		// TODO Auto-generated method stub
+		byte[] command = new byte[79];
+		command[0] = (byte)0x1b;
+		command[1] = (byte)0x25;
+		command[2] = (byte)0x43;
+		command[3] = (byte)'0';
+		command[4] = (byte)'0';
+		command[5] = (byte)'7';
+		command[6] = (byte)'2';
+		try {
+			System.arraycopy(PrnSvr.big5funt.getFontImageData((long) fontno), 0, command, 7, 72);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		Send_hData(command);
 		return false;
 	}
 
@@ -1489,7 +1505,7 @@ public class CS4625Impl implements Printer {
 	@Override
 	public boolean ChkExtFont(int fontno) {
 		// TODO Auto-generated method stub
-		return false;
+		return CharsetCnv.ChkExtFont(fontno);
 	}
 
 	@Override

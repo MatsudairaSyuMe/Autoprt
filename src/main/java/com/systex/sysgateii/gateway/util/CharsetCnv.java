@@ -18,6 +18,66 @@ public class CharsetCnv {
 	private static final Charset BIG5 = Charset.forName("BIG5");
 	private static final Charset UTF8 = Charset.forName("UTF-8");
 
+	public static boolean ChkAddFont(int fontno) {
+		// use another check function
+		long fontnum;
+		long fontnum1, fontnum2;
+
+		if (fontno < (long)0x8140)
+			return false;
+		if (fontno < (long)0xC980 && fontno > (long)0xC69E) // 斷層 C980-C69E
+			return false;
+		if (fontno < (long)0xAE8A && fontno > (long)0x9ACF) // 斷層 AE8A-9ACF
+			return false;
+
+		if (fontno >= (long)0xAE8A) // while > 8E8A
+		{
+			fontnum = fontno - (fontno & (long)0xFF);
+			if (fontno > fontnum + (long)0x9E || fontno < fontnum + (long)0x80)
+				return false;
+		} else // while < 8E8A
+		{
+			fontnum = fontno - (fontno & (long)0xFF);
+			fontnum1 = fontnum + (long)0x7E;
+			fontnum2 = fontnum + (long)0xA1;
+			fontnum = fontnum + (long)0x40;
+			if ((fontno & 0xFF) == (long)0x00FF)
+				return false;
+			if (fontno < fontnum || (fontno > fontnum1 && fontno < fontnum2))
+				return false;
+		}
+
+		return true;
+	}
+	
+	public static boolean ChkExtFont(int fontno)
+	{
+		long fontnum1,fontnum2;
+
+		fontnum1 = ((fontno & 0xFF00)) >> 8;
+		fontnum2 = (fontno & 0x00FF);
+		if ( ((long)0x81 <= fontnum1 && fontnum1 <= (long)0xD7) &&
+			 ((long)0x21 <= fontnum2 && fontnum2 <= (long)0x3F) )
+			 return true;
+
+		if ( fontnum1 == (long)0xD8 &&
+			 ((long)0x21 <= fontnum2 && fontnum2 <= (long)0x24 ) )
+			 return true;
+
+		if ( ((long)0x81 <= fontnum1 && fontnum1 <= (long)0xAD) &&
+			 ((long)0x81 <= fontnum2 && fontnum2 <= (long)0x9F) )
+			 return true;
+
+		/*
+		fontnum  = fontno - (fontno&0xFF);
+		fontnum1 = fontnum + 0x01;
+		fontnum2 = fontnum + 0x3F;
+		if (fontno < fontnum1 || fontno > fontnum2)
+			return false;
+		*/
+		return false;
+	}
+	
 	/**
 	 * Supplies the default encoding without using Charset.defaultCharset() and
 	 * without accessing System.getProperty("file.encoding").

@@ -45,6 +45,7 @@ import com.systex.sysgateii.gateway.telegram.Q0880TEXT;
 import com.systex.sysgateii.gateway.telegram.Q98TEXT;
 import com.systex.sysgateii.gateway.telegram.TITATel;
 import com.systex.sysgateii.gateway.telegram.TOTATel;
+import com.systex.sysgateii.gateway.util.CharsetCnv;
 import com.systex.sysgateii.gateway.util.LogUtil;
 import com.systex.sysgateii.gateway.util.dataUtil;
 import com.systex.sysgateii.gateway.util.ipAddrPars;
@@ -230,9 +231,13 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	private Q0880TEXT q0880DataFormat = null;
 	private P0880TEXT p0880DataFormat = null;
 	private String pasname = "        ";
+    //	"                                                     請翻下頁繼續補登\r\n";
+	private byte[] chgpgary = {(byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0xbd, (byte)0xd0, (byte)0xc2, (byte)0xbd, (byte)0xa4, (byte)0x55, (byte)0xad, (byte)0xb6, (byte)0xc4, (byte)0x7e, (byte)0xc4, (byte)0xf2, (byte)0xb8, (byte)0xc9, (byte)0xb5, (byte)0x6e, (byte)0x0d, (byte)0x0a};
+
 
 	private DscptMappingTable descm = null;
 	private boolean Send_Recv_DATAInq = true;
+	private CharsetCnv charcnv = new CharsetCnv();
 
 	List<ActorStatusListener> actorStatusListeners = new ArrayList<ActorStatusListener>();
 
@@ -1063,11 +1068,13 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 						this.iEnd = 2;
 						return true;
 					}
-					pr_data = "                                                     請翻下頁繼續補登\n";
+//					pr_data = "                                                     請翻下頁繼續補登\n"
 					this.iEnd = 1;
 					amlog.info("[{}][{}][{}]:62請翻下頁繼續補登..", brws, pasname, this.account);
-					if (prt.Prt_Text(pr_data.getBytes()) == false)
-						return false;
+//					if (prt.Prt_Text(pr_data.getBytes()) == false)
+//						return false;
+					sndbary = chgpgary;
+					prt.Prt_Text(sndbary);
 				}
 				else
 					this.iEnd = 0;
@@ -1217,11 +1224,13 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 						this.iEnd = 2;
 						return true;
 					}
-					pr_data = "                                                     請翻下頁繼續補登\n";
+//					pr_data = "                                                     請翻下頁繼續補登\n"
 					this.iEnd = 1;
 					amlog.info("[{}][{}][{}]:62請翻下頁繼續補登..", brws, pasname, this.account);
-					if (prt.Prt_Text(pr_data.getBytes()) == false)
-						return false;
+//					if (prt.Prt_Text(pr_data.getBytes()) == false)
+//						return false;
+					sndbary = chgpgary;
+					prt.Prt_Text(sndbary);
 				}
 				else
 					this.iEnd = 0;
@@ -1386,11 +1395,13 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 						this.iEnd = 2;
 						return true;
 					}
-					pr_data = "                                                     請翻下頁繼續補登\n";
+//					pr_data = "                                                     請翻下頁繼續補登\n";
 					this.iEnd = 1;
 					amlog.info("[{}][{}][{}]:62請翻下頁繼續補登..", brws, pasname, this.account);
-					if (prt.Prt_Text(pr_data.getBytes()) == false)
-						return false;
+//					if (prt.Prt_Text(pr_data.getBytes()) == false)
+//						return false;
+					sndbary = chgpgary;
+					prt.Prt_Text(sndbary);
 				}
 				else
 					this.iEnd = 0;
@@ -2274,7 +2285,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 										log.debug("{} {} {} {} {} {} AutoPrnCls : --change ", brws, catagory, account,
 												mt, mno, cMsg);
 									}
-									amlog.info("[{}][{}][{}]:52[{}{}]{}!", brws, pasname, this.account,mt,mno, cMsg);
+									amlog.info("[{}][{}][{}]:52[{}{}]{}!", brws, pasname, this.account,mt,mno, charcnv.BIG5UTF8str(cMsg));
 
 								}
 								// E194 , 補登資料超過可印行數, 應至服務台換摺
@@ -2295,7 +2306,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 										log.debug("{} {} {} {} {} {} AutoPrnCls : --change ", brws, catagory, account,
 												mt, mno, cMsg);
 									}
-									amlog.info("[{}][{}][{}]:52[{}{}]{}!", brws, pasname, this.account,mt,mno, cMsg);
+									amlog.info("[{}][{}][{}]:52[{}{}]{}!", brws, pasname, this.account,mt,mno, charcnv.BIG5UTF8str(cMsg));
 								}
 								if (ifun == 1)
 									log.debug("[{}]:TxFlow : Send_Recv() -- INQ Data Failed ! msgid={}{}", brws, mt,

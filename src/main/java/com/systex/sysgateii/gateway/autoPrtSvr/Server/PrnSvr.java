@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Timer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,12 +34,15 @@ import org.slf4j.MDC;
 import com.systex.sysgateii.gateway.autoPrtSvr.Client.PrtCli;
 import com.systex.sysgateii.gateway.conf.DynamicProps;
 import com.systex.sysgateii.gateway.listener.MessageListener;
+import com.systex.sysgateii.gateway.util.Big5FontImg;
 import com.systex.sysgateii.gateway.util.LogUtil;
 
 public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 	private static Logger log = LoggerFactory.getLogger(PrnSvr.class);
 	public static Logger amlog = null;
 	public static Logger atlog = null;
+	public static Big5FontImg big5funt = null;
+	public static AtomicBoolean p_fun_flag = new AtomicBoolean(false);
 
 
 	static PrnSvr server;
@@ -116,6 +120,16 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 		String byDate = sdf.format(new Date());
 		amlog = LogUtil.getDailyLogger(PrnSvr.logPath, verbrno + "_AM" + byDate, "info", "[%d{yyyy/MM/dd HH:mm:ss:SSS}]%msg%n");
 		atlog = LogUtil.getDailyLogger(PrnSvr.logPath, verbrno + "_AT" + byDate, "info", "[TID:%X{PID} %d{yyyy/MM/dd HH:mm:ss:SSS}]:[%X{WSNO}]:[%thread]:[%class{30} %M|%L]:%msg%n");
+		try {
+			p_fun_flag.set(false);
+			big5funt = new Big5FontImg("FontTable_low.bin", "FontData_All.bin");
+			p_fun_flag.set(true);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		log.debug("p_fun_flag={}", p_fun_flag);
+
 		server = new PrnSvr();
 	}
 

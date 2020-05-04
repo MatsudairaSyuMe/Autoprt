@@ -15,6 +15,7 @@ import org.slf4j.MDC;
 import com.systex.sysgateii.gateway.autoPrtSvr.Client.PrtCli;
 import com.systex.sysgateii.gateway.autoPrtSvr.Server.PrnSvr;
 import com.systex.sysgateii.gateway.prtCmd.Printer;
+import com.systex.sysgateii.gateway.util.CharsetCnv;
 import com.systex.sysgateii.gateway.util.LogUtil;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -703,7 +704,7 @@ public class CS5240Impl implements Printer {
 	@Override
 	public boolean ChkAddFont(int fontno) {
 		// TODO Auto-generated method stub
-		return false;
+		return CharsetCnv.ChkAddFont(fontno);
 	}
 
 	@Override
@@ -1497,7 +1498,7 @@ public class CS5240Impl implements Printer {
 	@Override
 	public boolean ChkExtFont(int fontno) {
 		// TODO Auto-generated method stub
-		return false;
+		return CharsetCnv.ChkExtFont(fontno);
 	}
 
 	@Override
