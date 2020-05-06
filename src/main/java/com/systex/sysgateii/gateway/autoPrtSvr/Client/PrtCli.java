@@ -2601,6 +2601,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 						}
 					} else {
 						amlog.info("[{}][{}][{}]:21存摺頁次錯誤！[{}]", brws, pasname, account, rpage);
+						
 						if (SetSignal(firstOpenConn, firstOpenConn, "0000000000","0000100000")) {
 							this.curState = SETSIGAFTERCHKBARCODE;
 							log.debug(
@@ -2653,6 +2654,14 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					}
 				}
 			}
+			//20200506
+			if (this.rpage < 0) {
+				SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000001000");
+				SetSignal(!firstOpenConn, firstOpenConn, "0000000000", "0000001000");
+				this.curState = EJECTAFTERPAGEERROR;
+				log.debug("check barcode error rpage={}", this.rpage);
+			}
+			//------
 			log.debug("after {}=>{}=====check prtcliFSM", before, this.curState);
 			break;
 
