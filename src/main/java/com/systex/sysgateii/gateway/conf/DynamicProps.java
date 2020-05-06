@@ -76,6 +76,7 @@ public class DynamicProps {
 										|| entry.getKey().equals("svrsubport.svrport")
 										|| entry.getKey().equals("svrsubport.localip")
 										|| entry.getKey().equals("svrsubport.localport")
+										|| entry.getKey().equals("svrsubport.recvtimeout")
 										|| entry.getKey().equals("svrsubport.verhbrno")
 										|| entry.getKey().equals("svrsubport.verhwsno")
 										|| entry.getKey().equals("boards.board.brno")
@@ -180,6 +181,7 @@ public class DynamicProps {
 						|| entry.getKey().equals("system.logpath")
 						|| entry.getKey().equals("svrsubport.svrip") || entry.getKey().equals("svrsubport.svrport")
 						|| entry.getKey().equals("svrsubport.localip") || entry.getKey().equals("svrsubport.localport")
+						|| entry.getKey().equals("svrsubport.recvtimeout")
 						|| entry.getKey().equals("svrsubport.verhbrno") || entry.getKey().equals("svrsubport.verhwsno")
 						|| entry.getKey().equals("boards.board.brno") || entry.getKey().equals("boards.board.ip")) {
 					conHashMap.put(entry.getKey().toString(), entry.getValue().toString());
