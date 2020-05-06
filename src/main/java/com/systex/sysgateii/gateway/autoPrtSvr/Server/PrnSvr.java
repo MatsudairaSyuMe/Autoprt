@@ -51,6 +51,7 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 	static ConcurrentHashMap<String, Object> cfgMap = null;
 	static List<ConcurrentHashMap<String, Object>> list = null;
 	public static String verbrno = "";
+	public static int setResponseTimeout = 60 * 1000;// 毫秒
 
 	public PrnSvr() {
 		log.info("[0000]:=============[Start]=============");
@@ -114,7 +115,13 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 		verbrno = cfg.getConHashMap().get("svrsubport.verhbrno");
 		list = cfg.getCfgPrtMapList();
 		logPath = cfg.getConHashMap().get("system.logpath");
+		String tout = cfg.getConHashMap().get("svrsubport.recvtimeout");
+		if (tout != null && tout.trim().length() > 0) {
+			setResponseTimeout = Integer.parseInt(tout);
+		}
 		log.debug("Enter createServer size={}", list.size());
+		log.debug("receive timeout is ={} mili-seconds", setResponseTimeout);
+
 		MDC.put("WSNO", "0000");
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
 		String byDate = sdf.format(new Date());

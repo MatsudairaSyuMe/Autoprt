@@ -238,8 +238,13 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	private DscptMappingTable descm = null;
 	private boolean Send_Recv_DATAInq = true;
 	private CharsetCnv charcnv = new CharsetCnv();
+	//20200506 receive time from Host default 60 seconds
+	private int responseTimeout = 60 * 1000;// 毫秒
+	//----
 
 	List<ActorStatusListener> actorStatusListeners = new ArrayList<ActorStatusListener>();
+
+	private long startTime;
 
 	public List<ActorStatusListener> getActorStatusListeners() {
 		return actorStatusListeners;
@@ -267,7 +272,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		pid = ManagementFactory.getRuntimeMXBean().getName().split("@")[0];
 		MDC.put("WSNO", this.brws.substring(3));
 		MDC.put("PID", pid);
-
+		responseTimeout = PrnSvr.setResponseTimeout;
 		amlog = PrnSvr.amlog;
 		aslog = LogUtil.getDailyLogger(PrnSvr.logPath, this.clientId + "_AS" + this.brws.substring(3) + byDate, "info", "TIME     [0000]:%d{yyyy.MM.dd HH:mm:ss:SSS} %msg%n");
 		atlog = PrnSvr.atlog;
@@ -2242,6 +2247,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 						amlog.info("[{}][{}][{}]:05中心存摺補登資料接收中...", brws, pasname, this.account);
 					}
 					this.curState = RECVTLM;
+					//20200506
+					this.startTime = System.currentTimeMillis();
+					//----
 				} else if (dispatcher.isTITA_TOTA_START() && alreadySendTelegram) {
 					this.rtelem = dispatcher.getResultTelegram();
 					if (this.rtelem != null) {
@@ -2356,20 +2364,28 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 							log.error("ERROR while get total label mtype {}" + e.getMessage());
 						}
 					} else {
-						//20200504
-						this.curState = EJECTAFTERPAGEERROR;
-						amlog.info("[{}][{}][{}]:21存摺頁次錯誤！[{}]", brws, pasname, this.account, rpage);
-						SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000001");
-						//----
-						if (SetSignal(!firstOpenConn, firstOpenConn, "0000000000", "0000000001")) {
-							log.debug(
-									"{} {} {} AutoPrnCls : --ckeep cheak barcode after Set Signal after check barcode",
-									brws, catagory, account);
+						long now = System.currentTimeMillis();
+						if ((now - startTime) > responseTimeout) {
+							// 20200504
+							this.curState = EJECTAFTERPAGEERROR;
+							log.error("ERROR!!! received data from host timeout {}", responseTimeout);
+							amlog.info("[{}][{}][{}]:21存摺頁次錯誤！[{}]接電文逾時{}", brws, pasname, this.account, rpage, responseTimeout);
+							SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000001");
+							// ----
+							if (SetSignal(!firstOpenConn, firstOpenConn, "0000000000", "0000000001")) {
+								log.debug(
+										"{} {} {} AutoPrnCls : --ckeep cheak barcode after Set Signal after check barcode",
+										brws, catagory, account);
+							} else {
+								log.debug(
+										"{} {} {} AutoPrnCls : --keep cheak barcode after Set Signal after check barcode",
+										brws, catagory, account);
+							}
+							rtn = -1;
 						} else {
-							log.debug("{} {} {} AutoPrnCls : --keep cheak barcode after Set Signal after check barcode",
-									brws, catagory, account);
+							log.warn("WARN!!! not yet received data from host {} dispatcher.isTITA_TOTA_START()={} alreadySendTelegram={}", now - startTime, dispatcher.isTITA_TOTA_START(), alreadySendTelegram);
+							rtn = 0;
 						}
-						rtn = -1;
 					}
 //					this.alreadySendTelegram = false;
 				}
@@ -2689,8 +2705,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			int r = 0;
 			this.Send_Recv_DATAInq = true;
 			if ((r = Send_Recv(this.iFig, TXP.INQ, "0", "0")) != 0) {
-				//20200428 modify for receive TOTA ERROR message
-				if (r < 0 && r != -2) {
+				//20200506 modify for receive TOTA ERROR message and can't received TOTA message
+				if (r < 0 && r != -2 && r != -1) {
 					this.curState = SESSIONBREAK;
 					amlog.info("[{}][{}][{}]:61存摺資料補登失敗！", brws, pasname, account);
 				}
@@ -2722,8 +2738,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			r = 0;
 			if (this.Send_Recv_DATAInq) {
 				if ((r = Send_Recv(this.iFig, TXP.INQ, "0", "0")) != 0) {
-					//20200428 modify for receive TOTA ERROR message
-					if (r < 0 && r != -2) {
+					//20200506 modify for receive TOTA ERROR message and can't received TOTA message
+					if (r < 0 && r != -2 && r != -1) {
 						this.curState = SESSIONBREAK;
 						amlog.info("[{}][{}][{}]:61存摺資料補登失敗！", brws, pasname, account);
 					}
@@ -2975,6 +2991,20 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	}
 	public Logger getAtLog() {
 		return atlog;
+	}
+
+	/**
+	 * @return the responseTimeout
+	 */
+	public int getResponseTimeout() {
+		return responseTimeout;
+	}
+
+	/**
+	 * @param responseTimeout the responseTimeout to set
+	 */
+	public void setResponseTimeout(int responseTimeout) {
+		this.responseTimeout = responseTimeout;
 	}
 
 
