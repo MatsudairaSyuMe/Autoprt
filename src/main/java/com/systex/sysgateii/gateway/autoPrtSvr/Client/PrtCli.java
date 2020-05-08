@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
@@ -240,6 +241,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	private CharsetCnv charcnv = new CharsetCnv();
 	//20200506 receive time from Host default 60 seconds
 	private int responseTimeout = 60 * 1000;// 毫秒
+	private String curSockNm = "";
 	//----
 
 	List<ActorStatusListener> actorStatusListeners = new ArrayList<ActorStatusListener>();
@@ -318,7 +320,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	
 	public void sendBytes(byte[] msg) throws IOException {
 		if (channel_ != null && channel_.isActive()) {
-			aslog.info(String.format("SEND %s[%04d]:%s", this.brws.substring(3), msg.length, new String(msg)));
+			aslog.info(String.format("SEND %s[%04d]:%s", this.curSockNm, msg.length, new String(msg)));
 			ByteBuf buf = channel_.alloc().buffer().writeBytes(msg);
 			channel_.writeAndFlush(buf);
 		} else {
@@ -329,7 +331,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	public void close() {
 		try {
 			channel_.close().sync();
-			aslog.info(String.format("DIS  %s[%04d]:", this.brws.substring(3), 0));
+			aslog.info(String.format("DIS  %s[%04d]:", this.curSockNm, 0));
+			this.curSockNm = "";
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
@@ -462,7 +465,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		MDC.put("WSNO", this.brws.substring(3));
 		MDC.put("PID", pid);
 		showStateMsg = false;
-		aslog.info(String.format("CON  %s[%04d]:", this.brws.substring(3), 0));
+		this.curSockNm = String.format("%04d", (int) ((Math.random() * ((9999 - 4) + 1)) + 4));
+		aslog.info(String.format("CON  %s[%04d]:", this.curSockNm, 0));
 		prtcliFSM(!firstOpenConn);
 		prt.getIsShouldShutDown().set(false);
 		this.seqNoFile = new File("SEQNO", "SEQNO_" + this.brws);
@@ -491,7 +495,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		super.channelInactive(ctx);
 		prt.getIsShouldShutDown().set(true);
 		prt.ClosePrinter();
-		aslog.info(String.format("DIS  %s[%04d]:", this.brws.substring(3), 0));
+		aslog.info(String.format("DIS  %s[%04d]:", this.curSockNm, 0));
+		this.curSockNm = "";
 		this.clientMessageBuf.clear();
 		prtcliFSM(firstOpenConn);
 	}
@@ -508,7 +513,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					byte[] asary = new byte[buf.readableBytes()];
 					ByteBuf dup = buf.duplicate();
 					dup.readBytes(asary);
-					aslog.info(String.format("RECV %s[%04d]:%s", this.brws.substring(3), buf.readableBytes(), new String(asary)));
+					aslog.info(String.format("RECV %s[%04d]:%s", this.curSockNm, buf.readableBytes(), new String(asary)));
 					if (clientMessageBuf.readerIndex() > (clientMessageBuf.capacity() / 2)) {
 						clientMessageBuf.discardReadBytes();
 						log.debug("adjustment clientMessageBuf readerindex ={}" + clientMessageBuf.readableBytes());
@@ -568,7 +573,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			prt.getIsShouldShutDown().set(true);
 			prt.ClosePrinter();
 			this.clientMessageBuf.clear();
-			aslog.info(String.format("ERR  %s[%04d]:", this.brws.substring(3), 0));
+			aslog.info(String.format("ERR  %s[%04d]:", this.curSockNm, 0));
 		}
 	}
 
@@ -2317,12 +2322,15 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 									}
 									amlog.info("[{}][{}][{}]:52[{}{}]{}!", brws, pasname, this.account,mt,mno, charcnv.BIG5UTF8str(cMsg));
 								}
-								if (ifun == 1)
+								if (ifun == 1) {
 									log.debug("[{}]:TxFlow : Send_Recv() -- INQ Data Failed ! msgid={}{}", brws, mt,
 											mno);
-								else
+									atlog.info("INQ Data Failed ! msgid={}{}{}", mt,mno, cMsg);
+								} else {
 									log.debug("[{}]:TxFlow : Send_Recv() -- DEL Data Failed ! msgid={}{}", brws, mt,
 											mno);
+									atlog.info("DEL Data Failed ! msgid={}{}", mt,mno);
+								}
 //								return (-2);
 								rtn = -2;
 								break;
