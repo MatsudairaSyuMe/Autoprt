@@ -47,4 +47,24 @@ public class Constants {
 	public static final int MSG_HDR_SIZE = 98;
 	public static final int MSG_ID_OFFSET = 4;
 	public static final int MSG_ID_SIZE = 39;
+	
+	//PrtCli printer status
+	public static final int READ_IDLE = 0; //00請插入存摺...
+	public static final int OpenPrinterResetPrinterInitCheckStatus = 1; //00補摺機重置中...
+	public static final int OpenPrinterPRESETCheckStatus = 2;
+	public static final int PurgeBuffer = 2;
+	public static final int CheckStatus = 3;       //95補摺機無回應！
+	public static final int PRESET = 4;
+	//0: 匯率顯示版 1:利率顯示版 2: AUTO46 自動補褶機 3: AUTO52 自動補褶機
+	public static final String DEVRATE = "0";
+	public static final String DEVINTER = "1";
+	public static final String DEVAUTO46 = "2";
+	public static final String DEVAUTO52 = "3";
+	public static final String DEVAUTO28 = "4";
+	public static final String DEVAUTO20 = "5";
+	// '目前連線狀況, 0: 未啟用 1:啟用未連線 2: 啟用已連線 3: 備援狀態連線'
+	public static final String STSNOTUSED = "0";
+	public static final String STSUSEDINACT = "1";
+	public static final String STSUSEDACT = "2";
+	public static final String STSBACKACT = "3";
 }

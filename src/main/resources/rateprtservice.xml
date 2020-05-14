@@ -55,7 +55,8 @@
 		<ip>10.24.1.230</ip>
 		<port>12000</port>
 		<logpath>/home/scotthong/tmp</logpath>
-		<user>scotthong</user>
+		<db url="jdbc:db2://172.16.46.140:50000/BISDB" user="BIS_USER" pass="bisuser"/>
+		<statustb name="BISAP.TB_AUDEVSTS" mkey="BRWS" fields="BRWS,IP,PORT,SYSIP,SYSPORT,ACTPAS,DEVTPE,CURSTUS,VERSION,CREATOR,MODIFIER"/>
 	</system>
 	<svrsubport>
 		<svrip>10.24.1.230:15000=10.24.1.230:15101, 10.24.1.230:15000=10.24.1.230:15102,10.24.1.230:15000=10.24.1.230:15103</svrip>

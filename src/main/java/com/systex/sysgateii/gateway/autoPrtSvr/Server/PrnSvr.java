@@ -43,6 +43,12 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 	public static Logger atlog = null;
 	public static Big5FontImg big5funt = null;
 	public static AtomicBoolean p_fun_flag = new AtomicBoolean(false);
+	public static String dburl = "";
+	public static String dbuser = "";
+	public static String dbpass = "";
+	public static String statustbname = "";
+	public static String statustbmkey = "";
+	public static String statustbfields = "";
 
 
 	static PrnSvr server;
@@ -109,8 +115,6 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 	
 	public static void createServer(DynamicProps cfg) {
 		log.debug("Enter createServer");
-
-
 		cfgMap = null;
 		verbrno = cfg.getConHashMap().get("svrsubport.verhbrno");
 		list = cfg.getCfgPrtMapList();
@@ -121,12 +125,21 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 		}
 		log.debug("Enter createServer size={}", list.size());
 		log.debug("receive timeout is ={} mili-seconds", setResponseTimeout);
-
+		dburl = cfg.getConHashMap().get("system.db[@url]");
+		dbuser = cfg.getConHashMap().get("system.db[@user]");
+		dbpass = cfg.getConHashMap().get("system.db[@pass]");
+		statustbname = cfg.getConHashMap().get("system.statustb[@name]");
+		statustbmkey = cfg.getConHashMap().get("system.statustb[@mkey]");
+		statustbfields = cfg.getConHashMap().get("system.statustb[@fields]");
+		if (dburl != null && dburl.trim().length() > 0)
+			log.debug("will use db url:[{}] user name:[{}] update status table [{}] main key[{}] fields [{}]", dburl, dbuser, statustbname, statustbmkey, statustbfields);
+		log.debug("receive timeout is ={} mili-seconds", setResponseTimeout);
 		MDC.put("WSNO", "0000");
+		MDC.put("PID", ManagementFactory.getRuntimeMXBean().getName().split("@")[0]);
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
 		String byDate = sdf.format(new Date());
-		amlog = LogUtil.getDailyLogger(PrnSvr.logPath, verbrno + "_AM" + byDate, "info", "[%d{yyyy/MM/dd HH:mm:ss:SSS}]%msg%n");
-		atlog = LogUtil.getDailyLogger(PrnSvr.logPath, verbrno + "_AT" + byDate, "info", "[TID:%X{PID} %d{yyyy/MM/dd HH:mm:ss:SSS}]:[%X{WSNO}]:[%thread]:[%class{30} %M|%L]:%msg%n");
+		amlog = LogUtil.getDailyLogger(PrnSvr.logPath, verbrno + "AM" + byDate, "info", "[%d{yyyy/MM/dd HH:mm:ss:SSS}]%msg%n");
+		atlog = LogUtil.getDailyLogger(PrnSvr.logPath, verbrno + "AT" + byDate, "info", "[TID:%X{PID} %d{yyyy/MM/dd HH:mm:ss:SSS}]:[%X{WSNO}]:[%thread]:[%class{0} %M|%L]:%msg%n");
 		try {
 			p_fun_flag.set(false);
 			big5funt = new Big5FontImg("FontTable_low.bin", "FontData_All.bin");

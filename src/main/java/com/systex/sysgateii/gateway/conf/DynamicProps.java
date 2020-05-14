@@ -80,6 +80,14 @@ public class DynamicProps {
 										|| entry.getKey().equals("svrsubport.verhbrno")
 										|| entry.getKey().equals("svrsubport.verhwsno")
 										|| entry.getKey().equals("boards.board.brno")
+										//20200513 add for data base connect
+										|| entry.getKey().equals("system.db[@url]")
+										|| entry.getKey().equals("system.db[@user]")
+										|| entry.getKey().equals("system.db[@pass]")
+										|| entry.getKey().equals("system.statustb[@name]")
+										|| entry.getKey().equals("system.statustb[@mkey]")
+										|| entry.getKey().equals("system.statustb[@fields]")
+										//----
 										|| entry.getKey().equals("boards.board.ip")) {
 									conHashMap.put(entry.getKey().toString(), entry.getValue().toString());
 									log.info("ConfProc put to config map info! {}, {}", entry.getKey(),
@@ -183,6 +191,14 @@ public class DynamicProps {
 						|| entry.getKey().equals("svrsubport.localip") || entry.getKey().equals("svrsubport.localport")
 						|| entry.getKey().equals("svrsubport.recvtimeout")
 						|| entry.getKey().equals("svrsubport.verhbrno") || entry.getKey().equals("svrsubport.verhwsno")
+						//20200513 add for data base connect
+						|| entry.getKey().equals("system.db[@url]")
+						|| entry.getKey().equals("system.db[@user]")
+						|| entry.getKey().equals("system.db[@pass]")
+						|| entry.getKey().equals("system.statustb[@name]")
+						|| entry.getKey().equals("system.statustb[@mkey]")
+						|| entry.getKey().equals("system.statustb[@fields]")
+						//----
 						|| entry.getKey().equals("boards.board.brno") || entry.getKey().equals("boards.board.ip")) {
 					conHashMap.put(entry.getKey().toString(), entry.getValue().toString());
 					log.info("ConfProc put to config map info! {}, {}", entry.getKey(), entry.getValue());

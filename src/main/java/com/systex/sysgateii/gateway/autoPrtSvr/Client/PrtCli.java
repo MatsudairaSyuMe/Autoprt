@@ -31,9 +31,10 @@ import org.slf4j.MDC;
 
 import com.systex.sysgateii.gateway.autoPrtSvr.Server.FASSvr;
 import com.systex.sysgateii.gateway.autoPrtSvr.Server.PrnSvr;
-import com.systex.sysgateii.gateway.data.Constants;
+import com.systex.sysgateii.gateway.comm.Constants;
 import com.systex.sysgateii.gateway.comm.TXP;
 import com.systex.sysgateii.gateway.conf.DscptMappingTable;
+import com.systex.sysgateii.gateway.dao.GwDao;
 import com.systex.sysgateii.gateway.listener.ActorStatusListener;
 import com.systex.sysgateii.gateway.prtCmd.Printer;
 import com.systex.sysgateii.gateway.prtCmd.Impl.CS4625Impl;
@@ -243,10 +244,19 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	private int responseTimeout = 60 * 1000;// 毫秒
 	private String curSockNm = "";
 	//----
-
+	//20200513
+	private String statusfields = "";
+	//"'9838901',10.24.1.230,'4002','10.24.1.230','3301','0','3','0','1','SYSTEM',''"
+	//                                        printer type,status
+	private String updValueptrn = "'%s',%s,'%s','%s','%s','0','%s','%s','1','SYSTEM',''";
+	//分行設備分類0: 匯率顯示版 1:利率顯示版 2: AUTO46 自動補褶機 3: AUTO52 自動補褶機
+	private String typeid = "2"; //default for AUTP46
+	private GwDao jsel2ins = null;
+	//----
 	List<ActorStatusListener> actorStatusListeners = new ArrayList<ActorStatusListener>();
 
 	private long startTime;
+	private long lastCheckTime;
 
 	public List<ActorStatusListener> getActorStatusListeners() {
 		return actorStatusListeners;
@@ -276,7 +286,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		MDC.put("PID", pid);
 		responseTimeout = PrnSvr.setResponseTimeout;
 		amlog = PrnSvr.amlog;
-		aslog = LogUtil.getDailyLogger(PrnSvr.logPath, this.clientId + "_AS" + this.brws.substring(3) + byDate, "info", "TIME     [0000]:%d{yyyy.MM.dd HH:mm:ss:SSS} %msg%n");
+		aslog = LogUtil.getDailyLogger(PrnSvr.logPath, this.clientId + "AS" + this.brws.substring(3) + byDate, "info", "TIME     [0000]:%d{yyyy.MM.dd HH:mm:ss:SSS} %msg%n");
 		atlog = PrnSvr.atlog;
 //		atlog.info("=============[Start]=============");
 //		atlog.info("------MainThreadId={}------", pid);
@@ -284,20 +294,26 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 
 		if (this.type.equals("AUTO28")) {
 			atlog.info("load Auto Printer type AUTO28");
+			this.typeid = Constants.DEVAUTO28;
 		} else if (this.type.equals("AUTO20")) {
 			atlog.info("load Auto Printer type AUTO20");
+			this.typeid = Constants.DEVAUTO28;
 		} else if (this.type.equals("AUTO46")) {
 			this.prt = new CS4625Impl(this, this.brws, this.type, this.autoturnpage);
 			atlog.info("load Auto Printer type AUTO46");
+			this.typeid = Constants.DEVAUTO46;
 		} else if (this.type.equals("AUTO52")) {
 			this.prt = new CS5240Impl(this, this.brws, this.type, this.autoturnpage);
 			atlog.info("load Auto Printer type AUTO52");
+			this.typeid = Constants.DEVAUTO52;
 		} else {
 			atlog.info("Auto Printer type define error!");
 			return;
 		}
 		log.info("=================={} {}",this.brws.substring(0, 5), this.brws.substring(3));
-
+		
+		this.statusfields = PrnSvr.statustbfields;
+		
 		ipAddrPars nodePars = new ipAddrPars();
 		nodePars.init();
 		try {
@@ -313,8 +329,22 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					}
 				}
 			}
+			if (PrnSvr.dburl != null && PrnSvr.dburl.trim().length() > 0) {
+				jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
+			}
 		} catch (Exception e) {
 			log.error("Address format error!!! {}", e.getMessage());
+		}
+//		log.info("rmt addr {} port {} local addr {} port {}",this.rmtaddr.getAddress().getHostAddress(), this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort());
+		String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
+				this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDINACT);
+		try {
+			int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, this.brws);
+			log.debug("total {} records update  status [{}]", row, Constants.STSUSEDINACT);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			log.debug("update status table {} error:", PrnSvr.statustbname, e.getMessage());
 		}
 	}
 	
@@ -467,6 +497,11 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		showStateMsg = false;
 		this.curSockNm = String.format("%04d", (int) ((Math.random() * ((9999 - 4) + 1)) + 4));
 		aslog.info(String.format("CON  %s[%04d]:", this.curSockNm, 0));
+		String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
+				this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDACT);
+		int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, this.brws);
+		log.debug("total {} records update status [{}]", row, Constants.STSUSEDACT);
+
 		prtcliFSM(!firstOpenConn);
 		prt.getIsShouldShutDown().set(false);
 		this.seqNoFile = new File("SEQNO", "SEQNO_" + this.brws);
@@ -496,6 +531,11 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		prt.getIsShouldShutDown().set(true);
 		prt.ClosePrinter();
 		aslog.info(String.format("DIS  %s[%04d]:", this.curSockNm, 0));
+		String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
+				this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDINACT);
+		int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, this.brws);
+		log.debug("total {} records update  status [{}]", row, Constants.STSUSEDINACT);
+
 		this.curSockNm = "";
 		this.clientMessageBuf.clear();
 		prtcliFSM(firstOpenConn);
@@ -561,6 +601,17 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	@Override
 	public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
 		log.debug(clientId + " channelUnregistered");
+		String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
+				this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDINACT);
+		try {
+			int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, this.brws);
+			log.debug("total {} records update  status [{}]", row, Constants.STSUSEDINACT);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			log.debug("update status table {} error:", PrnSvr.statustbname, e.getMessage());
+		}
+
 		ctx.close();
 	}
 
@@ -2492,6 +2543,17 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				amlog.info("[{}][{}][{}]****************************", brws, "        ", "            ");
 				amlog.info("[{}][{}][{}]:00請插入存摺...", brws, pasname, "            ");
 				log.info("DetectPaper [{}][{}][{}]:00請插入存摺...", brws, pasname, "            ");
+				this.lastCheckTime = System.currentTimeMillis();
+				String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
+						this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDACT);
+				try {
+					int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, this.brws);
+					log.debug("total {} records update status [{}]", row, Constants.STSUSEDACT);
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+					log.error("update state table {} error:{}", PrnSvr.statustbname, e.getMessage());
+				}
 				prt.DetectPaper(firstOpenConn, 0);
 			}
 			log.debug("after {}=>{}=====check prtcliFSM", before, this.curState);
@@ -2507,8 +2569,22 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 						this.curState = GETPASSBOOKSHOWSIG;
 						log.debug("{} {} {} AutoPrnCls : --start Show Signal", brws, catagory, account);
 						SetSignal(firstOpenConn, !firstOpenConn, "0000000000", "0010000000");
-					} else
+					} else {
+						if ((System.currentTimeMillis() - this.lastCheckTime) > 10 * 1000) {
+							String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
+									this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDACT);
+							try {
+								int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, this.brws);
+								log.debug("total {} records update status [{}]", row, Constants.STSUSEDACT);
+							} catch (Exception e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+								log.error("update state table {} error:{}", PrnSvr.statustbname, e.getMessage());
+							}
+							this.lastCheckTime = System.currentTimeMillis();
+						}
 						log.debug("{} {} {} AutoPrnCls : Parsing() -- Detect Error!", brws, catagory, account);
+					}
 				}
 			}
 			break;
