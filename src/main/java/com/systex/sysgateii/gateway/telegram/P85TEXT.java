@@ -47,7 +47,7 @@ public class P85TEXT {
 	String  txamt  =  "txamt"; //!< 交易金額
 	String  crdb   =  "crdb";  //!< 借貸記號
 	String  dsptype = "dsptype";  //!< 備註種類
-	String  dsptkd  = "sptkd";  //!< 備註型式
+	String  dsptkd  = "dsptkd";  //!< 備註型式
 	String  dsptext = "dsptext"; //!< 備註內容
 
 
@@ -129,6 +129,8 @@ public class P85TEXT {
 		System.arraycopy(setbV, 0, p85titatextary, f.offset, f.len);
 	}
 	public boolean appendTitaText(String fieldN, byte[] srcValue) {
+		log.debug(fieldN + ":");
+
 		Field f = p85titatext.get(p85titatextname.get(fieldN));
 		if (this.p85titatext_len > 0 && srcValue != null && srcValue.length > 0) {
 			if (this.p85titatextary == null || this.p85titatextary.length == 0) {
@@ -166,7 +168,7 @@ public class P85TEXT {
 	private byte[] p85titatextary = null;
 
 	public P85TEXT() {
-		log.debug("p85titatext_lens items=" + p85titatext_lens.length);
+//		log.debug("p85titatext_lens items=" + p85titatext_lens.length);
 		int id = 0;
 		for (int l : p85titatext_lens) {
 			Field f = new Field();

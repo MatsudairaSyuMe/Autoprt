@@ -56,8 +56,6 @@ public class FASSocketChannel {
 	public FASSocketChannel(String nodes[], ServerProducer producer, List<String> brnolist, List<String> wsnolist) throws ConnectException, IllegalArgumentException, InterruptedException {
 		group = new NioEventLoopGroup();
 		final Bootstrap bootstrap = new Bootstrap().group(group).channel(NioSocketChannel.class);
-//		setConnPool(new MultiNodeConnPoolImpl(nodes, bootstrap, CPH, DEFAULT_PORT, 0, 1, TimeUnit.SECONDS, 3000));
-//		getConnPool().preConnect(nodes.length);
 		//---- 20200422 test
 		((FASChannelPoolHandler)CPH).setProducer(producer);
 		((FASChannelPoolHandler)CPH).setBrnoList(brnolist);

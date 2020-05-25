@@ -1707,18 +1707,38 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					atlog.info("TITA_BASIC.txamt=[{}]",sm);
 					tital.setValue("ver", "02");
 					p85text.setValue("bkseq", this.bkseq);
-					if (tital.ChkCrdb(this.msrbal) > 0)    ///check 20200224
+					//20200523
+					String set_str = this.bkseq;
+//					p85text.appendTitaText("date", pb_arr.get(0));
+					//----
+					if (tital.ChkCrdb(this.msrbal) > 0) {    ///check 20200224
 						p85text.setValue("snpbbal", "+");
-					else
+						//20200523
+						set_str = set_str +  "+";
+						//----
+					}else {
 						p85text.setValue("snpbbal", "-");
-					p85text.setValue("npbbal", this.msrbal.substring(1));
+						//20200523
+						set_str = set_str + "-";
+						//----
+					}
+//					p85text.setValue("npbbal", this.msrbal.substring(1));
+					p85text.setValue("npbbal", tx_area.get("npbbal"));
 //					String scnt = String.format("%04d", pb_arr.size());
 					p85text.setValue("delcnt", String.format("%04d", pb_arr.size()));
-//					p85text.setValue("fnbdtl", pb_arr.get(pb_arr.size() - 1));
-					log.debug("pb_arr size() - 1={} [{}]", pb_arr.size() - 1, new String(pb_arr.get(pb_arr.size() - 1)));
-					p85text.appendTitaText("date", pb_arr.get(pb_arr.size() - 1));
+//					p85text.setValue("fnbdtl", pb_arr.get(pb_arr.size() - 1)); 20200523 change to pb_arr = 0
+					log.debug("pb_arr {} [{}]", 0, new String(pb_arr.get(0)));
+					//20200523
+					set_str = set_str + tx_area.get("npbbal") + String.format("%04d", pb_arr.size());
+					byte[] set_arr = new byte[p85text.getP85TitatextLen() - set_str.getBytes().length];
+					System.arraycopy(pb_arr.get(0), 0, set_arr, 0, p85text.getP85TitatextLen() - set_str.getBytes().length);
+					log.debug("set_arr length [{}]", set_arr.length);
+					log.debug(" len [{}]", p85text.getP85TitatextLen());
+					p85text.appendTitaText("date", set_arr);
+					//----
 					rtn = tital.mkTITAmsg(tital.getTitalabel(), p85text.getP85Titatext());
-					log.debug("P85 tita {}", new String(rtn));
+//					log.debug("P85 tita len={} [{}] len={} [{}]len={} [{}]", rtn.length, new String(rtn), tital.getTitalabel().length, new String(tital.getTitalabel()),p85text.getP85Titatext().length, new String(p85text.getP85Titatext()));
+					log.debug("P85 tita len={} [{}]", rtn.length, new String(rtn));
 				}
 				//***** Compose Q98 TITA *****//
 				else if (ifig == TXP.FCTYPE)
@@ -1997,6 +2017,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 						int nCnt = Integer.parseInt(new String(p0080text.getHeadValue("nbdelcnt")));
 						int iCnt = Integer.parseInt(dCount);
 						atlog.info("iCnt=[{}] nCnt=[{}]", iCnt, nCnt);
+						//20200523
+						tx_area.put("bkseq", new String(p0080text.getHeadValue("totabkseq")));
+						//----
 						if (opttotatext.length > texthead.length) {
 							int j = 0;
 							byte[] text = Arrays.copyOfRange(opttotatext, p0080text.getP0080TotaheadtextLen(), opttotatext.length);
@@ -2011,8 +2034,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 									double dTxamt = Double.parseDouble(new String(p0080text.getTotaTextValue("txamt", i))) / 100.0;
 									if (dTxamt == 0)
 										p0080text.setTotaTextValue("stxamt", plus, i);
-									atlog.info("i={} txamt={} dTxamt={} stxamt={} text=[{}]", i, new String(p0080text.getTotaTextValue("txamt", i)), dTxamt, new String(p0080text.getTotaTextValue("stxamt", i)), new String(p0080text.getTotaTexOc(i)));
-								}
+									atlog.info("m_pArr[{}]=[{}]", i, new String(p0080text.getTotaTexOc(i)));
+									log.info("i = [{}] txamt={} dTxamt={} stxamt={} text=[{}]", i, new String(p0080text.getTotaTextValue("txamt", i)), dTxamt, new String(p0080text.getTotaTextValue("stxamt", i)), new String(p0080text.getTotaTexOc(i)));
+															}
 								this.pb_arr.addAll(p0080text.getTotaTextLists());
 								rtn = text;
 								log.debug("{} {} {} :TxFlow : () -- pb_arr.size={}", brws, catagory, account, pb_arr.size());
@@ -2020,6 +2044,12 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 								this.dCount = String.format("%03d", iCnt);
 								log.debug("{} {} {} :TxFlow : after () -- dCount=[{}]", brws, catagory, account, this.dCount);
 								//Print Data
+								// 20200523
+								tx_area.put("snpbbal", new String(p0080text.getTotaTextValue("spbbal", nCnt - 1)));
+								tx_area.put("npbbal", new String(p0080text.getTotaTextValue("pbbal", nCnt - 1)));
+								log.debug("{} {} {} :TxFlow : () -- bkseq=[{}] snbbal=[{}] nbbal=[{}]", brws, catagory, account,
+										tx_area.get("bkseq"), tx_area.get("snpbbal"), tx_area.get("npbbal"));
+								// -----
 							} else
 								rtn = new byte[0];
 						} else
@@ -2077,10 +2107,15 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 											break;
 										this.fc_arr.add(q0880text.getTotaTexOc(i));
 										atlog.info("m_fArr[{}]=[{}]", begin + i, new String(q0880text.getTotaTexOc(i)));
-
+										//20200523
+										log.info("fc_arr [{}]=[{}]", begin + i, new String(q0880text.getTotaTexOc(i)));
+										//----
 									}
 									if (i == 0) {
 										atlog.info("m_fArr data null");
+										//20200523
+										log.info("i == 0");
+										//----
 									} else {
 										tx_area.put("txday", new String(q0880text.getTotaTextValue("totatxday", i - 1)));
 										tx_area.put("txseq", new String(q0880text.getTotaTextValue("totatxseq", i - 1)));
@@ -2151,10 +2186,16 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 														new String(p0880text.getTotaTextValue("txday", i))) == 0)
 											break;
 										this.gl_arr.add(p0880text.getTotaTexOc(i));
-										atlog.info("m_fArr[{}]=[{}]",begin + i, new String(p0880text.getTotaTexOc(i)));
+										atlog.info("m_gArr[{}]=[{}]",begin + i, new String(p0880text.getTotaTexOc(i)));
+										//20200523
+										log.info("gl_arr [{}]=[{}]",begin + i, new String(p0880text.getTotaTexOc(i)));
+										//----
 									}
 									if (i == 0) {
-										atlog.info("m_fArr data null");
+										atlog.info("m_gArr data null");
+										//20200523
+										log.info("i == 0");
+										//----
 									} else {
 										tx_area.put("txday", new String(p0880text.getTotaTextValue("txday", i - 1)));
 										tx_area.put("nbseq", new String(p0880text.getTotaTextValue("nbseq", i - 1)));
@@ -2323,9 +2364,16 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 						try {
 							String mt = new String(total.getValue("mtype"));
 							String cMsg = "";
+							//20200523
+							String mnostr = new String(total.getValue("msgno"));
+							atlog.info(" -- [{}] TOTA_TEXT=[{}]", mt + mnostr, new String(totatext));
+							//----
 							if (mt.equals("E") || mt.equals("A") || mt.equals("X")) {
 								if (total.getValue("mtype").equals("A"))
-									msgid = "E" + new String(total.getValue("msgno"));
+									//20200523
+//									msgid = "E" + new String(total.getValue("msgno"));
+									msgid = "E" + mnostr;
+								//----
 								for (int i = 0; i < totatext.length; i++)
 									if (totatext[i] == 0x7 || totatext[i] == 0x4 || totatext[i] == 0x3)
 										totatext[i] = 0x20;
@@ -2939,6 +2987,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			} else
 				this.curState = WRITEMSRWAITCONFIRM;
 			log.debug("{} {} {} :AutoPrnCls : WMSRFormat() -- c_Msr=[{}]",brws, catagory, account, this.tx_area.get("c_Msr"));
+			//20200522
+			atlog.info("WMSRFormat() -- c_Msr=[{}]",brws, catagory, account, this.tx_area.get("c_Msr"));
+			//----
 			log.debug("after {}=>{}=====check prtcliFSM", before, this.curState);
 			break;
 

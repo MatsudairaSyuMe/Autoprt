@@ -45,7 +45,7 @@ public class FASSvr implements MessageListener<byte[]>, Runnable {
 
 	static String[] NODES = { "" };
 	private FASSocketChannel ec2 = null;
-	private static final int FAIL_EVERY_CONN_ATTEMPT = 1;
+	private static final int FAIL_EVERY_CONN_ATTEMPT = 3;
 	private static final long TEST_TIME_SECONDS = 1;
 	private Channel currConn;
 	private boolean TITA_TOTA_START = false;
