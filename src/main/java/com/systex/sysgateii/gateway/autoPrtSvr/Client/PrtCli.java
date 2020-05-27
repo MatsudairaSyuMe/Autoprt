@@ -2004,7 +2004,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					byte[] texthead = Arrays.copyOfRange(opttotatext, 0, p0080text.getP0080TotaheadtextLen());
 					p0080text.copyTotaHead(texthead);
 					con = new String(p0080text.getHeadValue("nbcnt"));
-					log.debug("P0080totahead rtn={} tota.nbcnt={}",
+					log.debug("P0080totahead rtn={} tota.nbcnt={} tota.nbdelcnt={}",
 							new String(texthead), con,
 							new String(p0080text.getHeadValue("nbdelcnt")));
 					if (Integer.parseInt(con) > this.pbavCnt) {
@@ -2023,7 +2023,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 						if (opttotatext.length > texthead.length) {
 							int j = 0;
 							byte[] text = Arrays.copyOfRange(opttotatext, p0080text.getP0080TotaheadtextLen(), opttotatext.length);
-							log.debug("{} {} {} :TxFlow : () -- iCnt=[{}] nCnt=[{}] text.length={}", brws, catagory, account, iCnt, nCnt, text.length);
+//							log.debug("{} {} {} :TxFlow : () -- iCnt=[{}] nCnt=[{}] text.length={}", brws, catagory, account, iCnt, nCnt, text.length);
 							if (text.length % p0080text.getP0080TotatextLen() == 0)
 								j = text.length / p0080text.getP0080TotatextLen();
 							log.debug("{} {} {} :TxFlow : () -- iCnt=[{}] nCnt=[{}] text.length={} j={}", brws, catagory, account, iCnt, nCnt, text.length, j);
@@ -2076,14 +2076,16 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 							int j = 0;
 							byte[] text = Arrays.copyOfRange(opttotatext, q0880text.getQ0880TotaheadtextLen(),
 									opttotatext.length);
-							log.debug("{} {} {} :TxFlow : () -- totCnt=[{}] text.length={} [{}]", brws, catagory, account,
-									totCnt, text.length, new String(text));
+//							log.debug("{} {} {} :TxFlow : () -- totCnt=[{}] text.length={} [{}]", brws, catagory, account,
+//									totCnt, text.length, new String(text));
 							if (text.length % q0880text.getQ0880TotatextLen() == 0)
 								j = text.length / q0880text.getQ0880TotatextLen();
 							log.debug("{} {} {} :TxFlow : () -- totCnt=[{}] text.length={} j={}", brws, catagory,
 									account, totCnt, text.length, j);
-							if (j == totCnt) {
-								q0880text.copyTotaText(text, j);
+							//20200527
+							if (j >= totCnt) {
+								q0880text.copyTotaText(text, totCnt);
+								//----
 								if (begin < totCnt) {
 									int dataCnt = 0;
 									if ((totCnt - begin) >= 6)
@@ -2156,14 +2158,16 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 							int j = 0;
 							byte[] text = Arrays.copyOfRange(opttotatext, p0880text.getP0880TotaheadtextLen(),
 									opttotatext.length);
-							log.debug("{} {} {} :TxFlow : () -- totCnt=[{}] text.length={} [{}]", brws, catagory, account,
-									totCnt, text.length, new String(text));
+//							log.debug("{} {} {} :TxFlow : () -- totCnt=[{}] text.length={} [{}]", brws, catagory, account,
+//									totCnt, text.length, new String(text));
 							if (text.length % p0880text.getP0880TotatextLen() == 0)
 								j = text.length / p0880text.getP0880TotatextLen();
 							log.debug("{} {} {} :TxFlow : () -- totCnt=[{}] text.length={} j={}", brws, catagory,
 									account, totCnt, text.length, j);
-							if (j == totCnt) {
-								p0880text.copyTotaText(text, j);
+							//20200527
+							if (j >= totCnt) {
+								p0880text.copyTotaText(text, totCnt);
+							//----
 								if (begin < totCnt) {
 									int dataCnt = 0;
 									if ((totCnt - begin) >= 6)
