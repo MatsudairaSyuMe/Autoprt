@@ -1549,6 +1549,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					System.arraycopy(String.format("%02d", l).getBytes(), 0, c_Msr, 30, 2);
 					System.arraycopy(String.format("%02d", p).getBytes(), 0, c_Msr, 32, 2);
 					tx_area.put("c_Msr", new String(c_Msr));
+					//20200528
+					tx_area.put("pbcol", String.format("%02d", l));
+					tx_area.put("pbpage", String.format("%02d", p));
+					//----
 				}
 				rtn = prt.MS_Write(start, brws, account, c_Msr);
 				log.debug("{} {} {} WMSRFormat after to write new FCTYPE line={} page={} MSR {}", brws, catagory, account, l, p, tx_area.get("c_Msr"));
@@ -1561,6 +1565,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					System.arraycopy(String.format("%02d", l).getBytes(), 0, c_Msr, 24, 2);
 					System.arraycopy(String.format("%02d", p).getBytes(), 0, c_Msr, 26, 2);
 					tx_area.put("c_Msr", new String(c_Msr));
+					//20200528
+					tx_area.put("lineno", String.format("%02d", l));
+					tx_area.put("pageno", String.format("%02d", p));
+					//----
 				}
 				rtn = prt.MS_Write(start, brws, account, c_Msr);
 				log.debug("{} {} {} WMSRFormat after to write new GLTYPE line={} page={} MSR {}", brws, catagory, account, l, p, tx_area.get("c_Msr"));
@@ -1754,7 +1762,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					tital.setValueLtoRfill("actno", tx_area.get("account"), (byte) ' ');
 					tital.setValue("crdb", "0");
 					tital.setValue("nbcd", "3");
-					log.debug("fc_arr size() - 1={} [{}]", fc_arr.size() - 1, new String(fc_arr.get(fc_arr.size() - 1)));
+					//20200528
+//					log.debug("fc_arr size() - 1={} [{}]", fc_arr.size() - 1, new String(fc_arr.get(fc_arr.size() - 1)));
+					log.debug("fc_arr {} [{}]", 0, new String(fc_arr.get(0)));
 					String sm = this.msrbal.substring(1);
 					atlog.info("fArr[0]=[{}]",sm);
 					tital.setValue("txamt", sm);
@@ -1814,9 +1824,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					p1885text.setValue("nbday", tx_area.get("nbday"));
 					p1885text.setValue("nbseq", tx_area.get("nbseq"));
 					p1885text.setValue("kinbr", tx_area.get("kinbr"));
-					p1885text.setValue("nbno", tx_area.get("nbno"));
+					p1885text.setValue("nbno", this.no);
 					p1885text.setValue("lineno", tx_area.get("lineno"));
-					p1885text.setValue("pageno", this.no);
+					p1885text.setValue("pageno", tx_area.get("pageno"));
 					p1885text.setValue("end", "$");
 
 					rtn = tital.mkTITAmsg(tital.getTitalabel(), p1885text.getP1885Titatext());
