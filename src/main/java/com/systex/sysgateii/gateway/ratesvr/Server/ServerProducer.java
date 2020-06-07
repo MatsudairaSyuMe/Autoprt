@@ -317,7 +317,7 @@ public class ServerProducer extends ChannelDuplexHandler // ChannelInboundHandle
 
 	public ChannelFuture writeMessageWithContext(ChannelHandlerContext ctx, String msg, Charset chs) {
 		ByteBuf req = Unpooled.wrappedBuffer(msg.getBytes(chs));
-		ratelog.debug(String.format(rateSendPtrn, msg.length(), msg));
+		ratelog.debug(String.format(rateRecvPtrn, msg.length(), msg));
 		log.debug("assign ctx {} {} msg length={} send end", ctx, serverId, msg.length());
 		return ctx.writeAndFlush(req);
 	}

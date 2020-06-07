@@ -1160,7 +1160,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		boolean rtn = true;
 		int tl, total;
 		tl = this.iLine;
-		total = this.iCon;
+//20200603  test		total = this.iCon;
+		total = fc_arr.size();
 		String pbpr_date = String.format("%9s", " "); // 日期 9
 		String pbpr_wsno = String.format("%5s", " "); // 櫃檯機編號 5
 		String pbpr_crdblog = String.format("%36s", " "); // 摘要+支出收入金額 36
@@ -1270,14 +1271,15 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					}
 					
 				}
-				log.debug("after skip line------------");
+				log.debug("after skip line------------tl+i=[{}] total=[{}] i+1=[{}]", tl+i, total, i + 1);   //20200603 test
 				byte[] sndbary = new byte[pr_dataprev.getBytes().length + pbpr_crdbT.getBytes().length];
 				System.arraycopy(pr_dataprev.getBytes(), 0, sndbary, 0, pr_dataprev.getBytes().length);
 				System.arraycopy(pbpr_crdbT.getBytes(), 0, sndbary, pr_dataprev.getBytes().length, pbpr_crdbT.getBytes().length);
 				System.arraycopy(dsptb, 0, sndbary, pr_dataprev.getBytes().length, dsptb.length);
 				prt.Prt_Text(sndbary);
 				//若印滿 24 筆且尚有補登資料，加印「請翻下頁繼續補登」
-				if ( (tl+i) == 24 && (total > (i+1)) )
+//				if ( (tl+i) == 24 && (total >= (i+1)) )   //20200603 test
+				if ( (tl+i) == 23 && (total > (i+1)) )   //20200603 test
 				{
 					// 因為存摺會補到滿, FC 只有5頁, 如果是第5頁則不進行換頁流程
 					// 20180518 , add
