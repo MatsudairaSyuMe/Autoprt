@@ -127,7 +127,7 @@ public class FASSvr implements MessageListener<byte[]>, Runnable {
 			}
 			//----
 			//20200608
-			if (!map.get("system.port").isEmpty()) {
+			if (!map.get("system.port").isEmpty() && !map.get("system.port").trim().equals("0")) {
 				Thread thread = new Thread(producer);
 				thread.start();
 			}

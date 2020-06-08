@@ -53,14 +53,14 @@
 	</validDevice>
 	<system>
 		<ip>*</ip>
-		<port></port>
+		<port>0</port>
 		<logpath>/home/scotthong/tmp</logpath>
 		<db url="jdbc:db2://172.16.71.128:50000/BISDB" user="BIS_USER" pass="bisuser"/>
 		<statustb name="BISAP.TB_AUDEVSTS" mkey="BRWS" fields="BRWS,IP,PORT,SYSIP,SYSPORT,ACTPAS,DEVTPE,CURSTUS,VERSION,CREATOR,MODIFIER"/>
 	</system>
 	<svrsubport>
-<!-- 	<svrip>:15000=10.24.1.230:15101, 10.24.1.230:15000=10.24.1.230:15102,10.24.1.230:15000=10.24.1.230:15103</svrip>-->
-		<svrip>10.24.1.230:15000=10.24.1.230:15102,10.24.1.230:15000=10.24.1.230:15103</svrip>
+ 	<svrip>10.24.1.230:15000=10.24.1.230:15102,10.24.1.230:15000=10.24.1.230:15103</svrip>
+<!--		<svrip>10.24.1.230:15000=10.24.1.230:15102,10.24.1.230:15000=10.24.1.230:15103</svrip>-->
 <!--		<svrip>localhost:15000=localhost:15101</svrip>-->
 		<svrport>15000</svrport>
 		<localip>10.24.1.230</localip>
