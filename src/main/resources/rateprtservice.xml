@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-	<boards>
-		<board>
+ <boards>
+- 	<board>
 			<brno>984</brno>
 			<id>1</id>
 			<ip>10.24.1.98</ip>
@@ -11,7 +11,7 @@
 			<start description="掛牌啟用時間(時分)">0800</start>
 			<stop description="掛牌結束時間(時分)">1700</stop>
 		</board>
-		<board>
+ 		<board>
 			<brno>983</brno>
 			<id>2</id>
 			<ip>127.0.0.1</ip>
@@ -52,15 +52,16 @@
  <!--    <dev type="AUTO52" brws="9838903" ip="10.24.1.94:4001=10.24.1.230:3301" autoturnpage="false"/>-->
 	</validDevice>
 	<system>
-		<ip>localhost</ip>
-		<port>12000</port>
+		<ip>*</ip>
+		<port></port>
 		<logpath>/home/scotthong/tmp</logpath>
 		<db url="jdbc:db2://172.16.71.128:50000/BISDB" user="BIS_USER" pass="bisuser"/>
 		<statustb name="BISAP.TB_AUDEVSTS" mkey="BRWS" fields="BRWS,IP,PORT,SYSIP,SYSPORT,ACTPAS,DEVTPE,CURSTUS,VERSION,CREATOR,MODIFIER"/>
 	</system>
 	<svrsubport>
-<!--		<svrip>:15000=10.24.1.230:15101, 10.24.1.230:15000=10.24.1.230:15102,10.24.1.230:15000=10.24.1.230:15103</svrip>-->
-		<svrip>localhost:15000=localhost:15101</svrip>
+<!-- 	<svrip>:15000=10.24.1.230:15101, 10.24.1.230:15000=10.24.1.230:15102,10.24.1.230:15000=10.24.1.230:15103</svrip>-->
+		<svrip>10.24.1.230:15000=10.24.1.230:15102,10.24.1.230:15000=10.24.1.230:15103</svrip>
+<!--		<svrip>localhost:15000=localhost:15101</svrip>-->
 		<svrport>15000</svrport>
 		<localip>10.24.1.230</localip>
 		<localport>15010</localport>

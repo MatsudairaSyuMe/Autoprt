@@ -126,8 +126,12 @@ public class FASSvr implements MessageListener<byte[]>, Runnable {
 				}
 			}
 			//----
-			Thread thread = new Thread(producer);
-			thread.start();
+			//20200608
+			if (!map.get("system.port").isEmpty()) {
+				Thread thread = new Thread(producer);
+				thread.start();
+			}
+			//----
 			this.ec2 = new FASSocketChannel(NODES, producer, brnos, wsnos);
 			//----
 //			this.ec2 = new FASSocketChannel(NODES);
