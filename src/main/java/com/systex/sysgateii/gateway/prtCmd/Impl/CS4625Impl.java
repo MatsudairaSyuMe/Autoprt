@@ -898,7 +898,7 @@ public class CS4625Impl implements Printer {
 			} else {
 				this.curState = MS_Read_FINISH;
 				log.debug("MS_Read 3 ===<><>{} chkChkState {}", this.curState, this.curChkState);
-				atlog.info("data=[{}]",new String(this.curmsdata));
+				atlog.info("ms_read data=[{}]",new String(this.curmsdata));
 				return this.curmsdata;
 			}
 		}

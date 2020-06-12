@@ -358,6 +358,7 @@ public class CS5240Impl implements Printer {
 							rtn = new byte[i + 1];
 							log.debug("Rcv_Data rtn.length={}", rtn.length);
 							pc.clientMessageBuf.readBytes(rtn, 0, rtn.length);
+							
 							return rtn;
 						}
 				} else if (buf[0]== (byte)0x1b) {
@@ -429,6 +430,7 @@ public class CS5240Impl implements Printer {
 				if (rcv_len <= pc.clientMessageBuf.readableBytes()) {
 					rtn = new byte[rcv_len];
 					pc.clientMessageBuf.readBytes(rtn);
+					atlog.info("[{}]-[{}]",rcv_len,new String(rtn));
 					return rtn;
 				}
 			}

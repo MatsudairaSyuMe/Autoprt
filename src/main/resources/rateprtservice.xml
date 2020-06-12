@@ -43,7 +43,8 @@
 		</board>
 	</boards>
 	<validDevice>
-         <dev type="AUTO46" brws="9838902" ip="10.24.1.230:4001=10.24.1.230:3301" autoturnpage="false"/>
+<!--         <dev type="AUTO46" brws="9838902" ip="10.24.1.230:4001=10.24.1.230:3301" autoturnpage="false"/>-->
+         <dev type="AUTO46" brws="9838902" ip="localhost:4001=localhost:3301" autoturnpage="false"/>
 <!--         <dev type="AUTO52" brws="9838902" ip="10.24.1.230:4001=10.24.1.230:3301" autoturnpage="false"/>-->
 <!--         <dev type="AUTO46" brws="9838902" ip="10.24.1.96:4001=10.24.1.230:3301" autoturnpage="false"/>-->
 <!--          <dev type="AUTO52" brws="9838901" ip="10.24.1.230:4002=10.24.1.230:3301" autoturnpage="false"/>-->
@@ -59,9 +60,9 @@
 		<statustb name="BISAP.TB_AUDEVSTS" mkey="BRWS" fields="BRWS,IP,PORT,SYSIP,SYSPORT,ACTPAS,DEVTPE,CURSTUS,VERSION,CREATOR,MODIFIER"/>
 	</system>
 	<svrsubport>
- 	<svrip>10.24.1.230:15000=10.24.1.230:15102,10.24.1.230:15000=10.24.1.230:15103</svrip>
+<!-- 	<svrip>10.24.1.230:15000=10.24.1.230:15102,10.24.1.230:15000=10.24.1.230:15103</svrip>-->
 <!--		<svrip>10.24.1.230:15000=10.24.1.230:15102,10.24.1.230:15000=10.24.1.230:15103</svrip>-->
-<!--		<svrip>localhost:15000=localhost:15101</svrip>-->
+		<svrip>localhost:15000=localhost:15102, localhost:15000=localhost:15103</svrip>
 		<svrport>15000</svrport>
 		<localip>10.24.1.230</localip>
 		<localport>15010</localport>
