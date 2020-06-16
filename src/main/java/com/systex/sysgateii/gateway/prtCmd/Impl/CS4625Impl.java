@@ -1452,7 +1452,19 @@ public class CS4625Impl implements Printer {
 				this.iCnt++;
 			}
 		}
-
+		//20200616
+		if (this.curState == MS_WriteRecvData && this.curChkState != CheckStatus_START && this.iCnt <= 40) {
+			data = CheckStatus();
+			log.debug("4.1 ===<><>{} MS_Write {} {} iCnt={}", this.curState, this.curChkState, data, this.iCnt);
+			if (CheckDis(data) != 0) {
+				this.curChkState = CheckStatus_FINISH;
+				if (!pc.connectStatus()) {
+					amlog.info("[{}][{}][{}]:94補摺機斷線！", brws, pasname, account);		
+					return false;
+				}
+			}
+		}
+		//----
 		log.debug("{} {} {} {} final data.length={} write msr{}", iCnt, brws, "", "", (data == null) ? 0: data.length, this.curmsdata);
 		return rtn;
 	}

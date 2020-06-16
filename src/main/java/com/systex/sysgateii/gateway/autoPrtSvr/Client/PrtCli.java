@@ -190,6 +190,11 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 											// === 2 超過存摺頁次, 仍然顯示補登完成燈號
 											// go to capture
 	private int curState = SESSIONBREAK;
+	//20200616
+	private int lastState = SESSIONBREAK;
+	private long durationTime = -1L;
+	private long lastStateTime = -1L;
+	//--
 	private int iFirst = 0; // 0: start to print
 							// 1: print after turn page
 	private int iEnd = 0; // !< 繼續記號 0:開始 1:請翻下頁 2:頁次超過最大頁數
@@ -1562,7 +1567,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					//----
 				}
 				rtn = prt.MS_Write(start, brws, account, c_Msr);
-				log.debug(" after to write new FCTYPE line={} page={} MSR {}", brws, catagory, account, l, p, tx_area.get("c_Msr"));
+				log.debug(" after to write new FCTYPE line={} page={} MSR {}", l, p, tx_area.get("c_Msr"));
 				break;
 			case TXP.GLTYPE:
 				if (start ) {
@@ -1578,7 +1583,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					//----
 				}
 				rtn = prt.MS_Write(start, brws, account, c_Msr);
-				log.debug(" after to write new GLTYPE line={} page={} MSR {}", brws, catagory, account, l, p, tx_area.get("c_Msr"));
+				log.debug(" after to write new GLTYPE line={} page={} MSR {}", l, p, tx_area.get("c_Msr"));
 				break;
 			default:
 				rtn = false;
@@ -2559,6 +2564,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	private void prtcliFSM(boolean isInit) {
 		if (isInit) {
 			this.curState = SESSIONBREAK;
+			//20200616
+			this.lastState = SESSIONBREAK;
+			this.lastStateTime = -1l;			
+			//----
 			this.alreadySendTelegram = false;
 			this.dispatcher.setTITA_TOTA_START(false);
 			this.iFirst = 0;
@@ -2571,8 +2580,35 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			log.debug("=======================check prtcliFSM init");
 			return;
 		}
-
-		log.debug("before {}=======================check prtcliFSM", this.curState);
+        //20200616 add this.lastState and check duration time
+		if (this.lastState != this.curState) {
+			this.lastState = this.curState;
+			this.lastStateTime = System.currentTimeMillis(); //re-new lastStateTime
+			this.durationTime = -1l;
+		} else {
+			if (this.lastState == ENTERPASSBOOKSIG)
+				this.lastStateTime = System.currentTimeMillis(); //re-new lastStateTime for ENTERPASSBOOKSIG
+			this.durationTime = System.currentTimeMillis() - this.lastStateTime;
+			if (this.durationTime > responseTimeout) {
+				// 20200504
+				this.curState = EJECTAFTERPAGEERROR;
+				log.error("WORN!!! state timeout {} start reset", responseTimeout);
+				amlog.info("[{}][{}][{}]:21狀態錯誤！[{}] 逾時{}", brws, pasname, this.account, rpage, responseTimeout);
+				SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000001");
+				// ----
+				if (SetSignal(!firstOpenConn, firstOpenConn, "0000000000", "0000000001")) {
+					log.debug(
+							"{} {} {} AutoPrnCls : --state error time out",
+							brws, catagory, account);
+				} else {
+					log.debug(
+							"{} {} {} AutoPrnCls : --state error time out",
+							brws, catagory, account);
+				}
+			}
+		}
+		//----
+		log.debug("before {} last {} duration {} =======================check prtcliFSM", this.curState, this.lastState, this.durationTime);
 		int before = this.curState;
 		switch (this.curState) {
 		case SESSIONBREAK:
