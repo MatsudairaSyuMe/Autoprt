@@ -366,8 +366,18 @@ public class MultiNodeConnPoolImpl implements NonBlockingConnPool {
 				// reset the connection failures counter if connected successfully
 				failedConnAttemptCounts.get(nodeAddr).set(0);
 			}
-			LOG.info("doConnect New connection to {} successfully been created", nodeAddr);
-
+			//20200621
+			LOG.info("doConnect New connection to {} successfully been created connAttemptsLimit={}", nodeAddr, connAttemptsLimit);
+			if (conn.isActive()) {
+				final Queue<Channel> connQueue = availableConns.get(nodeAddr);
+				if (connQueue != null) {
+					connQueue.add(conn);
+					LOG.info("add connQueue");
+				}
+			} else {
+				conn.close();
+			}
+			//20200621
 		} catch (Exception ex) {
 			scheduleConnect(nodeAddr);
 		}

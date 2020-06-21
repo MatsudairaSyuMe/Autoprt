@@ -2317,6 +2317,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 						if (this.iCount == 0) {
 							amlog.info("[{}][{}][{}]:03中心存摺補登資料讀取中...", brws, pasname, this.account);
 						}
+						//20200506
+						this.startTime = System.currentTimeMillis();
+						//----
 
 						// Send Inquiry Request
 						this.resultmsg = null;
@@ -2328,6 +2331,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 						}
 					} else {
 						amlog.info("[{}][{}][{}]:04中心存摺已補登資料刪除中..", brws, pasname, this.account);
+						//20200506
+						this.startTime = System.currentTimeMillis();
+						//----
 						this.resultmsg = null;
 						resultmsg = DataDEL(TXP.SENDTHOST, iflg, mbal);
 						if (resultmsg == null || resultmsg.length == 0) {
@@ -2338,7 +2344,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					}
 					this.curState = SETREQSIG;
 					//20200403
-					SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0010000000");
+//20200619					SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0010000000");
 					//----
 					atlog.info("TITA_TEXT=[{}]",new String(resultmsg));
 					if (SetSignal(firstOpenConn, !firstOpenConn, "0000000000", "0010000000")) {
@@ -2371,7 +2377,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					}
 					this.curState = RECVTLM;
 					//20200506
-					this.startTime = System.currentTimeMillis();
+//					this.startTime = System.currentTimeMillis();
 					//----
 				} else if (dispatcher.isTITA_TOTA_START() && alreadySendTelegram) {
 					this.rtelem = dispatcher.getResultTelegram();
@@ -2581,32 +2587,30 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			return;
 		}
         //20200616 add this.lastState and check duration time
-		if (this.lastState != this.curState) {
+/*		if (this.lastState != this.curState) {
 			this.lastState = this.curState;
 			this.lastStateTime = System.currentTimeMillis(); //re-new lastStateTime
 			this.durationTime = -1l;
 		} else {
-			if (this.lastState == ENTERPASSBOOKSIG)
-				this.lastStateTime = System.currentTimeMillis(); //re-new lastStateTime for ENTERPASSBOOKSIG
-			this.durationTime = System.currentTimeMillis() - this.lastStateTime;
-			if (this.durationTime > responseTimeout) {
-				// 20200504
-				this.curState = EJECTAFTERPAGEERROR;
-				log.error("WORN!!! state timeout {} start reset", responseTimeout);
-				amlog.info("[{}][{}][{}]:21狀態錯誤！[{}] 逾時{}", brws, pasname, this.account, rpage, responseTimeout);
-				SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000001");
-				// ----
-				if (SetSignal(!firstOpenConn, firstOpenConn, "0000000000", "0000000001")) {
-					log.debug(
-							"{} {} {} AutoPrnCls : --state error time out",
-							brws, catagory, account);
-				} else {
-					log.debug(
-							"{} {} {} AutoPrnCls : --state error time out",
-							brws, catagory, account);
+			if (this.lastState == CAPTUREPASSBOOK)
+				this.lastStateTime = System.currentTimeMillis(); //re-new lastStateTime for CAPTUREPASSBOOK
+			else {
+				this.durationTime = System.currentTimeMillis() - this.lastStateTime;
+				if (this.durationTime > responseTimeout) {
+					// 20200504
+					this.curState = EJECTAFTERPAGEERROR;
+					log.error("WORN!!! state timeout {} start reset", responseTimeout);
+					amlog.info("[{}][{}][{}]:21狀態錯誤！[{}] 逾時{}", brws, pasname, this.account, rpage, responseTimeout);
+					SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000001");
+					// ----
+					if (SetSignal(!firstOpenConn, firstOpenConn, "0000000000", "0000000001")) {
+						log.debug("{} {} {} AutoPrnCls : --state error time out", brws, catagory, account);
+					} else {
+						log.debug("{} {} {} AutoPrnCls : --state error time out", brws, catagory, account);
+					}
 				}
 			}
-		}
+		}*/
 		//----
 		log.debug("before {} last {} duration {} =======================check prtcliFSM", this.curState, this.lastState, this.durationTime);
 		int before = this.curState;
@@ -2949,22 +2953,66 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		case SENDTLM:
 		case RECVTLM:
 			log.debug(
-					"{} {} {} :AutoPrnCls : process set req signal before send telegram isTITA_TOTA_START={} alreadySendTelegram={}",
-					brws, catagory, account, dispatcher.isTITA_TOTA_START(), alreadySendTelegram);
+					"{} {} {} :AutoPrnCls : process set req signal before send telegram isTITA_TOTA_START={} alreadySendTelegram={} this.Send_Recv_DATAInq={}",
+					brws, catagory, account, dispatcher.isTITA_TOTA_START(), alreadySendTelegram, this.Send_Recv_DATAInq);
 			r = 0;
 			if (this.Send_Recv_DATAInq) {
 				if ((r = Send_Recv(this.iFig, TXP.INQ, "0", "0")) != 0) {
-					//20200506 modify for receive TOTA ERROR message and can't received TOTA message
-					if (r < 0 && r != -2 && r != -1) {
+					//20200506 modify for receive TOTA ERROR message and can't received TOTA message 20200619 for connect error
+					if ((r < 0 && r != -2 && r != -1)) {
 						this.curState = SESSIONBREAK;
 						amlog.info("[{}][{}][{}]:61存摺資料補登失敗！", brws, pasname, account);
+					}
+				} else {
+					if (r == 0 && dispatcher.isTITA_TOTA_START() == false && this.alreadySendTelegram == false) {
+						long now = System.currentTimeMillis();
+						if ((now - startTime) > responseTimeout) {
+							this.curState = EJECTAFTERPAGEERROR;
+							log.error("ERROR!!! received data from host timeout {}", responseTimeout);
+							amlog.info("[{}][{}][{}]:62存摺資料補登失敗！[{}]接電文逾時{}", brws, pasname, this.account,
+									responseTimeout);
+							SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000001");
+							// ----
+							if (SetSignal(!firstOpenConn, firstOpenConn, "0000000000", "0000000001")) {
+								log.debug(
+										"{} {} {} AutoPrnCls : --reset printer after receive telegram error",
+										brws, catagory, account);
+							} else {
+								log.debug(
+										"{} {} {} AutoPrnCls : --reset printer after receive telegram error",
+										brws, catagory, account);
+							}
+						}
+						log.debug("startTime={} new={} (now - startTime) ={}", this.startTime, now, (now - startTime));
 					}
 				}
 			} else {
 				if (Send_Recv(this.iFig, TXP.DEL, "", tx_area.get("mbal")) != 0) {
-					if (r < 0) {
+					if (r < 0) { //20200619 for connect error
 						this.curState = SESSIONBREAK;
 						amlog.info("[{}][{}][{}]:61存摺資料補登失敗！", brws, pasname, account);
+					} else {
+						if (r == 0 && dispatcher.isTITA_TOTA_START() == false && this.alreadySendTelegram == false) {
+							long now = System.currentTimeMillis();
+							if ((now - startTime) > responseTimeout) {
+								this.curState = EJECTAFTERPAGEERROR;
+								log.error("ERROR!!! received data from host timeout {}", responseTimeout);
+								amlog.info("[{}][{}][{}]:62存摺刪除資料補登失敗！[{}]接電文逾時{}", brws, pasname, this.account,
+										responseTimeout);
+								SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000001");
+								// ----
+								if (SetSignal(!firstOpenConn, firstOpenConn, "0000000000", "0000000001")) {
+									log.debug(
+											"{} {} {} AutoPrnCls : --reset printer after receive telegram error",
+											brws, catagory, account);
+								} else {
+									log.debug(
+											"{} {} {} AutoPrnCls : --reset printer after receive telegram error",
+											brws, catagory, account);
+								}
+							}
+							log.debug("startTime={} new={} (now - startTime) ={}", this.startTime, now, (now - startTime));
+						}
 					}
 				}
 			}

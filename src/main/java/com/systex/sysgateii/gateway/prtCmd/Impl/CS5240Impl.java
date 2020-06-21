@@ -1403,14 +1403,17 @@ public class CS5240Impl implements Printer {
 					case (byte) '9': // MAGNETIC STRIPE READ/write error
 					case (byte) 'r': // MAGNETIC STRIPE READ error
 					case (byte) 'E': // Obstacles with media
-						if (Send_hData(S5240_PERRCODE_REQ) != 0)
+						//20200618
+//						if (Send_hData(S4625_PERRCODE_REQ) != 0)
+//							return false;
+//						Sleep(50);
+//						data = Rcv_Data(5);
+						amlog.info("[{}][{}][{}]:95硬體錯誤代碼3(MSW)[{}]", brws, pasname, account, new String(data));
+						Send_hData(S5240_PERRCODE_REQ);
+						if (Send_hData(S5240_PSTAT) != 0)
 							return false;
-						Sleep(50);
-						data = Rcv_Data(5);
-						amlog.info("[{}][{}][{}]:94補摺機狀態錯誤！(MSW) ERROR:[{}]", brws, pasname, account, data);
-						this.curState = ResetPrinterInit_START;
-						ResetPrinterInit();
-						break;
+//						this.curState = ResetPrinterInit_START;
+//						ResetPrinterInit();
 					case (byte) 'q':
 						if (Send_hData(S5240_PERRCODE_REQ) != 0)
 							return false;
@@ -1431,6 +1434,11 @@ public class CS5240Impl implements Printer {
 						this.curState = ResetPrinterInit_START;
 						ResetPrinterInit();
 						return false;
+					//20200618  for get paper overload process
+					case 'X':
+						if (Send_hData(S5240_PERRCODE_REQ) != 0)
+							return false;
+					//----
 					default:
 						// 20060713 , RECEVIE UNKNOWN ERROR , JUST RESET
 						this.curState = ResetPrinterInit_START;
@@ -1445,18 +1453,6 @@ public class CS5240Impl implements Printer {
 				}
 				log.debug("ReadBarcode 4 ===<><>{} chkChkState {}", this.curState, this.curChkState);
 				this.iCnt++;
-			}
-		}
-		//20200616
-		if (this.curState == MS_WriteRecvData && this.curChkState != CheckStatus_START && this.iCnt <= 40) {
-			data = CheckStatus();
-			log.debug("4.1 ===<><>{} MS_Write {} {} iCnt={}", this.curState, this.curChkState, data, this.iCnt);
-			if (CheckDis(data) != 0) {
-				this.curChkState = CheckStatus_FINISH;
-				if (!pc.connectStatus()) {
-					amlog.info("[{}][{}][{}]:94補摺機斷線！", brws, pasname, account);		
-					return false;
-				}
 			}
 		}
 		//----
