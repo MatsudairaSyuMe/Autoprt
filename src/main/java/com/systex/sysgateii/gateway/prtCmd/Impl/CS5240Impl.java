@@ -1410,12 +1410,12 @@ public class CS5240Impl implements Printer {
 //						data = Rcv_Data(5);
 						amlog.info("[{}][{}][{}]:95硬體錯誤代碼3(MSW)[{}]", brws, pasname, account, new String(data));
 						Send_hData(S5240_PERRCODE_REQ);
-						if (Send_hData(S5240_PSTAT) != 0)
+						if (Send_hData(S5240_PSTAT) == 0)
 							return false;
 //						this.curState = ResetPrinterInit_START;
 //						ResetPrinterInit();
 					case (byte) 'q':
-						if (Send_hData(S5240_PERRCODE_REQ) != 0)
+						if (Send_hData(S5240_PERRCODE_REQ) == 0)
 							return false;
 						Sleep(50);
 						data = Rcv_Data(5);

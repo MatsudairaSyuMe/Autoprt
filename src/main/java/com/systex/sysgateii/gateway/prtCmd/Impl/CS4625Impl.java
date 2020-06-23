@@ -1415,13 +1415,13 @@ public class CS4625Impl implements Printer {
 //						data = Rcv_Data(5);
 						amlog.info("[{}][{}][{}]:95硬體錯誤代碼3(MSW)[{}]", brws, pasname, account, new String(data));
 						Send_hData(S4625_PERRCODE_REQ);
-						if (Send_hData(S4625_PSTAT) != 0)
+						if (Send_hData(S4625_PSTAT) == 0)
 							return false;
 //						this.curState = ResetPrinterInit_START;
 //						ResetPrinterInit();
 						break;
 					case (byte) 'q':
-						if (Send_hData(S4625_PERRCODE_REQ) != 0)
+						if (Send_hData(S4625_PERRCODE_REQ) == 0)
 							return false;
 						Sleep(50);
 						data = Rcv_Data(5);
