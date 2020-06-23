@@ -1435,13 +1435,13 @@ public class CS4625Impl implements Printer {
 						this.curState = ResetPrinterInit_START;
 						ResetPrinterInit();
 						return false;
-					case '8':
+					case (byte) '8':
 						amlog.info("[{}][{}][{}]:94補摺機指令錯誤！(MSW)", brws, pasname, account);		
 						this.curState = ResetPrinterInit_START;
 						ResetPrinterInit();
 						return false;
 					//20200618  for get paper overload process
-					case 'X':
+					case (byte) 'X':
 						if (Send_hData(S4625_PERRCODE_REQ) != 0)
 							return false;
 					//----
