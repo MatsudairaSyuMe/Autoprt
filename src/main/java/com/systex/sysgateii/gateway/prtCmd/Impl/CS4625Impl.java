@@ -1442,7 +1442,7 @@ public class CS4625Impl implements Printer {
 						return false;
 					//20200618  for get paper overload process
 					case (byte) 'X':
-						if (Send_hData(S4625_PERRCODE_REQ) != 0)
+						if (Send_hData(S4625_PERRCODE_REQ) == 0)
 							return false;
 					//----
 					default:

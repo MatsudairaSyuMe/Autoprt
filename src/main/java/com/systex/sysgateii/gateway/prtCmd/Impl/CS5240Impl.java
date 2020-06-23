@@ -1436,7 +1436,7 @@ public class CS5240Impl implements Printer {
 						return false;
 					//20200618  for get paper overload process
 					case (byte) 'X':
-						if (Send_hData(S5240_PERRCODE_REQ) != 0)
+						if (Send_hData(S5240_PERRCODE_REQ) == 0)
 							return false;
 					//----
 					default:
