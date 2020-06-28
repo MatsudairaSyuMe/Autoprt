@@ -223,7 +223,8 @@ public class CS5240Impl implements Printer {
 		this.nCPI = 0;
 		this.nLPI = 0;
 		this.m_bColorRed.set(false);
-		this.p_fun_flag.set(false);
+		//20200628		this.p_fun_flag.set(false);
+		this.p_fun_flag.set(PrnSvr.p_fun_flag.get());
 		MDC.put("WSNO", this.brws.substring(3));
 		MDC.put("PID", pc.pid);
 		amlog = PrnSvr.amlog;
@@ -725,6 +726,8 @@ public class CS5240Impl implements Printer {
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			log.error("AddFont fontno=[{}] error ===<><>{} chkChkState {} {}", fontno, e.getMessage());
+			return false;
 		}
 		Send_hData(command);
 		return true;
@@ -1544,6 +1547,8 @@ public class CS5240Impl implements Printer {
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			log.error("AddExtFont fontno=[{}] error ===<><>{} chkChkState {} {}", fontno, e.getMessage());
+			return false;			
 		}
 		Send_hData(command);
 		return true;

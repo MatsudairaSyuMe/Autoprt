@@ -33,6 +33,8 @@ public class CharsetCnv {
 		if (fontno >= (long)0xAE8A) // while > 8E8A
 		{
 			fontnum = fontno - (fontno & (long)0xFF);
+//			out.println("fontno=" + fontno + ":" + (fontno & (long)0xFF) + ": fontnum=" + fontnum);
+//			out.println("fontnum + (long)0x9E=" + (fontnum + (long)0x9E) + ": fontnum + (long)0x80=" + (fontnum + (long)0x80));
 			if (fontno > fontnum + (long)0x9E || fontno < fontnum + (long)0x80)
 				return false;
 		} else // while < 8E8A
@@ -174,6 +176,18 @@ public class CharsetCnv {
 			 */
 			out.println("摩根太證息 Encoding bytes: " + new String(b));
 			out.println("big5 摩根太證息 Encoding BIG5bytesUTF8str: " + cc.BIG5bytesUTF8str(b));
+			byte s[] = {(byte)0x81, (byte)0x39};
+			out.println("s=" + cc.ChkAddFont((((int)((s[0] & 0xff))<<8)+((int)(s[1] & 0xff)))));
+			s[0] = (byte)0x81; s[1] = (byte)0x40;
+			out.println("s=" + cc.ChkAddFont((((int)((s[0] & 0xff))<<8)+((int)(s[1] & 0xff)))));
+			s[0] = (byte)0xC9; s[1] = (byte)0x80;
+			out.println("s=" + cc.ChkAddFont((((int)((s[0] & 0xff))<<8)+((int)(s[1] & 0xff)))));
+			s[0] = (byte)0xC9; s[1] = (byte)0x7f;
+			out.println("s=" + cc.ChkAddFont((((int)((s[0] & 0xff))<<8)+((int)(s[1] & 0xff)))));
+			s[0] = (byte)0xAE; s[1] = (byte)0x8A;
+			out.println("s=" + cc.ChkAddFont((((int)((s[0] & 0xff))<<8)+((int)(s[1] & 0xff)))));
+			s[0] = (byte)0xA4; s[1] = (byte)0xA4;
+			out.println("s=" + cc.ChkAddFont((((int)((s[0] & 0xff))<<8)+((int)(s[1] & 0xff)))));
 		} catch (Exception e) {
 			System.err.println(e);
 		}

@@ -226,7 +226,8 @@ public class CS4625Impl implements Printer {
 		this.nCPI = 0;
 		this.nLPI = 0;
 		this.m_bColorRed.set(false);
-		this.p_fun_flag.set(false);
+//20200628		this.p_fun_flag.set(false);
+		this.p_fun_flag.set(PrnSvr.p_fun_flag.get());
 		MDC.put("WSNO", this.brws.substring(3));
 		MDC.put("PID", pc.pid);
 		amlog = PrnSvr.amlog;
@@ -502,13 +503,13 @@ public class CS4625Impl implements Printer {
 			chrtmp1 = buff[i+1];
 			if ((this.p_fun_flag.get() == true) && (int)(chrtmp & 0xff) >= (int)(0x80 & 0xff) )
 			{
-				if (ChkAddFont((((int)chrtmp<<8)+((int)(chrtmp1 & 0xff)))) == true)
+				if (ChkAddFont((((int)((chrtmp & 0xff))<<8)+((int)(chrtmp1 & 0xff)))) == true)
 				{
 					AddFont((((int)chrtmp<<8)+((int)(chrtmp1 & 0xff))));
 					i+=2;
 					continue;
 				}
-				if (ChkExtFont((((int)chrtmp<<8)+((int)(chrtmp1 & 0xff)))) == true)
+				if (ChkExtFont((((int)(chrtmp & 0xff)<<8)+((int)(chrtmp1 & 0xff)))) == true)
 				{
 					AddExtFont(chrtmp,chrtmp1);
 					i+=2;
@@ -718,6 +719,8 @@ public class CS4625Impl implements Printer {
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			log.error("AddFont fontno=[{}] error ===<><>{} chkChkState {} {}", fontno, e.getMessage());
+			return false;
 		}
 		Send_hData(command);
 /*		if (this.curState == ADDFONT_START || this.curState == ADDFONT) {
@@ -1549,6 +1552,8 @@ public class CS4625Impl implements Printer {
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			log.error("AddExtFont fontno=[{}] error ===<><>{} chkChkState {} {}", fontno, e.getMessage());
+			return false;
 		}
 		Send_hData(command);
 		return true;
