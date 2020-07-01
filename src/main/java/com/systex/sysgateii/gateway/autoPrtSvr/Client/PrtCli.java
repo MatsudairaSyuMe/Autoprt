@@ -2011,7 +2011,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					else
 						p0880text.setValueRtoLfill("begin", Integer.toString(begin + 1), (byte) '0');
 					p0880text.setValue("nbno",this.no);
-					p0880text.setValue("pageno",this.cline);
+					p0880text.setValue("lineno",this.cline);
 					p0880text.setValue("pageno",this.cpage);
 					tx_area.put("nbno", this.no);
 					tx_area.put("lineno", this.cline);
@@ -2416,6 +2416,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 								// 20100913 , E622:本次日不符 send C0099
 								if (mno == 622) {
 //									return 622;
+									amlog.info("[{}][{}][{}]:52[{}{}]-{}！", brws, pasname,mt,mnostr, cMsg);
 									rtn = 622;
 									break;
 								}
