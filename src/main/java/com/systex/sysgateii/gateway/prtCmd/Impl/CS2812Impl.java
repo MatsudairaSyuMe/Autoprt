@@ -231,7 +231,7 @@ public class CS2812Impl implements Printer {
 			} else {
 				log.debug("1 ===<><>{} chkChkState {} {}", this.curState, this.curChkState, data);
 				this.curState = OpenPrinter_START;
-				Send_hData(S2812_PRESET);
+				//Send_hData(S2812_PRESET);
 			}
 		}
 		if (this.curState == OpenPrinter_START || this.curState == OpenPrinter) {

@@ -389,9 +389,16 @@ public class P0880TEXT {
 	}
 
 	public static void main(String[] args) throws Exception {
-		boolean rtn;
+		boolean rtn = false;
 		P0880TEXT tl = new P0880TEXT();
 		rtn = tl.initP0880TitaTEXT((byte) '0');
+		tl.setValueLtoRfill("glcomm", "00".getBytes(), (byte) ' ');
+		tl.setValueRtoLfill("pbcnt", String.format("%d", 999), (byte) '0');
+		tl.setValueRtoLfill("reqcnt", Integer.toString(1), (byte) '0');
+		tl.setValueRtoLfill("begin", Integer.toString(1), (byte) '0');
+		tl.setValue("nbno","000000304");
+		tl.setValue("lineno","24");
+		tl.setValue("pageno","01");
 		log.debug("tl.initP0880TitaTEXT rtn={}", rtn);
 		byte[] result = tl.getP0880Titatext();
 		// System.out.println("2--->" + Arrays.toString(result) + ":[" + new

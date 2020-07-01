@@ -2011,6 +2011,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					else
 						p0880text.setValueRtoLfill("begin", Integer.toString(begin + 1), (byte) '0');
 					p0880text.setValue("nbno",this.no);
+					//20200701
+					this.cline = tx_area.get("cline").trim();
+					//---
 					p0880text.setValue("lineno",this.cline);
 					p0880text.setValue("pageno",this.cpage);
 					tx_area.put("nbno", this.no);
