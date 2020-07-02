@@ -2005,14 +2005,14 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 						}
 					}
 					//未登摺之第幾筆
-					log.debug("--->begin=>{}", begin);
+					log.debug("GL <><><><>--->begin=>{} cline=[{}]", begin, this.cline);
 					if (begin == 0)
 						p0880text.setValueRtoLfill("begin", Integer.toString(1), (byte) '0');
 					else
 						p0880text.setValueRtoLfill("begin", Integer.toString(begin + 1), (byte) '0');
 					p0880text.setValue("nbno",this.no);
 					//20200701
-					this.cline = tx_area.get("cline").trim();
+	//				this.cline = tx_area.get("cline").trim();
 					//---
 					p0880text.setValue("lineno",this.cline);
 					p0880text.setValue("pageno",this.cpage);
@@ -2183,10 +2183,11 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 							int j = 0;
 							byte[] text = Arrays.copyOfRange(opttotatext, p0880text.getP0880TotaheadtextLen(),
 									opttotatext.length);
-//							log.debug("{} {} {} :TxFlow : () -- totCnt=[{}] text.length={} [{}]", brws, catagory, account,
-//									totCnt, text.length, new String(text));
-							if (text.length % p0880text.getP0880TotatextLen() == 0)
-								j = text.length / p0880text.getP0880TotatextLen();
+//							log.debug("{} {} {} :TxFlow : () -- totCnt=[{}] text.length={} getP0880TotatextLen()=[{}]", brws, catagory, account,
+//									totCnt, text.length, p0880text.getP0880TotatextLen());
+//							if (text.length % p0880text.getP0880TotatextLen() == 0)
+							j = text.length / p0880text.getP0880TotatextLen();
+							
 							log.debug("{} {} {} :TxFlow : () -- totCnt=[{}] text.length={} j={}", brws, catagory,
 									account, totCnt, text.length, j);
 							//20200527
