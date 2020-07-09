@@ -884,12 +884,15 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		case "006":
 		case "008":
 			this.actfiller = new String(cussrc, TXP.ACTNO_LEN, TXP.ACFILLER_LEN); // !< 帳號保留 MSR for PB/FC len 4
-			this.msrbal = new String(cussrc, TXP.ACTNO_LEN + TXP.ACFILLER_LEN, TXP.MSRBAL_LEN); // !< 磁條餘額 MSR for PB/FC len 14, GL len 12
+			this.msrbal = new String(cussrc, TXP.ACTNO_LEN + TXP.ACFILLER_LEN, TXP.MSRBAL_LEN); // !< 磁條餘額 MSR for PB/FC len 14, GL len 12, PB 13 + 1正負號 
+			//20200709 add for atlog
+			String atlogmsrbal = new String(cussrc, TXP.ACTNO_LEN + TXP.ACFILLER_LEN + 1, TXP.MSRBAL_LEN - 1); // !< 磁條餘額 MSR for PB/FC len 14, GL len 12, PB 13 + 1正負號 
 			this.cline = new String(cussrc, TXP.ACTNO_LEN + TXP.ACFILLER_LEN + TXP.MSRBAL_LEN, TXP.LINE_LEN); // !< 行次 MSR for PB/FC/GL len 2
 			this.cpage = new String(cussrc, TXP.ACTNO_LEN + TXP.ACFILLER_LEN + TXP.MSRBAL_LEN + TXP.LINE_LEN, TXP.PAGE_LEN); // !< 頁次 MSR for PB/FC/GL len 2
 			this.bkseq = new String(cussrc,
 					TXP.ACTNO_LEN + TXP.ACFILLER_LEN + TXP.MSRBAL_LEN + TXP.LINE_LEN + TXP.PAGE_LEN, TXP.BKSEQ_LEN); // !< 領用序號 MSR for PB len 1, FC len 2
-			atlog.info("台幣存摺 PB_MSR [{}]/[{}]/[{}]/[{}]/[{}]/[{}]", account, actfiller, msrbal, cline, cpage, bkseq);
+			// 20200709 change to use atlogmsrbal for atlog
+			atlog.info("台幣存摺 PB_MSR [{}]/[{}]/[{}]/[{}]/[{}]/[{}]", account, actfiller, atlogmsrbal, cline, cpage, bkseq);
 			iFig = TXP.PBTYPE;
 			break;
 		// 外幣存摺
@@ -2664,7 +2667,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					amlog.info("[{}][{}][{}]:62等待請翻下頁繼續補登...", brws, pasname, account);
 					log.debug("DetectPaper [{}][{}][{}]:62等待請翻下頁繼續補登...", brws, pasname, account);
 				} else {
-					amlog.info("[{}][{}][{}]****************************", brws, "        ", "            ");
+					amlog.info("[{}][{}][{}]:****************************", brws, "        ", "            ");
 					amlog.info("[{}][{}][{}]:00請插入存摺...", brws, pasname, "            ");
 					log.debug("DetectPaper [{}][{}][{}]:00請插入存摺...", brws, pasname, "            ");
 				}
@@ -2855,7 +2858,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 								account);
 					}
 				} else {
-					amlog.info("[{}][{}][{}]:21存摺頁次錯誤！[{}]", brws, pasname, account, rpage);
+					atlog.info("MS_Check() -- (1)Insert Page=[{}]", rpage);
 //					WMSRFormat(true, rpage);
 //					WMSRFormat(true, rpage);
 					if (SetSignal(firstOpenConn, firstOpenConn, "0000000000","0000100000")) {
@@ -2892,6 +2895,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 //				amlog.info("[{}][{}][{}]:22存摺頁次不符...正確頁次={} 插入頁次={}", brws, pasname, account, npage, rpage);
 				if (SetSignal(!firstOpenConn, firstOpenConn, "0000000000","0000100000")) {
 					amlog.info("[{}][{}][{}]:22存摺頁次不符...正確頁次={} 插入頁次={}", brws, pasname, account, npage, rpage);
+					atlog.info(" -- Error Page!! Correct Page=[{}] Insert Page=[{}]", npage, rpage);
 					this.curState = EJECTAFTERPAGEERROR;
 					log.debug(
 							"{} {} {} AutoPrnCls : --eject passbook after check barcode page error!!",
@@ -2910,6 +2914,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 
 		case EJECTAFTERPAGEERROR:
 			log.debug("{} {} {} :AutoPrnCls : process EJECTAFTERPAGEERROR", brws,catagory, account);
+			atlog.info(" -- ACTNO or PAGE ... ERROR!");
 			if (prt.Eject(firstOpenConn))
 				resetPassBook();
 			else
