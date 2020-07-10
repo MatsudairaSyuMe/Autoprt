@@ -953,7 +953,7 @@ public class CS5240Impl implements Printer {
 					return false;
 				}
 			} else {
-				atlog.info("first data is {}",Arrays.toString(data));
+//20200710				atlog.info("first data is {}",Arrays.toString(data));
 				//20060714 V116 , In p201/p101/p80 case , if read msr but the pr2-(e) replies '1' --> paper jame
 				// and Driver send ESC '0' to reset printer , but in vain.
 				// So after Open printer , if meed some errors like '1' -- paper jam , '8' -- command error, 'a' -- hw error ,
