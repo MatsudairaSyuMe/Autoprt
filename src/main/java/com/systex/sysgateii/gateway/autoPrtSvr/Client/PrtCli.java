@@ -240,7 +240,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	private String pasname = "        ";
     //	"                                                     請翻下頁繼續補登\r\n";
 	private byte[] chgpgary = {(byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20, (byte)0xbd, (byte)0xd0, (byte)0xc2, (byte)0xbd, (byte)0xa4, (byte)0x55, (byte)0xad, (byte)0xb6, (byte)0xc4, (byte)0x7e, (byte)0xc4, (byte)0xf2, (byte)0xb8, (byte)0xc9, (byte)0xb5, (byte)0x6e, (byte)0x0d, (byte)0x0a};
-
+    private boolean passSNDANDRCVTLM = false; //202007114 check Send_Receive()
 
 	private DscptMappingTable descm = null;
 	private boolean Send_Recv_DATAInq = true;
@@ -1553,7 +1553,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					System.arraycopy(String.format("%02d", p).getBytes(), 0, c_Msr, 32, 2);
 					tx_area.put("c_Msr", new String(c_Msr));
 				}
-				rtn = prt.MS_Write(start, brws, account, c_Msr);
+				rtn = prt.MS_Write(start, brws, account, c_Msr);//20200712 add for test
 				log.debug(" after to write new PBTYPE line={} page={} MSR {}", l, p, tx_area.get("c_Msr"));
 				break;
 			case TXP.FCTYPE:
@@ -1569,7 +1569,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					tx_area.put("pbpage", String.format("%02d", p));
 					//----
 				}
-				rtn = prt.MS_Write(start, brws, account, c_Msr);
+				rtn = prt.MS_Write(start, brws, account, c_Msr);  //20200712 add for test
 				log.debug(" after to write new FCTYPE line={} page={} MSR {}", l, p, tx_area.get("c_Msr"));
 				break;
 			case TXP.GLTYPE:
@@ -1585,7 +1585,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					tx_area.put("pageno", String.format("%02d", p));
 					//----
 				}
-				rtn = prt.MS_Write(start, brws, account, c_Msr);
+				rtn = prt.MS_Write(start, brws, account, c_Msr);  //20200712 add for test
 				log.debug(" after to write new GLTYPE line={} page={} MSR {}", l, p, tx_area.get("c_Msr"));
 				break;
 			default:
@@ -2438,7 +2438,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 										log.debug("{} {} {} {} {} {} AutoPrnCls : --change ", brws, catagory, account,
 												mt, mno, cMsg);
 									}
-									amlog.info("[{}][{}][{}]:52[{}{}]{}!", brws, pasname, this.account,mt,mno, cMsg);
+									amlog.info("[{}][{}][{}]:52[{}{}]{}!", brws, pasname, this.account,mt,mnostr, cMsg);
 
 								}
 								// E194 , 補登資料超過可印行數, 應至服務台換摺
@@ -2448,27 +2448,27 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 										;
 									} else {
 										log.debug("{} {} {} {} {} {} AutoPrnCls : --change ", brws, catagory, account,
-												mt, mno, cMsg);
+												mt, mnostr, cMsg);
 									}
-									amlog.info("[{}][{}][{}]:52[{}{}]{}!", brws, pasname, this.account,mt,mno, cMsg);
+									amlog.info("[{}][{}][{}]:52[{}{}]{}!", brws, pasname, this.account,mt,mnostr, cMsg);
 								} else {
 									SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000001");
 									if (SetSignal(!firstOpenConn, firstOpenConn, "0000000000", "0000000001")) {
 //										amlog.info("[{}][{}][{}]:52[{}]{}{}!", brws, pasname, this.account,mt,mno, cMsg);
 									} else {
 										log.debug("{} {} {} {} {} {} AutoPrnCls : --change ", brws, catagory, account,
-												mt, mno, cMsg);
+												mt, mnostr, cMsg);
 									}
-									amlog.info("[{}][{}][{}]:52[{}{}]{}!", brws, pasname, this.account,mt,mno, charcnv.BIG5UTF8str(cMsg));
+									amlog.info("[{}][{}][{}]:53[{}{}]{}!", brws, pasname, this.account,mt,mno, charcnv.BIG5UTF8str(cMsg));  //20200714 change 52 to 53
 								}
 								if (ifun == 1) {
 									log.debug("[{}]:TxFlow : Send_Recv() -- INQ Data Failed ! msgid={}{}", brws, mt,
-											mno);
-									atlog.info("INQ Data Failed ! msgid={}{}{}", mt,mno, cMsg);
+											mnostr);
+									atlog.info("INQ Data Failed ! msgid={}{}{}", mt,mnostr, cMsg);
 								} else {
 									log.debug("[{}]:TxFlow : Send_Recv() -- DEL Data Failed ! msgid={}{}", brws, mt,
-											mno);
-									atlog.info("DEL Data Failed ! msgid={}{}", mt,mno);
+											mnostr);
+									atlog.info("DEL Data Failed ! msgid={}{}", mt,mnostr);
 								}
 //								return (-2);
 								rtn = -2;
@@ -2570,6 +2570,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		this.gl_arr.clear();
 		this.pasname = "        ";
 		this.curState = ENTERPASSBOOKSIG;
+		this.passSNDANDRCVTLM = false;  //20200714
 		SetSignal(firstOpenConn, firstOpenConn, "1100000000", "0000000000");
 		log.debug("{}=====resetPassBook prtcliFSM", this.curState);
 		return;
@@ -2591,6 +2592,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			this.catagory = "";
 			this.account = "";
 			this.pasname = "        ";
+			this.passSNDANDRCVTLM = false;  //20200714
 			log.debug("=======================check prtcliFSM init");
 			return;
 		}
@@ -2914,7 +2916,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 
 		case EJECTAFTERPAGEERROR:
 			log.debug("{} {} {} :AutoPrnCls : process EJECTAFTERPAGEERROR", brws,catagory, account);
-			atlog.info(" -- ACTNO or PAGE ... ERROR!");
+			if (!this.passSNDANDRCVTLM)
+				atlog.info(" -- ACTNO or PAGE ... ERROR!");
+			else
+				atlog.info("after Send_Recv() -- ... ERROR!");
 			if (prt.Eject(firstOpenConn))
 				resetPassBook();
 			else
@@ -2934,6 +2939,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					catagory, account, dispatcher.isTITA_TOTA_START(), alreadySendTelegram);
 			int r = 0;
 			this.Send_Recv_DATAInq = true;
+			this.passSNDANDRCVTLM = true;  //20200714
 			if ((r = Send_Recv(this.iFig, TXP.INQ, "0", "0")) != 0) {
 				//20200506 modify for receive TOTA ERROR message and can't received TOTA message
 				if (r < 0 && r != -2 && r != -1) {
