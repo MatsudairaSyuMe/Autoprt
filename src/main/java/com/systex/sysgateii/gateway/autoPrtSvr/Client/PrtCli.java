@@ -2436,7 +2436,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 //										amlog.info("[{}][{}][{}]:52[{}]{}{}!", brws, pasname, this.account,mt,mno, cMsg);
 									} else {
 										log.debug("{} {} {} {} {} {} AutoPrnCls : --change ", brws, catagory, account,
-												mt, mno, cMsg);
+												mt, mnostr, cMsg);
 									}
 									amlog.info("[{}][{}][{}]:52[{}{}]{}!", brws, pasname, this.account,mt,mnostr, cMsg);
 
@@ -2459,7 +2459,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 										log.debug("{} {} {} {} {} {} AutoPrnCls : --change ", brws, catagory, account,
 												mt, mnostr, cMsg);
 									}
-									amlog.info("[{}][{}][{}]:53[{}{}]{}!", brws, pasname, this.account,mt,mno, charcnv.BIG5UTF8str(cMsg));  //20200714 change 52 to 53
+									amlog.info("[{}][{}][{}]:53[{}{}]{}!", brws, pasname, this.account,mt,mnostr, charcnv.BIG5UTF8str(cMsg));  //20200714 change 52 to 53
 								}
 								if (ifun == 1) {
 									log.debug("[{}]:TxFlow : Send_Recv() -- INQ Data Failed ! msgid={}{}", brws, mt,
