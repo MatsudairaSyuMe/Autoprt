@@ -34,6 +34,9 @@ import com.systex.sysgateii.gateway.autoPrtSvr.Server.PrnSvr;
 import com.systex.sysgateii.gateway.comm.Constants;
 import com.systex.sysgateii.gateway.comm.TXP;
 import com.systex.sysgateii.gateway.conf.DscptMappingTable;
+//20200716 add for message table
+import com.systex.sysgateii.gateway.conf.MessageMappingTable;
+//----
 import com.systex.sysgateii.gateway.dao.GwDao;
 import com.systex.sysgateii.gateway.listener.ActorStatusListener;
 import com.systex.sysgateii.gateway.prtCmd.Printer;
@@ -243,6 +246,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
     private boolean passSNDANDRCVTLM = false; //202007114 check Send_Receive()
 
 	private DscptMappingTable descm = null;
+	//20200716 add for message table
+	private MessageMappingTable m_Msg = null;
 	private boolean Send_Recv_DATAInq = true;
 	private CharsetCnv charcnv = new CharsetCnv();
 	//20200506 receive time from Host default 60 seconds
@@ -286,6 +291,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		this.iFirst = 0;
 		this.dispatcher = dispatcher;
 		this.descm = new DscptMappingTable();
+		//20200716 add for message table
+		this.m_Msg = new MessageMappingTable();
+		//----
 		pid = ManagementFactory.getRuntimeMXBean().getName().split("@")[0];
 		MDC.put("WSNO", this.brws.substring(3));
 		MDC.put("PID", pid);
@@ -2408,22 +2416,32 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 							atlog.info(" -- [{}] TOTA_TEXT=[{}]", mt + mnostr, new String(totatext));
 							//----
 							if (mt.equals("E") || mt.equals("A") || mt.equals("X")) {
-								if (total.getValue("mtype").equals("A"))
+								//20200716 modify get message from message table
+								if (mt.equals("E"))
+									msgid = "A" + mnostr;
+								else
+									msgid = mt + mnostr;
 									//20200523
 //									msgid = "E" + new String(total.getValue("msgno"));
-									msgid = "E" + mnostr;
+//									msgid = "E" + mnostr;
 								//----
 								for (int i = 0; i < totatext.length; i++)
 									if (totatext[i] == 0x7 || totatext[i] == 0x4 || totatext[i] == 0x3)
 										totatext[i] = 0x20;
 //								cMsg = "-" + new String(totatext).trim();
-								cMsg = "-" + charcnv.BIG5bytesUTF8str(totatext).trim();
+//								cMsg = "-" + charcnv.BIG5bytesUTF8str(totatext).trim();
+								//20200716 modify for getmessage from message table
+								cMsg = charcnv.BIG5bytesUTF8str(totatext).trim();
+								if (cMsg != null && cMsg.length() > 0)
+									cMsg = m_Msg.m_Message.get(msgid) + "－" + cMsg;
+								else
+									cMsg = m_Msg.m_Message.get(msgid);
 								log.debug("cMsg=[{}]", cMsg);
 								int mno = Integer.parseInt(new String(total.getValue("msgno")));
 								// 20100913 , E622:本次日不符 send C0099
 								if (mno == 622) {
 //									return 622;
-									amlog.info("[{}][{}][{}]:52[{}{}]-{}！", brws, pasname,mt,mnostr, cMsg);
+									amlog.info("[{}][{}][{}]:52[{}{}]-{}！", brws, pasname,this.account, mt,mnostr, cMsg);
 									rtn = 622;
 									break;
 								}
