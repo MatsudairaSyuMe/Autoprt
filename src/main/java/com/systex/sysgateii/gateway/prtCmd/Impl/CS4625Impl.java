@@ -1395,7 +1395,7 @@ public class CS4625Impl implements Printer {
 			log.debug("4 ===<><>{} chkChkState {} {}", this.curState, this.curChkState, data);
 			while (null != (data = Rcv_Data()) && !new String(data).equals("DIS")) {
 				if (data[2] == (byte) 'P') {
-					log.debug("ReadBarcode 5 ===<><>{} chkChkState {}", this.curState, this.curChkState);
+					log.debug("MS_Write 5 ===<><>{} chkChkState {}", this.curState, this.curChkState);
 					this.curState = MS_Write_FINISH;
 					rtn = true;
 					break;
@@ -1460,7 +1460,7 @@ public class CS4625Impl implements Printer {
 					ResetPrinterInit();
 					pc.close();
 				}
-				log.debug("ReadBarcode 4 ===<><>{} chkChkState {}", this.curState, this.curChkState);
+				log.debug("MS_Write 4 ===<><>{} chkChkState {}", this.curState, this.curChkState);
 				this.iCnt++;
 			}
 		}
@@ -1845,8 +1845,13 @@ public class CS4625Impl implements Printer {
 						this.curbarcodedata = new byte[3];
 						System.arraycopy(data, 3, this.curbarcodedata, 0, 3);
 						this.curState = ReadBarcode_FINISH;
-//						log.debug("ReadBarcode 4 ===<><>{} chkChkState {} {}", this.curState, this.curChkState, (short)(this.curbarcodedata[0] - 0x30));
-						return (short)(this.curbarcodedata[0] - 0x30);
+						log.debug("ReadBarcode 4 ===<><>{} chkChkState {} {}", this.curState, this.curChkState, (short)(this.curbarcodedata[0] - 0x30));
+						//20200718 add for no barcode
+						if ((short)(this.curbarcodedata[0] - 0x30) == 0)
+							return -2;
+						//----
+						else
+							return (short)(this.curbarcodedata[0] - 0x30);
 					}
 				} else if (iCnt > 40) {
 					amlog.info("[{}][{}][{}]:95補摺機硬體錯誤！(MSR-2)", brws, "        ", "            ");		

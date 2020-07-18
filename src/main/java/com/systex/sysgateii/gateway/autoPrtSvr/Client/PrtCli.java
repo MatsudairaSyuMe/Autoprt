@@ -2482,7 +2482,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 								if (ifun == 1) {
 									log.debug("[{}]:TxFlow : Send_Recv() -- INQ Data Failed ! msgid={}{}", brws, mt,
 											mnostr);
-									atlog.info("INQ Data Failed ! msgid={}{}{}", mt,mnostr, cMsg);
+									atlog.info("INQ Data Failed ! msgid={}{}", mt,mnostr); //20200718 take out cMsg
 								} else {
 									log.debug("[{}]:TxFlow : Send_Recv() -- DEL Data Failed ! msgid={}{}", brws, mt,
 											mnostr);
@@ -2893,12 +2893,26 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					}
 				}
 			}
-			//20200506
+			//20200718 modify for return return no barcode
 			if (this.rpage < 0) {
-				SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000001000");
-				SetSignal(!firstOpenConn, firstOpenConn, "0000000000", "0000001000");
-				this.curState = EJECTAFTERPAGEERROR;
-				log.debug("check barcode error rpage={}", this.rpage);
+				if (this.rpage == -2) {
+					this.rpage = 0;
+					atlog.info("MS_Check() -- (1)Insert Page=[{}]", rpage);
+					if (SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000100000")) {
+						this.curState = SETSIGAFTERCHKBARCODE;
+						log.debug("{} {} {} AutoPrnCls : --eject passbook set signal after check barcode page error!!",
+								brws, catagory, account);
+					} else {
+						this.curState = SETSIGAFTERCHKBARCODE;
+						log.debug("{} {} {} AutoPrnCls : --keep cheak barcode after Set Signal after check barcode",
+								brws, catagory, account);
+					}
+				} else {
+					SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000001000");
+					SetSignal(!firstOpenConn, firstOpenConn, "0000000000", "0000001000");
+					this.curState = EJECTAFTERPAGEERROR;
+					log.debug("check barcode error rpage={}", this.rpage);
+				}
 			}
 			//------
 			log.debug("after {}=>{}=====check prtcliFSM", before, this.curState);
@@ -2906,7 +2920,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 
 		case SETSIGAFTERCHKBARCODE:
 			log.debug("{} {} {} :AutoPrnCls : process setsignal after checkbcode", brws, catagory, account);
-			if (npage == rpage) {
+			if (npage == rpage && rpage > 0) {  //20200718 for print with page bar code exist
 				if (SetSignal(!firstOpenConn, !firstOpenConn, "0000000000", "0010000000")) {
 					this.curState = SNDANDRCVTLM;
 					log.debug("{} {} {} AutoPrnCls : --change process telegram", brws, catagory, account);
