@@ -3417,12 +3417,16 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				resetPassBook();
 				this.curState = ENTERPASSBOOKSIG;
 				log.error("ERROR!!! eject print host timeout {}", responseTimeout);
-				amlog.info("[{}][{}][{}]:63等待逾時或發生錯誤...[{}]", brws, pasname, this.account, responseTimeout);
+				if (this.account == null)
+					this.account = "";
+				amlog.info("[{}][{}][{}]:63等待逾時或發生錯誤...[{}]", brws, pasname, String.format("%12s", this.account), responseTimeout);
 			} else {
 				// ----
 				this.curState = EJECTAFTERPAGEERROR;
 				log.error("ERROR!!! eject print host timeout {}", responseTimeout);
-				amlog.info("[{}][{}][{}]:90補摺機動作失敗！狀態等待逾時[{}]", brws, pasname, this.account, responseTimeout);
+				if (this.account == null)
+					this.account = "";
+				amlog.info("[{}][{}][{}]:90補摺機動作失敗！狀態等待逾時[{}]", brws, pasname, String.format("%12s", this.account), responseTimeout);
 				SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000001");
 				// ----
 				if (SetSignal(!firstOpenConn, firstOpenConn, "0000000000", "0000000001")) {
