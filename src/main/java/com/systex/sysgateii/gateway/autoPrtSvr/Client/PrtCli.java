@@ -266,6 +266,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	List<ActorStatusListener> actorStatusListeners = new ArrayList<ActorStatusListener>();
 
 	private long startTime;
+	//20200722
+	private long stateStartTime;
+	//----
 	private long lastCheckTime;
 
 	public List<ActorStatusListener> getActorStatusListeners() {
@@ -3398,31 +3401,40 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
     //20200718 status check
 	private void lastCheck(int before) {
 		long now = System.currentTimeMillis();
-		if (before != this.curState || (before == this.curState && this.curState == CAPTUREPASSBOOK)) {
+		if (before != this.curState || (before == this.curState && (this.curState == CAPTUREPASSBOOK && this.iFirst == 0))) {
 			this.lastState = before;
-			this.startTime = now;
+//20200722			this.startTime = now;
+			this.stateStartTime = now;
+			//----
 			this.durationTime = 0l;
 		} else {
-			this.durationTime = now - this.startTime;
+//20200722			this.durationTime = now - this.startTime;
+			this.durationTime = now - this.stateStartTime;
 		}
 		if (this.durationTime > responseTimeout) {
-			this.curState = EJECTAFTERPAGEERROR;
-			log.error("ERROR!!! eject print host timeout {}", responseTimeout);
-			amlog.info("[{}][{}][{}]:90補摺機動作失敗！狀態等待逾時[{}]", brws, pasname, this.account,
-					responseTimeout);
-			SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000001");
-			// ----
-			if (SetSignal(!firstOpenConn, firstOpenConn, "0000000000", "0000000001")) {
-				log.debug(
-						"{} {} {} AutoPrnCls : --reset printer after receive telegram error",
-						brws, catagory, account);
+			// 20200722
+			if (before == this.curState && (this.curState == CAPTUREPASSBOOK && this.iFirst == 1)) { // 翻頁列印逾時
+				resetPassBook();
+				this.curState = ENTERPASSBOOKSIG;
+				log.error("ERROR!!! eject print host timeout {}", responseTimeout);
+				amlog.info("[{}][{}][{}]:63等待逾時或發生錯誤...[{}]", brws, pasname, this.account, responseTimeout);
 			} else {
-				log.debug(
-						"{} {} {} AutoPrnCls : --reset printer after receive telegram error",
-						brws, catagory, account);
-			}
+				// ----
+				this.curState = EJECTAFTERPAGEERROR;
+				log.error("ERROR!!! eject print host timeout {}", responseTimeout);
+				amlog.info("[{}][{}][{}]:90補摺機動作失敗！狀態等待逾時[{}]", brws, pasname, this.account, responseTimeout);
+				SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000001");
+				// ----
+				if (SetSignal(!firstOpenConn, firstOpenConn, "0000000000", "0000000001")) {
+					log.debug("{} {} {} AutoPrnCls : --reset printer after receive telegram error", brws, catagory,
+							account);
+				} else {
+					log.debug("{} {} {} AutoPrnCls : --reset printer after receive telegram error", brws, catagory,
+							account);
+				}
 //			close();
 //			this.curState = SESSIONBREAK;
+			}
 		}
 //		log.debug("startTime={} now={} durationTime ={}", this.startTime, now, durationTime);
 	}
