@@ -216,6 +216,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	private String org_mbal = ""; // original MSR's balance
 	private int iCount = 0;
 	private int iCon = 0;
+	//20200724
+	private String con = "";
 	private String dCount = "";
 	private int iLine = 0;
 	private int pbavCnt = 999;
@@ -1882,7 +1884,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		return rtn;
 	}
 
-	private byte[] DataINQ(int iVal, int ifig, String dCount, String con, byte[] opttotatext) {
+	//20200723
+//	private byte[] DataINQ(int iVal, int ifig, String dCount, String con, byte[] opttotatext)
+	private byte[] DataINQ(int iVal, int ifig, String dCount, String _con, byte[] opttotatext)
+	{
 		// optotatext only used while iVal == TXP.RECVFHOST mode
 		byte[] rtn = null;
 		P0080TEXT p0080text = null;
@@ -2123,9 +2128,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 								j = text.length / q0880text.getQ0880TotatextLen();
 							log.debug("{} {} {} :TxFlow : () -- totCnt=[{}] text.length={} j={}", brws, catagory,
 									account, totCnt, text.length, j);
-							//20200527
-							if (j >= totCnt) {
-								q0880text.copyTotaText(text, totCnt);
+							//20200523
+							if (j >= (totCnt % 6)) {
+								q0880text.copyTotaText(text, j);
 								//----
 								if (begin < totCnt) {
 									int dataCnt = 0;
@@ -2206,9 +2211,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 							
 							log.debug("{} {} {} :TxFlow : () -- totCnt=[{}] text.length={} j={}", brws, catagory,
 									account, totCnt, text.length, j);
-							//20200527
-							if (j >= totCnt) {
-								p0880text.copyTotaText(text, totCnt);
+							//20200723
+							if (j >= (totCnt % 6)) {
+								p0880text.copyTotaText(text, j);
 							//----
 								if (begin < totCnt) {
 									int dataCnt = 0;
@@ -2289,18 +2294,32 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	*   return_code : = 0 - NORMAL                    *
 	*                 < 0 - ERROR                     *
 	********************************************************************/
-	private int Send_Recv(int iflg, int ifun, String con, String mbal) {
+//	private int Send_Recv(int iflg, int ifun, String con, String mbal)
+	private int Send_Recv(int iflg, int ifun, String _con, String mbal)
+	{
+		//20200724
+		this.con = "000";
+		if (ifun == TXP.INQ) {
+			pb_arr.clear();
+			fc_arr.clear();
+			gl_arr.clear();
+		}
+		//----
 		int rtn = 0;
+
 		do {
+			log.debug("------------------------------------this.curState=[{}] this.Send_Recv_DATAInq=[{}] this.passSNDANDRCVTLM=[{}]" , this.curState, this.Send_Recv_DATAInq, this.passSNDANDRCVTLM);
+
 			if (this.curState == SNDANDRCVTLM || this.curState == SNDANDRCVDELTLM) {
 				this.iLine = Integer.parseInt(tx_area.get("cline").trim());
-				con = "000";
-				this.iCon = Integer.parseInt(con.trim());
-				if (ifun == TXP.INQ) {
+//20200724				con = "000";
+//				this.con = "000";
+				this.iCon = Integer.parseInt(this.con.trim());
+/*				if (ifun == TXP.INQ) {
 					pb_arr.clear();
 					fc_arr.clear();
 					gl_arr.clear();
-				}
+				}*/
 				tital = new TITATel();
 				boolean titalrtn = tital.initTitaLabel((byte) '0');
 				log.debug("tital.initTitaLabel rtn={}", titalrtn);
@@ -2367,14 +2386,21 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 //20200619					SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0010000000");
 					//----
 					atlog.info("TITA_TEXT=[{}]",new String(resultmsg));
-					if (SetSignal(firstOpenConn, !firstOpenConn, "0000000000", "0010000000")) {
-						this.curState = RECVTLM;
-						log.debug("{} {} {} AutoPrnCls : --change start process telegram", brws, catagory, account);
+					//20200724
+					if (this.iCount > 0 && ifun == TXP.INQ) {
+						this.curState = SENDTLM;
+						log.debug("{} {} {} AutoPrnCls : --change start process telegram dispatcher.isTITA_TOTA_START()={} alreadySendTelegram ={} this.iCount=[{}]", brws, catagory, account, dispatcher.isTITA_TOTA_START(), this.alreadySendTelegram, this.iCount);
 					} else {
-						this.curState = WAITSETREQSIG;
-						log.debug("{} {} {} AutoPrnCls : --change wait Set Signal for request data", brws, catagory,
-								account);
+						if (SetSignal(firstOpenConn, !firstOpenConn, "0000000000", "0010000000")) {
+							this.curState = RECVTLM;
+							log.debug("{} {} {} AutoPrnCls : --change start process telegram", brws, catagory, account);
+						} else {
+							this.curState = WAITSETREQSIG;
+							log.debug("{} {} {} AutoPrnCls : --change wait Set Signal for request data", brws, catagory,
+									account);
+						}
 					}
+					//----
 				} catch (Exception e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -2513,14 +2539,22 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 								}
 								iCount = Integer.parseInt(this.dCount);
 								iCon = Integer.parseInt(con);
-								log.debug("iCon={} iCon={} iLine={} (iLine - 1 + iCount)={}", iCount, iCon, iLine,
+								log.debug("iCont={} iCon={} iLine={} (iLine - 1 + iCount)={}", iCount, iCon, iLine,
 										(iLine - 1 + iCount));
 								if ((iLine - 1 + iCount) >= 24) {
 									atlog.info("[{}] TOTA_TEXT=[{}]", resultmsg.length, new String(resultmsg));
 									amlog.info("[{}][{}][{}]:55存摺補登資料接收成功！", brws, pasname, this.account);
 									this.curState = STARTPROCTLM;
 									break;
-								}
+								} //20200724
+								else if (this.iCount < iCon) {
+									this.curState = SNDANDRCVTLM;
+									this.Send_Recv_DATAInq = true;
+									this.passSNDANDRCVTLM = true;
+									this.alreadySendTelegram = false;
+								} else
+									this.curState = STARTPROCTLM;
+								//----
 							} else {
 								// Receive Delete Result
 								DataDEL(TXP.RECVFHOST, iflg, "");
@@ -2528,7 +2562,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 								this.curState = SNDANDRCVDELTLMCHKEND;
 								break;
 							}
-							this.curState = STARTPROCTLM;
+//20200724							this.curState = STARTPROCTLM;
 						} catch (Exception e) {
 							e.getStackTrace();
 							log.error("ERROR while get total label mtype {}" + e.getMessage());
@@ -2560,6 +2594,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 //					this.alreadySendTelegram = false;
 				}
 			}
+			log.debug("====================================this.curState=[{}] this.Send_Recv_DATAInq=[{}] this.passSNDANDRCVTLM=[{}]" , this.curState, this.Send_Recv_DATAInq, this.passSNDANDRCVTLM);
 		} while (this.iCount < iCon);
 
 		//20200428 add for receive error TOTA  ERROR message set to this.curState == EJECTAFTERPAGEERROR
