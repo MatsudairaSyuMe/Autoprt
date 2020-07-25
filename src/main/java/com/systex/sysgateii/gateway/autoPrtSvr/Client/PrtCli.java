@@ -825,9 +825,15 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		return rtn;
 	}
 
-	private byte[] DataINQ(int iVal, int ifig, String dCount, String con) {
+	//20200724
+/*	private byte[] DataINQ(int iVal, int ifig, String dCount, String con) {
 		return DataINQ(iVal, ifig, dCount, con, null);
 	}
+*/
+	private byte[] DataINQ(int iVal, int ifig, String dCount) {
+		return DataINQ(iVal, ifig, dCount, null);
+	}
+	//----
 
 	private void setpasname(byte[] cussrc) {
 		String chkcatagory = new String(cussrc, 3, 3);
@@ -1886,7 +1892,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 
 	//20200723
 //	private byte[] DataINQ(int iVal, int ifig, String dCount, String con, byte[] opttotatext)
-	private byte[] DataINQ(int iVal, int ifig, String dCount, String _con, byte[] opttotatext)
+	private byte[] DataINQ(int iVal, int ifig, String dCount, byte[] opttotatext)
 	{
 		// optotatext only used while iVal == TXP.RECVFHOST mode
 		byte[] rtn = null;
@@ -2362,7 +2368,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 
 						// Send Inquiry Request
 						this.resultmsg = null;
-						resultmsg = DataINQ(TXP.SENDTHOST, iflg, this.dCount, con);
+						//20200724
+//						resultmsg = DataINQ(TXP.SENDTHOST, iflg, this.dCount, con);
+						resultmsg = DataINQ(TXP.SENDTHOST, iflg, this.dCount);
+						//----
 						if (resultmsg == null || resultmsg.length == 0) {
 							atlog.info("iMsgLen = 0");
 							amlog.info("[{}][{}][{}]:31傳送之訊息長度為０！", brws, pasname, this.account);							
@@ -2526,7 +2535,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 							if (ifun == TXP.INQ) {
 								// Receive Inquiry Data
 								// 20080923 , Check return value
-								resultmsg = DataINQ(TXP.RECVFHOST, iflg, this.dCount, con, totatext);
+								//20200724
+//								resultmsg = DataINQ(TXP.RECVFHOST, iflg, this.dCount, con, totatext);
+								resultmsg = DataINQ(TXP.RECVFHOST, iflg, this.dCount, totatext);
+								//----
 								if (resultmsg == null || resultmsg.length == 0) {
 									if (SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000001")) {
 										amlog.info("[{}][{}][{}]:34接收資料錯誤！", brws, pasname, this.account);
