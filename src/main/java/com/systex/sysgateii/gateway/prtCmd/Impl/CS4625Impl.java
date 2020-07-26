@@ -853,11 +853,15 @@ public class CS4625Impl implements Printer {
 					if (data[2] == (byte)(0x7f & 0xff)) {
 						iCnt = 0;
 						amlog.info("[{}][{}][{}]:94補摺機狀態錯誤！", brws, "        ", "            ");
-						this.curState = ResetPrinterInit_START;
-						ResetPrinterInit();
-						this.curmsdata = null;
-						pc.close();
-						return null;						
+//						this.curState = ResetPrinterInit_START;
+						this.curState = MS_Read_FINISH;
+//						ResetPrinterInit();
+						byte[] nr = new byte[1];
+						nr[0] = (byte)'X';
+						this.curmsdata = nr;
+//						pc.close();
+//						return null;
+						return this.curmsdata;
 					} else if (data.length >= 38) {
 						int lastidx = data.length - 1;
 						for (; lastidx > 1; lastidx--)

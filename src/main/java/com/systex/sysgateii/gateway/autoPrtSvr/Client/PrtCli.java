@@ -2846,6 +2846,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				this.curState = READMSR;
 				cusid = null;
 				if (null != (cusid = prt.MS_Read(firstOpenConn, brws))) {
+					if (cusid.length == 1) {
+						this.curState = EJECTAFTERPAGEERROR;
+					} else {
 					this.curState = CHKACTNO;
 					for (int i = 0; i < cusid.length; i++)
 						cusid[i] = cusid[i] == (byte) '<' ? (byte) '-' : cusid[i];
@@ -2854,6 +2857,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					amlog.info("[{}][{}][{}]:12存摺磁條讀取成功！", brws, pasname, new String(cusid, 0, TXP.ACTNO_LEN));
 				}
 				log.debug("{} {} {} AutoPrnCls : --start Read MSR", brws, catagory, account);
+				}
 			}
 			//20200718
 			lastCheck(before);
@@ -2864,12 +2868,16 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			log.debug("{} {} {} :AutoPrnCls : Read MSR", brws, catagory, account);
 			cusid = null;
 			if (null != (cusid = prt.MS_Read(!firstOpenConn, brws))) {
-				this.curState = CHKACTNO;
-				for (int i = 0; i < cusid.length; i++)
-					cusid[i] = cusid[i] == (byte) '<' ? (byte) '-' : cusid[i];
-				setpasname(cusid);
-				amlog.info("[{}][{}][{}]:12存摺磁條讀取成功！", brws, pasname, new String(cusid, 0, TXP.ACTNO_LEN));
-				log.debug("{} {} {} AutoPrnCls : --start check Account", brws, catagory, account);
+				if (cusid.length == 1) {
+					this.curState = EJECTAFTERPAGEERROR;
+				} else {
+					this.curState = CHKACTNO;
+					for (int i = 0; i < cusid.length; i++)
+						cusid[i] = cusid[i] == (byte) '<' ? (byte) '-' : cusid[i];
+					setpasname(cusid);
+					amlog.info("[{}][{}][{}]:12存摺磁條讀取成功！", brws, pasname, new String(cusid, 0, TXP.ACTNO_LEN));
+					log.debug("{} {} {} AutoPrnCls : --start check Account", brws, catagory, account);
+				}
 			}
 			//20200718
 			lastCheck(before);
@@ -3458,6 +3466,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 //20200722			this.durationTime = now - this.startTime;
 			this.durationTime = now - this.stateStartTime;
 		}
+		log.error("this.durationTime={}", this.durationTime);
 		if (this.durationTime > responseTimeout) {
 			// 20200722
 			if (before == this.curState && (this.curState == CAPTUREPASSBOOK && this.iFirst == 1)) { // 翻頁列印逾時
