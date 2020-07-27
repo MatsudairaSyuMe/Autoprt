@@ -844,7 +844,7 @@ public class CS5240Impl implements Printer {
 				if (data[1] == (byte)'s') {
 					if (data[2] == (byte)(0x7f & 0xff)) {
 						iCnt = 0;
-						amlog.info("[{}][{}][{}]:94補摺機狀態錯誤！", brws, "        ", "            ");
+						amlog.info("[{}][{}][{}]:94補摺機狀態錯誤！(MSR)", brws, "        ", "            ");
 //						this.curState = ResetPrinterInit_START;
 						this.curState = MS_Read_FINISH;
 //						ResetPrinterInit();
@@ -857,12 +857,12 @@ public class CS5240Impl implements Printer {
 					} else if (data.length >= 38) {
 						int lastidx = data.length - 1;
 						for (; lastidx > 1; lastidx--)
-							if (data[lastidx] == (byte)0x1c)
+							if (data[lastidx] == (byte) 0x1c)
 								break;
 						byte[] tmpb = new byte[lastidx - 2];
-					System.arraycopy(data, 2, tmpb, 0, tmpb.length);
-					this.curmsdata = tmpb;
-					System.gc();
+						System.arraycopy(data, 2, tmpb, 0, tmpb.length);
+						this.curmsdata = tmpb;
+						System.gc();
 					} else {
 						iCnt = 0;
 						amlog.info("[{}][{}][{}]:94補摺機狀態錯誤！(MSR-1)", brws, "        ", "            ");

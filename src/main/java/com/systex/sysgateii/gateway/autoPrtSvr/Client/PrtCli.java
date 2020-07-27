@@ -3466,7 +3466,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 //20200722			this.durationTime = now - this.startTime;
 			this.durationTime = now - this.stateStartTime;
 		}
-		log.error("this.durationTime={}", this.durationTime);
+//		log.error("this.durationTime={}", this.durationTime);
 		if (this.durationTime > responseTimeout) {
 			// 20200722
 			if (before == this.curState && (this.curState == CAPTUREPASSBOOK && this.iFirst == 1)) { // 翻頁列印逾時
