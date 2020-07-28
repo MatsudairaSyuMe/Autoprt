@@ -1589,7 +1589,7 @@ public class CS5240Impl implements Printer {
 		case (byte) '2':
 		case (byte) '4':
 			//20200401
-			if (this.curState == 39 || this.curState == 14) {
+			if (this.curState == Eject || this.curState == SetSignal_4) {
 				this.curChkState = CheckStatus_START;
 				return false;
 			}
@@ -1638,6 +1638,12 @@ public class CS5240Impl implements Printer {
 			return true;
 		case (byte) 'q': // read/write error of MS
 		case (byte) 'r': // read error of MS
+			//20200728
+			if (this.curState == Eject) {
+				this.curChkState = CheckStatus_START;
+				return false;
+			}
+		//----
 			this.curState = CheckStatus_START;
 			data = CheckStatus();
 			Send_hData(S5240_PERRCODE_REQ);
@@ -1666,6 +1672,12 @@ public class CS5240Impl implements Printer {
 			log.debug("[{}]:S5240 : Error Reset[0x00]", String.format(outptrn2, wsno));
 			atlog.info("Error [0x00]");
 			return false;
+		case (byte) '6': // read error response
+			//20200728
+			if (this.curState == Eject) 
+				this.curChkState = CheckStatus_START;
+			return false;
+		//----
 		default:
 			atlog.info("Error Reset[{}]", String.format(outptrn3, data[2]));
 			ResetPrinter();
