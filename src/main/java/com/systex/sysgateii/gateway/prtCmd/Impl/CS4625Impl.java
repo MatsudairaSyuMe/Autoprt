@@ -501,8 +501,7 @@ public class CS4625Impl implements Printer {
 		while (i < len ) {
 			chrtmp = buff[i];
 			chrtmp1 = buff[i+1];
-//			if((this.p_fun_flag.get() == true) && (int)(chrtmp & 0xff) >= (int)((byte)0x80 & 0xff))
-			if((int)(chrtmp & 0xff) >= (int)((byte)0x80 & 0xff))
+/*			if((this.p_fun_flag.get() == true) && (int)(chrtmp & 0xff) >= (int)((byte)0x80 & 0xff))
 			{
 				log.debug("0 ===<><>{} Prt_Text check chinese Font chkChkState {} i={}", this.curState, this.curChkState, i, String.format("0x%02x%02x", chrtmp, chrtmp1));
 
@@ -520,7 +519,7 @@ public class CS4625Impl implements Printer {
 					i+=2;
 					continue;
 				}
-			}
+			}*/
 //			log.debug("Prt_Text i={} len={}", i, len);
 /*			if ( len > 1 ) {
 				if ( buff[i] == (byte)0x0a &&
@@ -605,7 +604,8 @@ public class CS4625Impl implements Printer {
 					chrtmp = buff[i];
 					chrtmp1 = buff[i+1];
 //					log.debug("3 ===<><>Prt_Text chkChkState {} {}", (int)(chrtmp & 0xff), (int)(0x80 & 0xff));
-					if ( (int)(chrtmp & 0xff) >= (int)(0x80 & 0xff))
+//20200729					if ( (int)(chrtmp & 0xff) >= (int)(0x80 & 0xff))
+					if((this.p_fun_flag.get() == true) && (int)(chrtmp & 0xff) >= (int)((byte)0x80 & 0xff))
 					{
 						dblword = true;
 						// check only , BNE 6319 , break
@@ -619,6 +619,25 @@ public class CS4625Impl implements Printer {
 							dblword = false;
 							break;
 						}*/
+
+						log.debug("0 ===<><>{} Prt_Text check chinese Font chkChkState {} i={}", this.curState, this.curChkState, i, String.format("0x%02x%02x", chrtmp, chrtmp1));
+
+						if (ChkAddFont((int)((chrtmp & 0x00ff)<<8)+(int)((chrtmp1 & 0xff))) == true)
+						{
+							AddFont((int)((chrtmp & 0x00ff)<<8)+(int)((chrtmp1 & 0xff)));
+							log.debug("1 ===<><>{} Prt_Text enter S4625_PSI chkChkState {} i={} AddFont", this.curState, this.curChkState, i, String.format("0x%02x%02x", chrtmp, chrtmp1));
+							i+=2;
+							continue;
+						}
+						if (ChkExtFont((int)((chrtmp & 0x00ff)<<8)+((int)((chrtmp1 & 0xff)))) == true)
+						{
+							AddExtFont(chrtmp,chrtmp1);
+							log.debug("2 ===<><>{} Prt_Text enter S4625_PSI chkChkState {} i={} AddExtFont", this.curState, this.curChkState, i, String.format("0x%02x%02x", chrtmp, chrtmp1));
+							i+=2;
+							continue;
+						}
+
+//----
 						if ( bBeginSISession == false ) {
 							log.debug("4 ===<><>{} Prt_Text enter S4625_PSI chkChkState {} wlen={} i={}", this.curState, this.curChkState, wlen, i);
 
