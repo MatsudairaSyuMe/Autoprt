@@ -67,7 +67,7 @@ public class Big5FontImg {
 		byte[] rtn = new byte[count];
 		try {
 			long l = keyadr_map.get(start);
-//            System.out.println("key=" + start + " addr=" + l);
+            System.out.println("key=" + start + " addr=" + l);
 			fontis.skip(l);
 			if (fontis.read(rtn) != count)
 				throw new Exception("read length error");
@@ -120,7 +120,23 @@ public class Big5FontImg {
 				System.out.print(String.format("%02x ", b));
 			System.out.println();
 			aa = fd.getFontImageData((long) 0xfe9e);
-			System.out.println("len " + aa.length + ":" + (long) 0xfe9e);
+			System.out.println("0xfe9e len " + aa.length + ":" + (long) 0xfe9e);
+			for (byte b : aa)
+				System.out.print(String.format("%02x ", b));
+			System.out.println();
+//			aa = fd.getFontImageData((long) 0xfe9e);
+			aa = fd.getFontImageData((long) 0x95b0);
+			System.out.println("0x95b0 len " + aa.length + ":" + (long) 0x95b0);
+			for (byte b : aa)
+				System.out.print(String.format("%02x ", b));
+			System.out.println();
+			aa = fd.getFontImageData((long)38320);
+			System.out.println("38320 len " + aa.length + ":" + 38320);
+			for (byte b : aa)
+				System.out.print(String.format("%02x ", b));
+			System.out.println();
+			aa = fd.getFontImageData((long)0xf9d6);
+			System.out.println("0xf9d6 len " + aa.length + ":" + (long)0xf9d6);
 			for (byte b : aa)
 				System.out.print(String.format("%02x ", b));
 			System.out.println();

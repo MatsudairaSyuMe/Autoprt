@@ -501,17 +501,22 @@ public class CS4625Impl implements Printer {
 		while (i < len ) {
 			chrtmp = buff[i];
 			chrtmp1 = buff[i+1];
-			if ((this.p_fun_flag.get() == true) && (int)(chrtmp & 0xff) >= (int)(0x80 & 0xff) )
+//			if((this.p_fun_flag.get() == true) && (int)(chrtmp & 0xff) >= (int)((byte)0x80 & 0xff))
+			if((int)(chrtmp & 0xff) >= (int)((byte)0x80 & 0xff))
 			{
-				if (ChkAddFont((((int)((chrtmp & 0xff))<<8)+((int)(chrtmp1 & 0xff)))) == true)
+				log.debug("0 ===<><>{} Prt_Text check chinese Font chkChkState {} i={}", this.curState, this.curChkState, i, String.format("0x%02x%02x", chrtmp, chrtmp1));
+
+				if (ChkAddFont((int)((chrtmp & 0x00ff)<<8)+(int)((chrtmp1 & 0xff))) == true)
 				{
-					AddFont((((int)chrtmp<<8)+((int)(chrtmp1 & 0xff))));
+					AddFont((int)((chrtmp & 0x00ff)<<8)+(int)((chrtmp1 & 0xff)));
+					log.debug("1 ===<><>{} Prt_Text enter S4625_PSI chkChkState {} i={} AddFont", this.curState, this.curChkState, i, String.format("0x%02x%02x", chrtmp, chrtmp1));
 					i+=2;
 					continue;
 				}
-				if (ChkExtFont((((int)(chrtmp & 0xff)<<8)+((int)(chrtmp1 & 0xff)))) == true)
+				if (ChkExtFont((int)((chrtmp & 0x00ff)<<8)+((int)((chrtmp1 & 0xff)))) == true)
 				{
 					AddExtFont(chrtmp,chrtmp1);
+					log.debug("2 ===<><>{} Prt_Text enter S4625_PSI chkChkState {} i={} AddExtFont", this.curState, this.curChkState, i, String.format("0x%02x%02x", chrtmp, chrtmp1));
 					i+=2;
 					continue;
 				}
@@ -1550,7 +1555,8 @@ public class CS4625Impl implements Printer {
 		command[4] = (byte)'0';
 		command[5] = (byte)'7';
 		command[6] = (byte)'2';
-		long fontno = (long)((high & 0x00ff) << 8)+((long)(low & 0xff));
+
+		long fontno = (long)((high & 0x00ff) << 8)+((long)((low & 0xff)));
 		try {
 			System.arraycopy(PrnSvr.big5funt.getFontImageData((long) fontno), 0, command, 7, 72);
 		} catch (Exception e) {
@@ -1644,9 +1650,13 @@ public class CS4625Impl implements Printer {
 			return true;
 		case (byte) 'q': // read/write error of MS
 		case (byte) 'r': // read error of MS
-			//20200728
+			//20200729
 			if (this.curState == Eject) {
+				log.error("get read msr error status reset printer");
+				ResetPrinter();
 				this.curChkState = CheckStatus_START;
+				if (Send_hData(S4625_PEJT) != 0)
+					return false;
 				return false;
 			}
 		//----
