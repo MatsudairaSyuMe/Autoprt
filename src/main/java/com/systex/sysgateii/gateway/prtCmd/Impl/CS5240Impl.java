@@ -137,6 +137,9 @@ public class CS5240Impl implements Printer {
 	private String outptrn1 = "%5.5s";
 	private String outptrn2 = "%4.4s";
 	private String outptrn3 = "%c";
+	//20200730 send Chinese add and extend bitmap font data
+	private byte[] command = new byte[79];
+	//----
 
 //  State Value
 	public static final int ResetPrinterInit_START    = 0;
@@ -465,7 +468,7 @@ public class CS5240Impl implements Printer {
 		int j, offset = 0;
 		boolean bLineFeed;
 		boolean bHalf = false;
-		byte[] hBuf = new byte[200];
+		byte[] hBuf = new byte[600];
 
 		// filter space 91.10.09
 		bLineFeed = false;
@@ -503,9 +506,9 @@ public class CS5240Impl implements Printer {
 		boolean bBeginRedSession=m_bColorRed.get();
 		boolean bBeginSISession=false;
 		this.curState = Prt_Text_START;
-		while (i < len ) {
-			chrtmp = buff[i];
-			chrtmp1 = buff[i+1];
+//		while (i < len ) {
+//			chrtmp = buff[i];
+//			chrtmp1 = buff[i+1];
 /*			if((int)(chrtmp & 0xff) >= (int)((byte)0x80 & 0xff))
 			{
 				log.debug("0 ===<><>{} Prt_Text check chinese Font chkChkState {} i={}", this.curState, this.curChkState, i, String.format("0x%02x%02x", chrtmp, chrtmp1));
@@ -626,20 +629,34 @@ public class CS5240Impl implements Printer {
 						}*/
 
 						log.debug("0 ===<><>{} Prt_Text check chinese Font chkChkState {} i={}", this.curState, this.curChkState, i, String.format("0x%02x%02x", chrtmp, chrtmp1));
+
 						if (ChkAddFont((int)((chrtmp & 0x00ff)<<8)+(int)((chrtmp1 & 0xff))) == true)
 						{
-							AddFont((int)((chrtmp & 0x00ff)<<8)+(int)((chrtmp1 & 0xff)));
-							log.debug("1 ===<><>{} Prt_Text enter S5240E_PSI chkChkState {} i={} AddFont", this.curState, this.curChkState, i, String.format("0x%02x%02x", chrtmp, chrtmp1));
+							log.debug("1 ===<><>{} Prt_Text chkChkState {} i={} AddFont", this.curState, this.curChkState, i, String.format("0x%02x%02x", chrtmp, chrtmp1));
+							if (AddFont((int)((chrtmp & 0x00ff)<<8)+(int)((chrtmp1 & 0xff)))) {
+								System.arraycopy(this.command, 0, hBuf, wlen+3, this.command.length);
+								wlen+=this.command.length;
+								bBeginSISession=false;
+							} else
+								log.error("1 ===<><>{} Prt_Text chkChkState {} i={} AddFont error", this.curState, this.curChkState, i, String.format("0x%02x%02x", chrtmp, chrtmp1));								
 							i+=2;
+							dblword = false;
 							continue;
 						}
 						if (ChkExtFont((int)((chrtmp & 0x00ff)<<8)+((int)((chrtmp1 & 0xff)))) == true)
 						{
-							AddExtFont(chrtmp,chrtmp1);
-							log.debug("2 ===<><>{} Prt_Text enter S5240E_PSI chkChkState {} i={} AddExtFont", this.curState, this.curChkState, i, String.format("0x%02x%02x", chrtmp, chrtmp1));
+							log.debug("2 ===<><>{} Prt_Text chkChkState {} i={} AddExtFont", this.curState, this.curChkState, i, String.format("0x%02x%02x", chrtmp, chrtmp1));
+							if (AddExtFont(chrtmp,chrtmp1)) {
+								System.arraycopy(this.command, 0, hBuf, wlen+3, this.command.length);
+								wlen+=this.command.length;
+								bBeginSISession=false;
+							} else
+								log.error("2.1 ===<><>{} Prt_Text chkChkState {} i={} AddExtFont error", this.curState, this.curChkState, i, String.format("0x%02x%02x", chrtmp, chrtmp1));								
 							i+=2;
+							dblword = false;
 							continue;
 						}
+
 //----
 
 						if ( bBeginSISession == false ) {
@@ -723,7 +740,7 @@ public class CS5240Impl implements Printer {
 					log.debug("6.2 ===<><>{} Prt_Text leave S5240_PSO chkChkState {} {} wlen={} i={}", this.curState, this.curChkState, wlen, i);
 				}
 			}
-		}
+//		}
 		return true;
 	}
 
@@ -736,7 +753,10 @@ public class CS5240Impl implements Printer {
 	@Override
 	public boolean AddFont(int fontno) {
 		// TODO Auto-generated method stub
-		byte[] command = new byte[79];
+		//20200730 use class define parameter		byte[] command = new byte[79];
+		//20200730
+		Arrays.fill(command, (byte)0x0);
+		//----
 		command[0] = (byte)0x1b;
 		command[1] = (byte)0x25;
 		command[2] = (byte)0x43;
@@ -752,7 +772,9 @@ public class CS5240Impl implements Printer {
 			log.error("AddFont fontno=[{}] error ===<><>{} chkChkState {} {}", fontno, e.getMessage());
 			return false;
 		}
-		Send_hData(command);
+		//20200730
+//		Send_hData(command);
+		//----
 		return true;
 	}
 
@@ -1560,7 +1582,10 @@ public class CS5240Impl implements Printer {
 	@Override
 	public boolean AddExtFont(byte high, byte low) {
 		// TODO Auto-generated method stub
-		byte[] command = new byte[79];
+		//20200730 use class define parameter		byte[] command = new byte[79];
+		//20200730
+		Arrays.fill(command, (byte)0x0);
+		//----
 		command[0] = (byte)0x1b;
 		command[1] = (byte)0x25;
 		command[2] = (byte)0x43;
@@ -1577,7 +1602,9 @@ public class CS5240Impl implements Printer {
 			log.error("AddExtFont fontno=[{}] error ===<><>{} chkChkState {} {}", fontno, e.getMessage());
 			return false;			
 		}
-		Send_hData(command);
+		//20200730
+//		Send_hData(command);
+		//----
 		return true;
 	}
 
