@@ -995,7 +995,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				pr_data = "";
 				pbpr_date = new String (p0080DataFormat.getTotaTextValueSrc("date", pb_arr.get(i))).trim();
 				if (Integer.parseInt(pbpr_date) > 1000000)
-					pbpr_date = String.format("%9s", pbpr_date);
+					pbpr_date = String.format("%9s", Integer.parseInt(pbpr_date));  //20200731 adjust local's Date format
 				else {
 					pbpr_date  = " " + pbpr_date.substring(0, 2) + "." + pbpr_date.substring(2, 4) + "." + pbpr_date.substring(4, 6);
 				}
@@ -1397,11 +1397,26 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				pbpr_crdbT = pbpr_crdbT + " " + new String(p0880DataFormat.getTotaTextValueSrc("curcd", gl_arr.get(i)));
 				pr_data = pr_data + " " + new String(p0880DataFormat.getTotaTextValueSrc("curcd", gl_arr.get(i)));
 
-				double price = Double.parseDouble(new String(p0880DataFormat.getTotaTextValueSrc("price", gl_arr.get(i))).trim()) / 100.0;
+				//20200731 Matsudaira check for null value!!!!!!
+				byte[] pricechk = p0880DataFormat.getTotaTextValueSrc("price", gl_arr.get(i));
+				int chkidx = 0;
+				boolean filled = false;
+				for (final byte cb : pricechk) {
+					if (cb == (byte)0x0) {
+						pricechk[chkidx] = (byte)'0';
+						filled = true;
+					}
+					chkidx++;
+				}
+				log.debug("--->p0880text price src [{}] and filled [{}]", new String(pricechk).trim(), filled ? "yes":"no");
+//				double price = Double.parseDouble(new String(p0880DataFormat.getTotaTextValueSrc("price", gl_arr.get(i))).trim()) / 100.0;
+				double price = Double.parseDouble(new String(pricechk).trim()) / 100.0;
+				//----
 				pbpr_crdbT = pbpr_crdbT + dataUtil.rfmtdbl(price, "ZZZ9.99");
 				pr_data = pr_data + dataUtil.rfmtdbl(price, "ZZZ9.99");
 
 				//處理支出(回售/提領)黃金數
+				
 				String wamtbuff = new String(p0880DataFormat.getTotaTextValueSrc("withsign", gl_arr.get(i)))
 					+ new String(p0880DataFormat.getTotaTextValueSrc("withdraw", gl_arr.get(i)));
 
@@ -1430,12 +1445,29 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				}
 				pr_datalog = pr_data;
 				//處理結存
-				log.debug("--->p0880text avebal src [{}]", new String(p0880DataFormat.getTotaTextValueSrc("avebal", gl_arr.get(i))).trim());
-				dTxamt = Double.parseDouble(new String(p0880DataFormat.getTotaTextValueSrc("avebal", gl_arr.get(i))).trim()) / 100.0;
+//				log.debug("--->p0880text avebal src [{}]", new String(p0880DataFormat.getTotaTextValueSrc("avebal", gl_arr.get(i))).trim());
+				//20200731 Matsudaira check for null value!!!!!!
+				byte[] avebalchk = p0880DataFormat.getTotaTextValueSrc("avebal", gl_arr.get(i));
+				chkidx = 0;
+				filled = false;
+				for (final byte cb : avebalchk) {
+					if (cb == (byte)0x0) {
+						avebalchk[chkidx] = (byte)'0';
+						filled = true;
+					}
+					chkidx++;
+				}
+				log.debug("--->p0880text avebal src [{}] and filled [{}]", new String(avebalchk).trim(), filled ? "yes":"no");
+//				dTxamt = Double.parseDouble(new String(p0880DataFormat.getTotaTextValueSrc("avebal", gl_arr.get(i))).trim()) / 100.0;
+				//----
+				dTxamt = Double.parseDouble(new String(avebalchk).trim()) / 100.0;
 				log.debug("--->p0880text avebal float [{}]", dTxamt);
 				pbpr_balance = dataUtil.rfmtdbl(dTxamt, TXP.GRAM2);
 				log.debug("--->p0880text avebal convert=[{}]", pbpr_balance);
-				tx_area.put("avebal", new String(p0880DataFormat.getTotaTextValueSrc("avebal", gl_arr.get(i))));
+				//20200731 Matsudaira check for null value!!!!!!
+//				tx_area.put("avebal", new String(p0880DataFormat.getTotaTextValueSrc("avebal", gl_arr.get(i))));
+				tx_area.put("avebal", new String(avebalchk));
+				//----
 				
 				tx_area.put("nbday", new String(p0880DataFormat.getTotaTextValueSrc("txday", gl_arr.get(i))));
 				tx_area.put("nbseq", new String(p0880DataFormat.getTotaTextValueSrc("nbseq", gl_arr.get(i))));
@@ -1486,9 +1518,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				//若印滿 24 筆且尚有補登資料，加印「請翻下頁繼續補登」
 				if ( (tl+i) == 24 && (total >= (i+1)) )
 				{
-					// 因為存摺會補到滿, FC 只有5頁, 如果是第5頁則不進行換頁流程
+					// 因為存摺會補到滿, GL 只有9頁, 如果是第9頁則不進行換頁流程
 					// 20180518 , add
-					if (this.npage >= TXP.FC_MAX_PAGE) {
+					if (this.npage >= TXP.GL_MAX_PAGE) {
 						this.iEnd = 2;
 						return true;
 					}

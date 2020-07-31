@@ -623,30 +623,30 @@ public class CS4625Impl implements Printer {
 							break;
 						}*/
 
-						log.debug("0 ===<><>{} Prt_Text check chinese Font chkChkState {} i={}", this.curState, this.curChkState, i, String.format("0x%02x%02x", chrtmp, chrtmp1));
+						log.debug("0 ===<><>{} {} Prt_Text check chinese Font i={} [{}]", this.curState, this.curChkState, i, String.format("0x%02x%02x", chrtmp, chrtmp1));
 
 						if (ChkAddFont((int)((chrtmp & 0x00ff)<<8)+(int)((chrtmp1 & 0xff))) == true)
 						{
-							log.debug("1 ===<><>{} Prt_Text chkChkState {} i={} AddFont", this.curState, this.curChkState, i, String.format("0x%02x%02x", chrtmp, chrtmp1));
+							log.debug("1 ===<><>{} {} Prt_Text i={} AddFont [{}]", this.curState, this.curChkState, i, String.format("0x%02x%02x", chrtmp, chrtmp1));
 							if (AddFont((int)((chrtmp & 0x00ff)<<8)+(int)((chrtmp1 & 0xff)))) {
 								System.arraycopy(this.command, 0, hBuf, wlen+3, this.command.length);
 								wlen+=this.command.length;
 								bBeginSISession=false;
 							} else
-								log.error("1 ===<><>{} Prt_Text chkChkState {} i={} AddFont error", this.curState, this.curChkState, i, String.format("0x%02x%02x", chrtmp, chrtmp1));								
+								log.error("1 ===<><>{} {} Prt_Text i={} AddFont [{}] error", this.curState, this.curChkState, i, String.format("0x%02x%02x", chrtmp, chrtmp1));								
 							i+=2;
 							dblword = false;
 							continue;
 						}
 						if (ChkExtFont((int)((chrtmp & 0x00ff)<<8)+((int)((chrtmp1 & 0xff)))) == true)
 						{
-							log.debug("2 ===<><>{} Prt_Text chkChkState {} i={} AddExtFont", this.curState, this.curChkState, i, String.format("0x%02x%02x", chrtmp, chrtmp1));
+							log.debug("2 ===<><>{} {} Prt_Text i={} AddExtFont [{}]", this.curState, this.curChkState, i, String.format("0x%02x%02x", chrtmp, chrtmp1));
 							if (AddExtFont(chrtmp,chrtmp1)) {
 								System.arraycopy(this.command, 0, hBuf, wlen+3, this.command.length);
 								wlen+=this.command.length;
 								bBeginSISession=false;
 							} else
-								log.error("2.1 ===<><>{} Prt_Text chkChkState {} i={} AddExtFont error", this.curState, this.curChkState, i, String.format("0x%02x%02x", chrtmp, chrtmp1));								
+								log.error("2.1 ===<><>{} {} Prt_Text i={} AddExtFont error [{}] ", this.curState, this.curChkState, i, String.format("0x%02x%02x", chrtmp, chrtmp1));								
 							i+=2;
 							dblword = false;
 							continue;
@@ -654,7 +654,7 @@ public class CS4625Impl implements Printer {
 
 //----
 						if ( bBeginSISession == false ) {
-							log.debug("4 ===<><>{} Prt_Text enter S4625_PSI chkChkState {} wlen={} i={}", this.curState, this.curChkState, wlen, i);
+							log.debug("4 ===<><>{} {} Prt_Text enter S4625_PSI wlen={} i={}", this.curState, this.curChkState, wlen, i);
 
 //							memcpy(&hBuf[wlen+3],S4625_PSI,5);
 							System.arraycopy(S4625_PSI, 0, hBuf, wlen+3, 5);
@@ -674,7 +674,7 @@ public class CS4625Impl implements Printer {
 					else
 					{
 						if ( bBeginSISession == true ) {
-							log.debug("5 ===<><>{} Prt_Text leave S4625_PSO chkChkState {} wlen={} i={}", this.curState, this.curChkState, wlen, i);
+							log.debug("5 ===<><>{} {} Prt_Text leave S4625_PSO wlen={} i={}", this.curState, this.curChkState, wlen, i);
 							System.arraycopy(S4625_PSO, 0, hBuf, wlen+3, 5);
 							bBeginSISession=false;
 							wlen+=5;
@@ -713,11 +713,11 @@ public class CS4625Impl implements Printer {
 						wlen++;
 					}
 				}
-				log.debug("6 ===<><>{} Prt_Text leave S4625_PSO chkChkState {} {} wlen={} i={}", this.curState, this.curChkState, wlen, i);
+				log.debug("6 ===<><>{} {} Prt_Text leave S4625_PSO chkChkState wlen={} i={}", this.curState, this.curChkState, wlen, i);
 				if ( wlen > 0 ) {
 					hBuf[0]=hBuf[1]=hBuf[2]=' ';
 					if ( bBeginSISession == true ) {
-						log.debug("6.1 ===<><>{} Prt_Text leave S4625_PSO chkChkState {} {} wlen={} i={}", this.curState, this.curChkState, wlen, i);
+						log.debug("6.1 ===<><>{} {} Prt_Text leave S4625_PSO wlen={} i={}", this.curState, this.curChkState, wlen, i);
 						System.arraycopy(S4625_PSO, 0, hBuf, wlen+3, 5);
 						bBeginSISession=false;
 						wlen+=5;
@@ -729,7 +729,7 @@ public class CS4625Impl implements Printer {
 					byte[] sendhBuf = new byte[wlen];
 					System.arraycopy(hBuf, 3, sendhBuf, 0, sendhBuf.length);
 					Send_hData(sendhBuf);
-					log.debug("6.2 ===<><>{} Prt_Text leave S4625_PSO chkChkState {} {} wlen={} i={}", this.curState, this.curChkState, wlen, i);
+					log.debug("6.2 ===<><>{} {} Prt_Text leave S4625_PSO wlen={} i={}", this.curState, this.curChkState, wlen, i);
 				}
 			}
 //		}

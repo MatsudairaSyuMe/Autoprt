@@ -2,6 +2,7 @@ package com.systex.sysgateii.gateway.util;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -16,6 +17,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class Big5FontImg {
 	private FileInputStream fontkeyis = null;
 	private FileInputStream fontis = null;
+	private long fsize = 0l;
 	private ConcurrentHashMap<Long, Long> keyadr_map = new ConcurrentHashMap<Long, Long>();
 
 	public Big5FontImg(String filenamekey, String filename) throws IOException, Exception {
@@ -27,6 +29,7 @@ public class Big5FontImg {
 			// create new file input stream
 			fontkeyis = new FileInputStream(filenamekey);
 			fontis = new FileInputStream(filename);
+			this.fsize = fontis.getChannel().size();
 			// read bytes to the buffer
 			int i = 0;
 			int idx = 0;
@@ -52,7 +55,7 @@ public class Big5FontImg {
 //                System.out.println("key=" + key + " addr=" + addr);
 				keyadr_map.put(key, addr);
 			}
-			System.out.println("Big5 table key total " + idx + " records create map table size=" + keyadr_map.size());
+//			System.out.println("Big5 table key total " + idx + " records create map table size=" + keyadr_map.size());
 			if (fontkeyis != null)
 				fontkeyis.close();
 		} catch (Exception ex) {
@@ -65,16 +68,20 @@ public class Big5FontImg {
 	public byte[] toByteArray(long start, int count) throws IOException, Exception {
 		// skip bytes from file input stream
 		byte[] rtn = new byte[count];
+		Arrays.fill(rtn, (byte) 0x0);
 		try {
 			long l = keyadr_map.get(start);
-            System.out.println("key=" + start + " addr=" + l);
+ //          System.out.println("key=" + start + " addr=" + l + ": addr * 72 = " + (l * 72) + " size=" + this.fsize);
 			fontis.skip(l);
-			if (fontis.read(rtn) != count)
-				throw new Exception("read length error");
+			if (fontis.read(rtn) != count) {
+				Arrays.fill(rtn, (byte) 0x0);
+//				throw new Exception("read length error");
+			}
 		} catch (Exception ex) {
 			// if any error occurs
 			ex.printStackTrace();
-			throw new Exception("read file error:" + ex.toString());
+			Arrays.fill(rtn, (byte) 0x0);
+//			throw new Exception("read file error:" + ex.toString());
 		}
 		return rtn;
 	}
@@ -130,16 +137,18 @@ public class Big5FontImg {
 			for (byte b : aa)
 				System.out.print(String.format("%02x ", b));
 			System.out.println();
-			aa = fd.getFontImageData((long)38320);
-			System.out.println("38320 len " + aa.length + ":" + 38320);
-			for (byte b : aa)
-				System.out.print(String.format("%02x ", b));
-			System.out.println();
-			aa = fd.getFontImageData((long)0xf9d6);
-			System.out.println("0xf9d6 len " + aa.length + ":" + (long)0xf9d6);
-			for (byte b : aa)
-				System.out.print(String.format("%02x ", b));
-			System.out.println();
+			for (int i = 0; i < 20; i++) {
+				aa = fd.getFontImageData((long) 38320);
+				System.out.println("38320 len " + aa.length + ":" + 38320 + ": i=" +i);
+				for (byte b : aa)
+					System.out.print(String.format("%02x ", b));
+				System.out.println();
+			}
+			/*
+			 * aa = fd.getFontImageData((long)0xf9d6); System.out.println("0xf9d6 len " +
+			 * aa.length + ":" + (long)0xf9d6); for (byte b : aa)
+			 * System.out.print(String.format("%02x ", b)); System.out.println();
+			 */
 			fd.CloseFontFile();
 		} catch (Exception ex) {
 			// if any error occurs
