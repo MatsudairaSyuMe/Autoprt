@@ -944,7 +944,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			break;
 		default:
 			amlog.info("[{}][{}][{}]:13存摺帳號錯誤！[{}](非台幣/外幣/黃金存摺)", brws, pasname, this.account);
-			atlog.info("ERROR!! PB_MSR [{}]/[{}]/[{}]/[{}]/[{}]/[{}]", account, "", "", cline, cpage, bkseq);
+			atlog.info("ERROR！！ PB_MSR [{}]/[{}]/[{}]/[{}]/[{}]/[{}]", account, "", "", cline, cpage, bkseq);
 			iFig = 0;
 			rtn = false;
 			break;
@@ -2363,8 +2363,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				log.debug("tital.initTitaLabel rtn={}", titalrtn);
 
 				try {
-					tital.setValue("brno", "983");
-					tital.setValue("wsno", "0403");
+					tital.setValue("brno", this.brws.substring(0, 3));
+					tital.setValue("wsno", this.brws.substring(3));
 					try {
 						this.setSeqNo = Integer
 								.parseInt(FileUtils.readFileToString(this.seqNoFile, Charset.defaultCharset())) + 1;
@@ -2387,9 +2387,14 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					tital.setValue("sbtmod", "0");
 					tital.setValue("curcd", "00");
 					tital.setValue("pseudo", "1");
-					if (!new String(this.fepdd).equals("  "))
+					if (!new String(this.fepdd).equals("  ")) {
 						tital.setValue("fepdd", this.fepdd);
-					atlog.info("fepdd=[{}]",this.fepdd);
+					}
+					//20200806 for test
+					tital.setValue("fepdd", "05");
+					//----
+					atlog.info("fepdd=[{}]",new String(this.fepdd));
+					tital.setValue("acbrno", this.brws.substring(0, 3));
 					if (ifun == TXP.INQ) {
 						if (this.iCount == 0) {
 							amlog.info("[{}][{}][{}]:03中心存摺補登資料讀取中...", brws, pasname, this.account);
@@ -2528,7 +2533,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 										log.debug("{} {} {} {} {} {} AutoPrnCls : --change ", brws, catagory, account,
 												mt, mnostr, cMsg);
 									}
-									amlog.info("[{}][{}][{}]:52[{}{}]{}!", brws, pasname, this.account,mt,mnostr, cMsg);
+									amlog.info("[{}][{}][{}]:52[{}{}]{}！", brws, pasname, this.account,mt,mnostr, cMsg);
 
 								}
 								// E194 , 補登資料超過可印行數, 應至服務台換摺
@@ -2540,7 +2545,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 										log.debug("{} {} {} {} {} {} AutoPrnCls : --change ", brws, catagory, account,
 												mt, mnostr, cMsg);
 									}
-									amlog.info("[{}][{}][{}]:52[{}{}]{}!", brws, pasname, this.account,mt,mnostr, cMsg);
+									amlog.info("[{}][{}][{}]:52[{}{}]{}！", brws, pasname, this.account,mt,mnostr, cMsg);
 								} else {
 									SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000001");
 									if (SetSignal(!firstOpenConn, firstOpenConn, "0000000000", "0000000001")) {
@@ -2549,16 +2554,16 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 										log.debug("{} {} {} {} {} {} AutoPrnCls : --change ", brws, catagory, account,
 												mt, mnostr, cMsg);
 									}
-									amlog.info("[{}][{}][{}]:53[{}{}]{}!", brws, pasname, this.account,mt,mnostr, charcnv.BIG5UTF8str(cMsg));  //20200714 change 52 to 53
+									amlog.info("[{}][{}][{}]:53[{}{}]{}！", brws, pasname, this.account,mt,mnostr, charcnv.BIG5UTF8str(cMsg));  //20200714 change 52 to 53
 								}
 								if (ifun == 1) {
-									log.debug("[{}]:TxFlow : Send_Recv() -- INQ Data Failed ! msgid={}{}", brws, mt,
+									log.debug("[{}]:TxFlow : Send_Recv() -- INQ Data Failed ! msgid=[{}{}]", brws, mt,
 											mnostr);
-									atlog.info("INQ Data Failed ! msgid={}{}", mt,mnostr); //20200718 take out cMsg
+									atlog.info("INQ Data Failed ！ msgid=[{}{}]", mt,mnostr); //20200718 take out cMsg
 								} else {
-									log.debug("[{}]:TxFlow : Send_Recv() -- DEL Data Failed ! msgid={}{}", brws, mt,
+									log.debug("[{}]:TxFlow : Send_Recv() -- DEL Data Failed ! msgid=[{}{}", brws, mt,
 											mnostr);
-									atlog.info("DEL Data Failed ! msgid={}{}", mt,mnostr);
+									atlog.info("DEL Data Failed ！ msgid=[{}{}]", mt,mnostr);
 								}
 //								return (-2);
 								rtn = -2;
@@ -2577,7 +2582,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 									} else {
 										log.debug("{} {} {} AutoPrnCls : --change ", brws, catagory, account);
 									}
-									atlog.info("Failed ! iRtncd=[-1]");
+									atlog.info("Failed ！ iRtncd=[-1]");
 									rtn = -1;
 									break;
 								}
@@ -2983,6 +2988,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			if ((this.rpage = prt.ReadBarcode(!firstOpenConn, (short) 2)) > 0) {
 				log.debug("{} {} {} AutoPrnCls : --start telegram get rpage={} npage={}", brws, catagory, account,
 						this.rpage, this.npage);
+				atlog.info("MS_Check() -- (1)Insert Page=[{}]", rpage);  //20200806
 				if (npage == rpage) {
 					amlog.info("[{}][{}][{}]:02檢查存摺頁次正確...正確頁次={} 插入頁次={} 行次={}", brws, pasname, account, npage, rpage, nline);
 					if (SetSignal(firstOpenConn, !firstOpenConn, "0000000000", "0010000000")) {
@@ -2994,7 +3000,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 								account);
 					}
 				} else {
-					atlog.info("MS_Check() -- (1)Insert Page=[{}]", rpage);
+//					atlog.info("MS_Check() -- (1)Insert Page=[{}]", rpage);  mark for 20200806
 //					WMSRFormat(true, rpage);
 //					WMSRFormat(true, rpage);
 					if (SetSignal(firstOpenConn, firstOpenConn, "0000000000","0000100000")) {
@@ -3013,7 +3019,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			if (this.rpage < 0) {
 				if (this.rpage == -2) {
 					this.rpage = 0;
-					atlog.info("MS_Check() -- (1)Insert Page=[{}]", rpage);
+//					atlog.info("MS_Check() -- (1)Insert Page=[{}]", rpage);  mark 20200806
 					if (SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000100000")) {
 						this.curState = SETSIGAFTERCHKBARCODE;
 						log.debug("{} {} {} AutoPrnCls : --eject passbook set signal after check barcode page error!!",
@@ -3068,9 +3074,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		case EJECTAFTERPAGEERROR:
 			log.debug("{} {} {} :AutoPrnCls : process EJECTAFTERPAGEERROR", brws,catagory, account);
 			if (!this.passSNDANDRCVTLM)
-				atlog.info(" -- ACTNO or PAGE ... ERROR!");
+				atlog.info(" -- ACTNO or PAGE ... ERROR！");
 			else
-				atlog.info("after Send_Recv() -- ... ERROR!");
+				atlog.info("after Send_Recv() -- ... ERROR！");
 			if (prt.Eject(firstOpenConn))
 				resetPassBook();
 			else
@@ -3437,7 +3443,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			if (iEnd == 2)
 				iEnd = 0;
 			resetPassBook();
-			atlog.info("完成!!.");
+			atlog.info("完成！！.");
 			//20200718
 			lastCheck(before);
 			log.debug("after {}=>{} iEnd={} =====check prtcliFSM", before, this.curState, iEnd);

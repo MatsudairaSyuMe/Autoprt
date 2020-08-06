@@ -338,7 +338,7 @@ public class CS4625Impl implements Printer {
 			return -3;
 		try {
 			pc.sendBytes(buff);
-			atlog.info("[{}]-[{}]", buff.clone().length,new String(buff));
+			atlog.info("[{}]-[{}{}", buff.clone().length,new String(buff, "US-ASCII"), "]");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
