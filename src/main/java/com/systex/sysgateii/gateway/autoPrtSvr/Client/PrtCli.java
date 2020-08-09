@@ -2390,9 +2390,6 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					if (!new String(this.fepdd).equals("  ")) {
 						tital.setValue("fepdd", this.fepdd);
 					}
-					//20200806 for test
-					tital.setValue("fepdd", "05");
-					//----
 					atlog.info("fepdd=[{}]",new String(this.fepdd));
 					tital.setValue("acbrno", this.brws.substring(0, 3));
 					if (ifun == TXP.INQ) {
@@ -2814,6 +2811,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					prt.DetectPaper(firstOpenConn, 0);
 					//----
 				} else {*/
+
+
 					if (prt.DetectPaper(!firstOpenConn, 0)) {
 						this.curState = GETPASSBOOKSHOWSIG;
 						log.debug("{} {} {} AutoPrnCls : --start Show Signal", brws, catagory, account);
@@ -2936,6 +2935,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				tx_area.put("txseq", "");
 				tx_area.put("keepacc", "");
 				Arrays.fill(fepdd, (byte) ' ');
+				updatefepdd();
 				this.iEnd = 0;
 				this.dCount = "000";
 				this.iCount = Integer.parseInt(this.dCount);
@@ -3535,5 +3535,17 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			}
 		}
 //		log.debug("startTime={} now={} durationTime ={}", this.startTime, now, durationTime);
+	}
+	private void updatefepdd() {
+		try {
+			String tbsdy = jsel2ins.SELTBSDY("BISAP.TB_AUSVRPRM", "TBSDY", "SVRID", 1).trim();
+			log.debug("current tbsdy [{}]", tbsdy);
+			if (tbsdy != null && tbsdy.length() >= 7)
+				this.fepdd = tbsdy.substring(tbsdy.length() - 2).getBytes();
+		} catch (Exception e) {
+			e.printStackTrace();
+			log.error("update state table {} error:{}", PrnSvr.statustbname, e.getMessage());
+		}
+		return;
 	}
 }

@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 public class GwDao {
 	private static Logger log = LoggerFactory.getLogger(GwDao.class);
 	// test
-	private String selurl = "jdbc:db2://172.16.46.140:50000/BISDB";
+	private String selurl = "jdbc:db2://172.16.71.128:50000/BISDB";
 	private String seluser = "BIS_USER";
 	private String selpass = "bisuser";
 	// test
@@ -131,6 +131,28 @@ public class GwDao {
 		return row;
 	}
 
+	public String SELTBSDY(String fromTblName, String fieldn, String keyname, int keyvalue)
+			throws Exception {
+		String rtnVal = "";
+		if (fromTblName == null || fromTblName.trim().length() == 0 || fieldn == null || fieldn.trim().length() == 0
+				|| keyname == null || keyname.trim().length() == 0)
+			return rtnVal;
+		try {
+			java.sql.Statement stmt = selconn.createStatement();
+			rs = ((java.sql.Statement) stmt).executeQuery("SELECT " + fieldn + " FROM " + fromTblName + " where "
+					+ keyname + " = " + Integer.toString(keyvalue));
+			if (rs != null) {
+				if (rs.next()) {
+					rtnVal = Integer.toString(rs.getInt(fieldn));
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			log.error("error : {}", e.toString());
+		}
+		log.debug("return TBSDY=[{}]", rtnVal);
+		return rtnVal;
+	}
 	private PreparedStatement setValueps(PreparedStatement ps, String[] updvalary, boolean updinsert) throws Exception {
 		// updinsert true for update, false for insert
 		int type;
@@ -314,7 +336,7 @@ public class GwDao {
 	public static void main(String[] args) {
 		int total = 0;
 		GwDao jsel2ins = null;
-		String fromurl = "jdbc:db2://172.16.46.140:50000/BISDB";
+		String fromurl = "jdbc:db2://172.16.71.128:50000/BISDB";
 		String fromuser = "BIS_USER";
 		String frompass = "bisuser";
 
@@ -354,8 +376,10 @@ public class GwDao {
 			String keyValue = "9838901";
 
 			total = 0;
-			total = jsel2ins.UPSERT(fn, selField, updValue, keyName, keyValue);
-			System.out.println("total " + total + " records transferred");
+//			total = jsel2ins.UPSERT(fn, selField, updValue, keyName, keyValue);
+//			System.out.println("total " + total + " records transferred");
+			System.out.println("TBSDY= " + jsel2ins.SELTBSDY("BISAP.TB_AUSVRPRM", "TBSDY", "SVRID", 1));
+
 
 		} catch (SQLException se) {
 			// Handle errors for JDBC
