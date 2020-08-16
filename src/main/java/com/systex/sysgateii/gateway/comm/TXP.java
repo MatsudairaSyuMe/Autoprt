@@ -14,7 +14,10 @@ public class TXP {
 	public static final int DEL = 2;           // data function -- 2:DEL
 	public static final int PBTYPE = 1;        // AP type -- 1:PB
 	public static final int FCTYPE = 2;        // AP type -- 2:FC
-	public static final int GLTYPE = 3;        // AP type -- 3:GL 
+	public static final int GLTYPE = 3;        // AP type -- 3:GL
+	//20200810
+	public static final int C0099TYPE = 4;     // AP type -- 4:C0099
+	//----
 	public static final int SENDTHOST = 1;     //Send to Host
 	public static final int RECVFHOST = 2;     //Recv from Host
 	public static final int CONTROL_BUFFER_SIZE = 12;

@@ -1,6 +1,7 @@
 package com.systex.sysgateii.gateway.dao;
 
 import java.beans.Statement;
+import java.sql.Blob;
 import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.Date;
@@ -16,6 +17,7 @@ import java.util.Vector;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.systex.sysgateii.gateway.util.DataConvert;
 
 public class GwDao {
 	private static Logger log = LoggerFactory.getLogger(GwDao.class);
@@ -31,6 +33,13 @@ public class GwDao {
 	private ResultSet rs = null;
 	private boolean verbose = true;
 	private String sfn = "";
+	//20200815
+	private PreparedStatement tbsdytblpreparedStatement = null;
+	private Vector<String> tbsdytblcolumnNames = null;
+	private Vector<Integer> tbsdytblcolumnTypes = null;
+	private ResultSet tbsdytblrs = null;
+	private String tbsdysfn = "";
+	//----
 
 	/**
 	 * 
@@ -64,6 +73,7 @@ public class GwDao {
 		java.sql.Statement stmt = selconn.createStatement();
 		rs = ((java.sql.Statement) stmt)
 				.executeQuery("SELECT " + field + " FROM " + fromTblName + " where " + keyname + "=" + selkeyval);
+		log.debug("update value [{}]", updval);
 		String[] valary = updval.split(",");
 		for (int i = 0; i < valary.length; i++) {
 			int s = valary[i].indexOf('\'');
@@ -139,11 +149,12 @@ public class GwDao {
 			return rtnVal;
 		try {
 			java.sql.Statement stmt = selconn.createStatement();
-			rs = ((java.sql.Statement) stmt).executeQuery("SELECT " + fieldn + " FROM " + fromTblName + " where "
+			tbsdytblrs = ((java.sql.Statement) stmt).executeQuery("SELECT " + fieldn + " FROM " + fromTblName + " where "
 					+ keyname + " = " + Integer.toString(keyvalue));
-			if (rs != null) {
-				if (rs.next()) {
-					rtnVal = Integer.toString(rs.getInt(fieldn));
+			if (tbsdytblrs != null) {
+				if (tbsdytblrs.next()) {
+//					rtnVal = Integer.toString(tbsdytblrs.getInt(fieldn));
+					rtnVal = tbsdytblrs.getString(fieldn);
 				}
 			}
 		} catch (Exception e) {
@@ -153,6 +164,44 @@ public class GwDao {
 		log.debug("return TBSDY=[{}]", rtnVal);
 		return rtnVal;
 	}
+	//20200815
+	public String SELONEFLD(String fromTblName, String fieldn, String keyname, String keyvalue, boolean verbose)
+			throws Exception {
+		String rtnVal = "";
+		tbsdytblcolumnNames = new Vector<String>();
+		tbsdytblcolumnTypes = new Vector<Integer>();
+		if (fromTblName == null || fromTblName.trim().length() == 0 || fieldn == null || fieldn.trim().length() == 0
+				|| keyname == null || keyname.trim().length() == 0)
+			return rtnVal;
+		try {
+			java.sql.Statement stmt = selconn.createStatement();
+			tbsdytblrs = ((java.sql.Statement) stmt).executeQuery("SELECT " + fieldn + " FROM " + fromTblName + " where "
+					+ keyname + " = " + keyvalue);
+			int type = -1;
+			if (tbsdytblrs != null) {
+				ResultSetMetaData rsmd = tbsdytblrs.getMetaData();
+				int columnCount = 0;
+				while (columnCount < rsmd.getColumnCount()) {
+					columnCount++;
+					type = rsmd.getColumnType(columnCount);
+					if (verbose)
+						log.debug("ColumnName={} ColumnTypeName={} ", rsmd.getColumnName(columnCount), rsmd.getColumnTypeName(columnCount) );
+					tbsdytblcolumnNames.add(rsmd.getColumnName(columnCount));
+					tbsdytblcolumnTypes.add(type);
+				}
+				if (tbsdytblrs.next()) {
+					log.debug("-->[{}]",gettbsdytblValue(tbsdytblrs, fieldn, verbose));
+					rtnVal = tbsdytblrs.getString(fieldn);
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			log.error("error : {}", e.toString());
+		}
+		log.debug("return SELONEFLD=[{}]", rtnVal);
+		return rtnVal;
+	}
+	//----
 	private PreparedStatement setValueps(PreparedStatement ps, String[] updvalary, boolean updinsert) throws Exception {
 		// updinsert true for update, false for insert
 		int type;
@@ -230,6 +279,80 @@ public class GwDao {
 		if (verbose)
 			System.out.println();
 		return ps;
+	}
+	private String gettbsdytblValue(ResultSet rs, String obj, boolean verbose) throws Exception {
+		int type;
+		String rtn = "";
+		for (int j = 0; j < tbsdytblcolumnNames.size(); j++) {
+			if (!tbsdytblcolumnNames.get(j).endsWith(obj))
+				continue;
+			type = tbsdytblcolumnTypes.get(j);
+			if (verbose)
+				log.debug("\t" + obj + ":");
+			switch (type) {
+			case Types.VARCHAR:
+			case Types.CHAR:
+				if (verbose)
+					log.debug("rs.getString");
+				rtn = rs.getString(obj);
+				break;
+			case Types.DECIMAL:
+				if (verbose)
+					log.debug("rs.getDouble");
+				rtn = Double.toString(rs.getDouble(obj));
+				break;
+			case Types.TIMESTAMP:
+				if (verbose)
+					log.debug("rs.getTimestamp");
+				rtn = rs.getTimestamp(obj).toString();
+				break;
+			case Types.BIGINT:
+				if (verbose)
+					log.debug("rs.getLong");
+				rtn = Long.toString(rs.getLong(obj));
+				break;
+			case Types.BLOB:
+				if (verbose)
+					log.debug("rs.getBlob");
+				Blob blob = rs.getBlob(obj);
+				int blobLength = (int) blob.length();
+				byte[] blobAsBytes = blob.getBytes(1, blobLength);
+				rtn  = DataConvert.bytesToHex(blobAsBytes);
+				break;
+			case Types.CLOB:
+				if (verbose)
+					log.debug("rs.getClob");
+				Clob clob = rs.getClob(obj);
+				rtn = clob.toString();
+				break;
+			case Types.DATE:
+				if (verbose)
+					log.debug("rs.getDate");
+				rtn = rs.getString(obj);
+				break;
+			case Types.DOUBLE:
+				if (verbose)
+					log.debug("rs.getDouble");
+				rtn = Double.toString(rs.getDouble(obj));
+				break;
+			case Types.INTEGER:
+				if (verbose)
+					log.debug("rs.getInt");
+				rtn = Integer.toString(rs.getInt(obj));
+				break;
+			case Types.NVARCHAR:
+				if (verbose)
+					log.debug("rs.getNString(idx, v)");
+				rtn = rs.getNString(obj);
+				break;
+			default:
+				log.error("undevelop type:{} change to string", type);
+				rtn = rs.getString(obj);
+				break;
+			}
+			break;
+		}
+		return rtn;
 	}
 
 	public void CloseConnect() throws Exception {
@@ -378,7 +501,8 @@ public class GwDao {
 			total = 0;
 //			total = jsel2ins.UPSERT(fn, selField, updValue, keyName, keyValue);
 //			System.out.println("total " + total + " records transferred");
-			System.out.println("TBSDY= " + jsel2ins.SELTBSDY("BISAP.TB_AUSVRPRM", "TBSDY", "SVRID", 1));
+//			System.out.println("TBSDY= " + jsel2ins.SELTBSDY("BISAP.TB_AUSVRPRM", "TBSDY", "SVRID", 1));
+			System.out.println("TBSDY= " + jsel2ins.SELONEFLD("BISAP.TB_AUSVRPRM", "SVRID,TBSDY", "SVRID", "1", false));
 
 
 		} catch (SQLException se) {

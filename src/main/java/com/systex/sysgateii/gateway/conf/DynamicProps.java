@@ -72,6 +72,9 @@ public class DynamicProps {
 								log.info("ConfProc info! {}, {}", entry.getKey(), entry.getValue());
 								if (entry.getKey().equals("system.ip") || entry.getKey().equals("system.port")
 										|| entry.getKey().equals("system.logpath")
+										//20200815
+										|| entry.getKey().equals("system.svrid")
+										//----
 										|| entry.getKey().equals("svrsubport.svrip")
 										|| entry.getKey().equals("svrsubport.svrport")
 										|| entry.getKey().equals("svrsubport.localip")
@@ -87,6 +90,11 @@ public class DynamicProps {
 										|| entry.getKey().equals("system.statustb[@name]")
 										|| entry.getKey().equals("system.statustb[@mkey]")
 										|| entry.getKey().equals("system.statustb[@fields]")
+										//----
+										//20200815
+										|| entry.getKey().equals("system.svrtbsdytb[@name]")
+										|| entry.getKey().equals("system.svrtbsdytb[@mkey]")
+										|| entry.getKey().equals("system.svrtbsdytb[@fields]")
 										//----
 										|| entry.getKey().equals("boards.board.ip")) {
 									conHashMap.put(entry.getKey().toString(), entry.getValue().toString());
@@ -187,6 +195,9 @@ public class DynamicProps {
 						entry.getValue().toString().length());
 				if (entry.getKey().equals("system.ip") || entry.getKey().equals("system.port")
 						|| entry.getKey().equals("system.logpath")
+						//20200815
+						|| entry.getKey().equals("system.svrid")
+						//----
 						|| entry.getKey().equals("svrsubport.svrip") || entry.getKey().equals("svrsubport.svrport")
 						|| entry.getKey().equals("svrsubport.localip") || entry.getKey().equals("svrsubport.localport")
 						|| entry.getKey().equals("svrsubport.recvtimeout")
@@ -198,6 +209,11 @@ public class DynamicProps {
 						|| entry.getKey().equals("system.statustb[@name]")
 						|| entry.getKey().equals("system.statustb[@mkey]")
 						|| entry.getKey().equals("system.statustb[@fields]")
+						//----
+						//20200815
+						|| entry.getKey().equals("system.svrtbsdytb[@name]")
+						|| entry.getKey().equals("system.svrtbsdytb[@mkey]")
+						|| entry.getKey().equals("system.svrtbsdytb[@fields]")
 						//----
 						|| entry.getKey().equals("boards.board.brno") || entry.getKey().equals("boards.board.ip")) {
 					conHashMap.put(entry.getKey().toString(), entry.getValue().toString());

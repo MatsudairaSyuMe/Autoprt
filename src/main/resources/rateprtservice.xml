@@ -53,11 +53,13 @@
  <!--    <dev type="AUTO52" brws="9838903" ip="10.24.1.94:4001=10.24.1.230:3301" autoturnpage="false"/>-->
 	</validDevice>
 	<system>
+		<svrid>1</svrid>
 		<ip>*</ip>
 		<port>0</port>
 		<logpath>/home/scotthong/tmp</logpath>
 		<db url="jdbc:db2://172.16.71.128:50000/BISDB" user="BIS_USER" pass="bisuser"/>
 		<statustb name="BISAP.TB_AUDEVSTS" mkey="BRWS" fields="BRWS,IP,PORT,SYSIP,SYSPORT,ACTPAS,DEVTPE,CURSTUS,VERSION,CREATOR,MODIFIER"/>
+		<svrtbsdytb name="BISAP.TB_AUSVRPRM" mkey="SVRID" fields="SVRID,TBSDY"/>
 	</system>
 	<svrsubport>
 <!-- 	<svrip>10.24.1.230:15000=10.24.1.230:15102,10.24.1.230:15000=10.24.1.230:15103</svrip>-->

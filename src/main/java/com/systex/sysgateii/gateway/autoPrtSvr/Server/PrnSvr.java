@@ -49,6 +49,12 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 	public static String statustbname = "";
 	public static String statustbmkey = "";
 	public static String statustbfields = "";
+	//20200815
+	public static String svrid = "";
+	public static String svrtbsdytbname = "";
+	public static String svrtbsdytbmkey = "";
+	public static String svrtbsdytbfields = "";
+	//----
 
 
 	static PrnSvr server;
@@ -131,8 +137,16 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 		statustbname = cfg.getConHashMap().get("system.statustb[@name]");
 		statustbmkey = cfg.getConHashMap().get("system.statustb[@mkey]");
 		statustbfields = cfg.getConHashMap().get("system.statustb[@fields]");
-		if (dburl != null && dburl.trim().length() > 0)
-			log.debug("will use db url:[{}] user name:[{}] update status table [{}] main key[{}] fields [{}]", dburl, dbuser, statustbname, statustbmkey, statustbfields);
+		//20200815
+		svrid = cfg.getConHashMap().get("system.svrid");
+		svrtbsdytbname = cfg.getConHashMap().get("system.svrtbsdytb[@name]");
+		svrtbsdytbmkey = cfg.getConHashMap().get("system.svrtbsdytb[@mkey]");
+		svrtbsdytbfields = cfg.getConHashMap().get("system.svrtbsdytb[@fields]");
+		//----
+		if (dburl != null && dburl.trim().length() > 0) {
+			log.debug("will use db url:[{}] user name:[{}] update status table [{}] main key [{}] fields [{}]", dburl, dbuser, statustbname, statustbmkey, statustbfields);
+			log.debug("check tbsdy from table [{}] main key [{}]=[{}] fields [{}]", svrtbsdytbname, svrtbsdytbmkey, svrid, svrtbsdytbfields);
+		}
 		log.debug("receive timeout is ={} mili-seconds", setResponseTimeout);
 		MDC.put("WSNO", "0000");
 		MDC.put("PID", ManagementFactory.getRuntimeMXBean().getName().split("@")[0]);

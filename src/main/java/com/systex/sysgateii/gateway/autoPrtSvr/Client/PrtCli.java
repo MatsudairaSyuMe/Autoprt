@@ -1899,7 +1899,25 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 
 					rtn = tital.mkTITAmsg(tital.getTitalabel(), p1885text.getP1885Titatext());
 					log.debug("P1885 tita [{}]", new String(rtn));
+				//20200810
+				} else if (ifig == TXP.C0099TYPE) {
+//					memcpy(TITA_BASIC.aptype,"C00",sizeof(TITA_BASIC.aptype)+sizeof(TITA_BASIC.apcode));
+//					memcpy(TITA_BASIC.stxno,"99",sizeof(TITA_BASIC.stxno));
+//					memcpy(TITA_BASIC.ptype,"0",sizeof(TITA_BASIC.ptype));
+//					memcpy(TITA_BASIC.dscpt,"S99  ",sizeof(TITA_BASIC.dscpt));
+//					memset(TITA_BASIC.actno,'0',sizeof(TITA_BASIC.actno));
+//					memcpy(&TITA_TEXT,"        ",8);
+					tital.setValue("aptype", "C00");
+					tital.setValue("stxno", "99");
+					tital.setValue("ptype", "0");
+					tital.setValue("dscpt", "S99  ");
+					tital.setValueLtoRfill("actno", "0", (byte) '0');
+					tital.setValue("dscpt", "S99  ");
+					String tita_text = "        ";
+					rtn = tital.mkTITAmsg(tital.getTitalabel(), tita_text.getBytes());
+					log.debug("TxFlow : DataINQ() -- rtn=[{}]", new String(rtn));
 				}
+				//----
 			} else { //iVal == RECVFHOST
 				//***** Receive P001 TOTA and check error *****//
 				if (ifig == TXP.PBTYPE)
@@ -2080,7 +2098,25 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					tx_area.put("pageno", this.cpage);
 					rtn = tital.mkTITAmsg(tital.getTitalabel(), p0880text.getP0880Titatext());
 					log.debug("TxFlow : DataINQ() -- rtn={}", new String(rtn));
+				//20200810
+				} else if (ifig == TXP.C0099TYPE) {
+//					memcpy(TITA_BASIC.aptype,"C00",sizeof(TITA_BASIC.aptype)+sizeof(TITA_BASIC.apcode));
+//					memcpy(TITA_BASIC.stxno,"99",sizeof(TITA_BASIC.stxno));
+//					memcpy(TITA_BASIC.ptype,"0",sizeof(TITA_BASIC.ptype));
+//					memcpy(TITA_BASIC.dscpt,"S99  ",sizeof(TITA_BASIC.dscpt));
+//					memset(TITA_BASIC.actno,'0',sizeof(TITA_BASIC.actno));
+//					memcpy(&TITA_TEXT,"        ",8);
+					tital.setValue("aptype", "C00");
+					tital.setValue("stxno", "99");
+					tital.setValue("ptype", "0");
+					tital.setValue("dscpt", "S99  ");
+					tital.setValueLtoRfill("actno", "0", (byte) '0');
+					tital.setValue("dscpt", "S99  ");
+					String tita_text = "        ";
+					rtn = tital.mkTITAmsg(tital.getTitalabel(), tita_text.getBytes());
+					log.debug("TxFlow : DataINQ() -- rtn=[{}]", new String(rtn));
 				}
+				//----
 			} else { //iVal == RECVFHOST
 				if (iFig == TXP.PBTYPE) {
 					rtn = new byte[0];
@@ -2489,6 +2525,27 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 							String mnostr = new String(total.getValue("msgno"));
 							atlog.info(" -- [{}] TOTA_TEXT=[{}]", mt + mnostr, new String(totatext));
 							//----
+							//20200810
+							if ((mt + mnostr).trim().equalsIgnoreCase("C000")) {
+//								memcpy(fepdd,tota_c0099.tbsdy+6,2);
+//								ODSTrace(NULL,"set fepdd=[%2.2s]",fepdd);
+//								"2020081014070020200810"
+								log.debug("!!!!! copy fepdd");
+								if (totatext.length >= 22) {
+									System.arraycopy(totatext, 20, this.fepdd, 0, 2);
+									atlog.info("set fepdd=[{}]", new String(this.fepdd));
+									String updTBSDY = "1,'" + new String(totatext, 14, 8) + "',";
+									int row = jsel2ins.UPSERT("BISAP.TB_AUSVRPRM", "SVRID, TBSDY", updTBSDY, "SVRID", "1");
+									log.debug("total {} records update [{}]", row, updTBSDY);
+								} else
+									log.error("!!!!! totatext len={} too short !!!", totatext.length);
+								this.curState = SNDANDRCVTLM;
+								this.Send_Recv_DATAInq = true;
+								this.passSNDANDRCVTLM = true;
+								this.alreadySendTelegram = false;
+								continue;
+							}
+							//----
 							if (mt.equals("E") || mt.equals("A") || mt.equals("X")) {
 								//20200716 modify get message from message table
 								if (mt.equals("E"))
@@ -2504,21 +2561,36 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 										totatext[i] = 0x20;
 //								cMsg = "-" + new String(totatext).trim();
 //								cMsg = "-" + charcnv.BIG5bytesUTF8str(totatext).trim();
-								//20200716 modify for getmessage from message table
-								cMsg = charcnv.BIG5bytesUTF8str(totatext).trim();
-								if (cMsg != null && cMsg.length() > 0)
-									cMsg = m_Msg.m_Message.get(msgid) + "－" + cMsg;
+								//20200716 modify for get message from message table
+								//20200809 modify for check totatext length > 0
+								if (totatext.length > 0)
+								    cMsg = charcnv.BIG5bytesUTF8str(totatext).trim();
 								else
-									cMsg = m_Msg.m_Message.get(msgid);
-								log.debug("cMsg=[{}]", cMsg);
+									cMsg = "";
 								int mno = Integer.parseInt(new String(total.getValue("msgno")));
 								// 20100913 , E622:本次日不符 send C0099
 								if (mno == 622) {
 //									return 622;
 									amlog.info("[{}][{}][{}]:52[{}{}]-{}！", brws, pasname,this.account, mt,mnostr, cMsg);
+									//20200810
+//									this.curState = SNDANDRCVTLM;
+									this.Send_Recv_DATAInq = true;
+									this.passSNDANDRCVTLM = true;
+									this.alreadySendTelegram = false;
+									resultmsg = DataINQ(TXP.SENDTHOST, TXP.C0099TYPE, this.dCount);
+									//not yet send telegram send firstly
+									alreadySendTelegram = dispatcher.sendTelegram(resultmsg);
+									this.curState = RECVTLM;
+									//20200810
 									rtn = 622;
-									break;
+//									break;
+									continue;
 								}
+								if (cMsg != null && cMsg.length() > 0)
+									cMsg = m_Msg.m_Message.get(msgid) + "－" + cMsg;
+								else
+									cMsg = m_Msg.m_Message.get(msgid);
+								log.debug("cMsg=[{}]", cMsg);
 								//20200428 add for receive TOTA ERROR message
 								this.curState = EJECTAFTERPAGEERROR;
 								// "A665" & "X665" 無補登摺資料、"A104" 該戶無未登摺資料
@@ -3538,7 +3610,14 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	}
 	private void updatefepdd() {
 		try {
-			String tbsdy = jsel2ins.SELTBSDY("BISAP.TB_AUSVRPRM", "TBSDY", "SVRID", 1).trim();
+//			String tbsdy = jsel2ins.SELTBSDY("BISAP.TB_AUSVRPRM", "TBSDY", "SVRID", 1).trim();
+			String selfld = "";
+			if (PrnSvr.svrtbsdytbfields.indexOf(',') > -1) {
+				String[] fldary = PrnSvr.svrtbsdytbfields.split(",");
+				selfld = fldary[1];
+			} else
+				selfld = PrnSvr.svrtbsdytbfields;
+			String tbsdy = jsel2ins.SELONEFLD(PrnSvr.svrtbsdytbname, selfld, PrnSvr.svrtbsdytbmkey, PrnSvr.svrid, true).trim();
 			log.debug("current tbsdy [{}]", tbsdy);
 			if (tbsdy != null && tbsdy.length() >= 7)
 				this.fepdd = tbsdy.substring(tbsdy.length() - 2).getBytes();
