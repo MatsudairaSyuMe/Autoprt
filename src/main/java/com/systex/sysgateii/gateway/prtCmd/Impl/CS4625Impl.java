@@ -879,7 +879,9 @@ public class CS4625Impl implements Printer {
 		}
 		if (this.curState == MS_Read) {
 			this.curState = MS_ReadRecvData;
-			Sleep(1500);
+// 202090819 test for speed			Sleep(1500);
+			Sleep(200);
+			//----
 			this.iCnt = 0;
 			this.curmsdata = null;
 			data = Rcv_Data();

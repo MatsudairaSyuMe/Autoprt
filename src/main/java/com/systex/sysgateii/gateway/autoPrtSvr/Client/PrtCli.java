@@ -357,8 +357,12 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
 				this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDINACT);
 		try {
+			if (jsel2ins == null)
+				jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
 			int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, this.brws);
 			log.debug("total {} records update  status [{}]", row, Constants.STSUSEDINACT);
+			jsel2ins.CloseConnect();
+			jsel2ins = null;
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -520,9 +524,12 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		aslog.info(String.format("CON  %s[%04d]:", this.curSockNm, 0));
 		String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
 				this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDACT);
+		if (jsel2ins == null)
+			jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
 		int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, this.brws);
 		log.debug("total {} records update status [{}]", row, Constants.STSUSEDACT);
-
+		jsel2ins.CloseConnect();
+		jsel2ins =  null;
 		prtcliFSM(!firstOpenConn);
 		this.seqNoFile = new File("SEQNO", "SEQNO_" + this.brws);
 		log.debug("seqNoFile local=" + this.seqNoFile.getAbsolutePath());
@@ -553,9 +560,12 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		aslog.info(String.format("DIS  %s[%04d]:", this.curSockNm, 0));
 		String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
 				this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDINACT);
+		if (jsel2ins == null)
+			jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
 		int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, this.brws);
 		log.debug("total {} records update  status [{}]", row, Constants.STSUSEDINACT);
-
+		jsel2ins.CloseConnect();
+		jsel2ins = null;
 		this.curSockNm = "";
 		this.clientMessageBuf.clear();
 		prtcliFSM(firstOpenConn);
@@ -624,8 +634,12 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
 				this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDINACT);
 		try {
+			if (jsel2ins == null)
+				jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
 			int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, this.brws);
 			log.debug("total {} records update  status [{}]", row, Constants.STSUSEDINACT);
+			jsel2ins.CloseConnect();
+			jsel2ins = null;
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -2523,7 +2537,13 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 							String cMsg = "";
 							//20200523
 							String mnostr = new String(total.getValue("msgno"));
-							atlog.info(" -- [{}] TOTA_TEXT=[{}]", mt + mnostr, new String(totatext));
+							//20200819 change TOTA_TEXT to UTF-8 messge
+//							atlog.info(" -- [{}] TOTA_TEXT=[{}]", mt + mnostr, new String(totatext));
+							if (totatext.length > 1)
+								atlog.info(" -- [{}] TOTA_TEXT=[{}]", mt + mnostr, charcnv.BIG5bytesUTF8str(totatext));
+							else
+								atlog.info(" -- [{}] TOTA_TEXT=[{}]", mt + mnostr, new String(totatext));
+							//----
 							//----
 							//20200810
 							if ((mt + mnostr).trim().equalsIgnoreCase("C000")) {
@@ -2534,9 +2554,13 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 								if (totatext.length >= 22) {
 									System.arraycopy(totatext, 20, this.fepdd, 0, 2);
 									atlog.info("set fepdd=[{}]", new String(this.fepdd));
-									String updTBSDY = "1,'" + new String(totatext, 14, 8) + "',";
-									int row = jsel2ins.UPSERT("BISAP.TB_AUSVRPRM", "SVRID, TBSDY", updTBSDY, "SVRID", "1");
+									String updTBSDY = PrnSvr.svrid + ",'" + new String(totatext, 14, 8) + "',";
+									if (jsel2ins == null)
+										jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
+									int row = jsel2ins.UPSERT(PrnSvr.svrtbsdytbname, PrnSvr.svrtbsdytbfields, updTBSDY, PrnSvr.svrtbsdytbmkey, PrnSvr.svrid);
 									log.debug("total {} records update [{}]", row, updTBSDY);
+									jsel2ins.CloseConnect();
+									jsel2ins = null;
 								} else
 									log.error("!!!!! totatext len={} too short !!!", totatext.length);
 								this.curState = SNDANDRCVTLM;
@@ -2568,10 +2592,17 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 								else
 									cMsg = "";
 								int mno = Integer.parseInt(new String(total.getValue("msgno")));
+								//20200819 get A/E 622 message
+								if (cMsg != null && cMsg.length() > 0)
+									cMsg = m_Msg.m_Message.get(msgid) + "－" + cMsg;
+								else
+									cMsg = m_Msg.m_Message.get(msgid);
+								log.debug("cMsg=[{}]", cMsg);
+								//---
 								// 20100913 , E622:本次日不符 send C0099
 								if (mno == 622) {
 //									return 622;
-									amlog.info("[{}][{}][{}]:52[{}{}]-{}！", brws, pasname,this.account, mt,mnostr, cMsg);
+									amlog.info("[{}][{}][{}]:52[{}{}]{}！", brws, pasname,this.account, mt,mnostr, cMsg);
 									//20200810
 //									this.curState = SNDANDRCVTLM;
 									this.Send_Recv_DATAInq = true;
@@ -2586,11 +2617,6 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 //									break;
 									continue;
 								}
-								if (cMsg != null && cMsg.length() > 0)
-									cMsg = m_Msg.m_Message.get(msgid) + "－" + cMsg;
-								else
-									cMsg = m_Msg.m_Message.get(msgid);
-								log.debug("cMsg=[{}]", cMsg);
 								//20200428 add for receive TOTA ERROR message
 								this.curState = EJECTAFTERPAGEERROR;
 								// "A665" & "X665" 無補登摺資料、"A104" 該戶無未登摺資料
@@ -2858,8 +2884,12 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
 						this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDACT);
 				try {
+					if (jsel2ins == null)
+						jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
 					int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, this.brws);
 					log.debug("total {} records update status [{}]", row, Constants.STSUSEDACT);
+					jsel2ins.CloseConnect();
+					jsel2ins = null;
 				} catch (Exception e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -2894,8 +2924,12 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 							String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
 									this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDACT);
 							try {
+								if (jsel2ins == null)
+									jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
 								int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, this.brws);
 								log.debug("total {} records update status [{}]", row, Constants.STSUSEDACT);
+								jsel2ins.CloseConnect();
+								jsel2ins = null;
 							} catch (Exception e) {
 								// TODO Auto-generated catch block
 								e.printStackTrace();
@@ -3617,13 +3651,23 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				selfld = fldary[1];
 			} else
 				selfld = PrnSvr.svrtbsdytbfields;
+			if (jsel2ins == null)
+				jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
 			String tbsdy = jsel2ins.SELONEFLD(PrnSvr.svrtbsdytbname, selfld, PrnSvr.svrtbsdytbmkey, PrnSvr.svrid, true).trim();
 			log.debug("current tbsdy [{}]", tbsdy);
 			if (tbsdy != null && tbsdy.length() >= 7)
 				this.fepdd = tbsdy.substring(tbsdy.length() - 2).getBytes();
 		} catch (Exception e) {
 			e.printStackTrace();
-			log.error("update state table {} error:{}", PrnSvr.statustbname, e.getMessage());
+			log.error("update state table {} error:{}", PrnSvr.svrtbsdytbname, e.getMessage());
+		} finally {
+			try {
+			jsel2ins.CloseConnect();
+			} catch (Exception e) {
+				e.printStackTrace();
+				log.error("close connect to table {} error:{}", PrnSvr.svrtbsdytbname, e.getMessage());
+			}
+			jsel2ins = null;
 		}
 		return;
 	}

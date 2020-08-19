@@ -56,9 +56,9 @@ public class GwDao {
 		this.selurl = selurl;
 		this.seluser = seluser;
 		this.selpass = selpass;
-		log.debug("Connecting to a selected database...");
+//		log.debug("Connecting to a selected database...");
 		selconn = getDB2Connection(selurl, seluser, selpass);
-		log.debug("Connected selected database successfully...");
+//		log.debug("Connected selected database successfully...");
 		this.verbose = v;
 	}
 
@@ -70,7 +70,7 @@ public class GwDao {
 		if (fromTblName == null || fromTblName.trim().length() == 0)
 			throw new Exception("given table name error =>" + fromTblName);
 		log.debug(String.format("Select from table %s... where %s=%s", fromTblName, keyname, selkeyval));
-		java.sql.Statement stmt = selconn.createStatement();
+		java.sql.Statement stmt = selconn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE, ResultSet.CLOSE_CURSORS_AT_COMMIT);
 		rs = ((java.sql.Statement) stmt)
 				.executeQuery("SELECT " + field + " FROM " + fromTblName + " where " + keyname + "=" + selkeyval);
 		log.debug("update value [{}]", updval);
@@ -174,7 +174,7 @@ public class GwDao {
 				|| keyname == null || keyname.trim().length() == 0)
 			return rtnVal;
 		try {
-			java.sql.Statement stmt = selconn.createStatement();
+			java.sql.Statement stmt = selconn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE, ResultSet.CLOSE_CURSORS_AT_COMMIT);
 			tbsdytblrs = ((java.sql.Statement) stmt).executeQuery("SELECT " + fieldn + " FROM " + fromTblName + " where "
 					+ keyname + " = " + keyvalue);
 			int type = -1;
@@ -491,7 +491,7 @@ public class GwDao {
 
 		try {
 
-			jsel2ins = new GwDao(fromurl, fromuser, frompass, verbose);
+			jsel2ins = null;
 
 			String selField = "BRWS,IP,PORT,SYSIP,SYSPORT,ACTPAS,DEVTPE,CURSTUS,VERSION,CREATOR,MODIFIER";
 			String updValue = "'9838901',10.24.1.230,'4002','10.24.1.230','3301','0','3','0','1','SYSTEM',''";
@@ -499,12 +499,22 @@ public class GwDao {
 			String keyValue = "9838901";
 
 			total = 0;
-//			total = jsel2ins.UPSERT(fn, selField, updValue, keyName, keyValue);
+			while (true) {
+				if (jsel2ins == null)
+					jsel2ins = new GwDao(fromurl, fromuser, frompass, verbose);
+				total = jsel2ins.UPSERT(fn, selField, updValue, keyName, keyValue);
+				jsel2ins.CloseConnect();
+				jsel2ins = null;
 //			System.out.println("total " + total + " records transferred");
 //			System.out.println("TBSDY= " + jsel2ins.SELTBSDY("BISAP.TB_AUSVRPRM", "TBSDY", "SVRID", 1));
-			System.out.println("TBSDY= " + jsel2ins.SELONEFLD("BISAP.TB_AUSVRPRM", "SVRID,TBSDY", "SVRID", "1", false));
-
-
+//			System.out.println("TBSDY= " + jsel2ins.SELONEFLD("BISAP.TB_AUSVRPRM", "SVRID,TBSDY", "SVRID", "1", false));
+				if (jsel2ins == null)
+					jsel2ins = new GwDao(fromurl, fromuser, frompass, verbose);
+				System.out.println("TBSDY= " + jsel2ins.SELONEFLD("BISAP.TB_AUSVRPRM", "TBSDY", "SVRID", "1", false));
+				jsel2ins.CloseConnect();
+				jsel2ins = null;
+				Thread.sleep(2 * 1000);
+			}
 		} catch (SQLException se) {
 			// Handle errors for JDBC
 			se.printStackTrace();
