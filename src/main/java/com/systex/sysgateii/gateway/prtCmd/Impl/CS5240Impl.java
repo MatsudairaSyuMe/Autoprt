@@ -873,7 +873,6 @@ public class CS5240Impl implements Printer {
 		if (this.curState == MS_Read) {
 			this.curState = MS_ReadRecvData;
 // 202090819 test for speed			Sleep(1500);
-			Sleep(200);
 			//----
 			this.iCnt = 0;
 			this.curmsdata = null;
@@ -1894,7 +1893,7 @@ public class CS5240Impl implements Printer {
 		}
 		if (this.curState == ReadBarcode_START_2) {
 			this.curState = ReadBarcodeRecvData;
-			Sleep(1500);
+//20200819 speed up			Sleep(1500);
 			this.iCnt = 0;
 			this.curbarcodedata = null;
 			data = Rcv_Data();
