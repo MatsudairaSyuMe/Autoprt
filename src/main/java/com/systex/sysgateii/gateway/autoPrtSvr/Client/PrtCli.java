@@ -493,7 +493,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			@Override
 			public void initChannel(SocketChannel ch) throws Exception {
 				ch.pipeline().addLast("log", new LoggingHandler(PrtCli.class, LogLevel.INFO));
-				ch.pipeline().addLast(new IdleStateHandler(500, 0, 0, TimeUnit.MILLISECONDS));
+				ch.pipeline().addLast(new IdleStateHandler(200, 0, 0, TimeUnit.MILLISECONDS));
 				ch.pipeline().addLast(getHandler("PrtCli"));
 			}
 		});
@@ -1079,11 +1079,19 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 						dTxamt *= -1.0;
 //					NumberFormat format =  new DecimalFormat("#####,###,##0.00        ");
 //					pbpr_crdblog = pbpr_crdblog + String.format("%25s", format.format(dTxamt));
+					/* 20200820 adjust print position
 					pbpr_crdb = pbpr_crdb + String.format("%18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "       ");
 					
 					pbpr_crdbT = String.format("%18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "       ");
 					
 					pbpr_crdblog = pbpr_crdblog + String.format("%18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "       ");
+					*/
+					pbpr_crdb = pbpr_crdb + String.format("%18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "        ");
+					
+					pbpr_crdbT = String.format("%18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "        ");
+					
+					pbpr_crdblog = pbpr_crdblog + String.format("%18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "        ");
+					//----
 				} else {
 					//收入
 					String samtbuf = "";
@@ -1094,11 +1102,19 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 //					NumberFormat format =  new DecimalFormat("#####,###,##0.00   ");
 //					pbpr_crdb = pbpr_crdb + String.format("%19s", format.format(dTxamt));
 //					pbpr_crdblog = pbpr_crdblog + String.format("%19s", format.format(dTxamt));
+					/* 20200820 adjust print position
 					pbpr_crdb = pbpr_crdb + String.format("%18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "  ");
 
 					pbpr_crdbT = String.format("%18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "  ");
 
 					pbpr_crdblog = pbpr_crdblog + String.format("%18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "  ");
+					*/
+					pbpr_crdb = pbpr_crdb + String.format("                 %18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT));
+
+					pbpr_crdbT = String.format("                 %18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT));
+
+					pbpr_crdblog = pbpr_crdblog + String.format("                 %18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT));
+					//----
 				}
 				pr_datalog = pr_data;
 				pbpr_crdb = String.format("%35s", pbpr_crdb);
@@ -1127,11 +1143,11 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				byte[] nl = new byte[2];
 				nl[0] = (byte)0x0d;
 				nl[1] = (byte)0x0a;
-				pr_data = pr_data + pbpr_balance + new String(nl);
+				pr_data = pr_data + " " + pbpr_balance + new String(nl);
 				
-				pbpr_crdbT = pbpr_crdbT + pbpr_balance + new String(nl);
+				pbpr_crdbT = pbpr_crdbT + " " +  pbpr_balance + new String(nl);
 				
-				pr_datalog = pr_datalog + pbpr_balance;
+				pr_datalog = pr_datalog + " " + pbpr_balance;
 				log.debug("pbpr_date=[{}] pbpr_wsno=[{}] pbpr_dscpt=[{}] pbpr_crdb=[{}] pbpr_balance=[{}] pr_data=[{}] pbpr_crdbT=[{}]", pbpr_date, pbpr_wsno, pbpr_dscpt, pbpr_crdb, pbpr_balance, pr_data, pbpr_crdbT);
 				log.debug("pr_datalog=[{}]", pr_datalog);
 				//Print Data
@@ -1392,8 +1408,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			for (int i = 0; i < gl_arr.size(); i++) {
 				//空格(1)+日期
 				pr_data = "";
-				pbpr_date = new String(p0880DataFormat.getTotaTextValueSrc("txday", gl_arr.get(i)));
-				pr_data = pbpr_date;
+				pbpr_date = pr_data + new String(p0880DataFormat.getTotaTextValueSrc("txday", gl_arr.get(i)));
+				pr_data = pr_data + pbpr_date;
 
 				//空格(2)+櫃台機編號
 				pr_data = pr_data + " " + new String(p0880DataFormat.getTotaTextValueSrc("kinbr", gl_arr.get(i)))
@@ -1403,13 +1419,14 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				dsptb = FilterBig5(dsptb);
 
 				//空格(1)+摘要
-				pbpr_crdbT = String.format("%11s", " "); // " " + 摘要 template(11 bytes)
+				//20200821 摘要 10
+				pbpr_crdbT = String.format("%10s", " "); // " " + 摘要 template(11 bytes)
 				pr_data = pr_data + " " + String.format("%-10s", new String(dsptb, "BIG5"));
 
 				//空格(1)+幣別(NT/US)(2)+單價(7)
 				//單價(4.2)
-				pbpr_crdbT = pbpr_crdbT + " " + new String(p0880DataFormat.getTotaTextValueSrc("curcd", gl_arr.get(i)));
-				pr_data = pr_data + " " + new String(p0880DataFormat.getTotaTextValueSrc("curcd", gl_arr.get(i)));
+				pbpr_crdbT = pbpr_crdbT + "  " + new String(p0880DataFormat.getTotaTextValueSrc("curcd", gl_arr.get(i)));
+				pr_data = pr_data + "  " + new String(p0880DataFormat.getTotaTextValueSrc("curcd", gl_arr.get(i)));
 
 				//20200731 Matsudaira check for null value!!!!!!
 				byte[] pricechk = p0880DataFormat.getTotaTextValueSrc("price", gl_arr.get(i));
@@ -1443,19 +1460,36 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				if (Double.parseDouble(wamtbuff) != 0) {
 					//支出
 					dTxamt = Double.parseDouble(wamtbuff) / 100.0;
+					/*20200821
 					pr_data = pr_data +  " " + dataUtil.rfmtdbl(dTxamt, TXP.GRAM1) + "           ";
 					
 					pbpr_crdbT = pbpr_crdbT + " " + dataUtil.rfmtdbl(dTxamt, TXP.GRAM1) + "           ";
 					
 					pbpr_crdblog = pbpr_crdblog + " " + dataUtil.rfmtdbl(dTxamt, TXP.GRAM1) + "           ";
+					*/
+					pr_data = pr_data +  " " + dataUtil.rfmtdbl(dTxamt, TXP.GRAM1) + "          ";
+					
+					pbpr_crdbT = pbpr_crdbT + " " + dataUtil.rfmtdbl(dTxamt, TXP.GRAM1) + "          ";
+					
+					pbpr_crdblog = pbpr_crdblog + " " + dataUtil.rfmtdbl(dTxamt, TXP.GRAM1) + "          ";
+					//----
 				} else {
 					//收入
 					dTxamt = Double.parseDouble(damtbuff) / 100.0;
+					/*20200821
 					pr_data = pr_data +  "            " + dataUtil.rfmtdbl(dTxamt, TXP.GRAM1);
 					
 					pbpr_crdbT = pbpr_crdbT + "            " + dataUtil.rfmtdbl(dTxamt, TXP.GRAM1);
 					
 					pbpr_crdblog = pbpr_crdblog + "            " + dataUtil.rfmtdbl(dTxamt, TXP.GRAM1);
+					*/
+					pr_data = pr_data +  "           " + dataUtil.rfmtdbl(dTxamt, TXP.GRAM1);
+					
+					pbpr_crdbT = pbpr_crdbT + "           " + dataUtil.rfmtdbl(dTxamt, TXP.GRAM1);
+					
+					pbpr_crdblog = pbpr_crdblog + "           " + dataUtil.rfmtdbl(dTxamt, TXP.GRAM1);
+					//----
+
 				}
 				pr_datalog = pr_data;
 				//處理結存
@@ -2918,7 +2952,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					if (prt.DetectPaper(!firstOpenConn, 0)) {
 						this.curState = GETPASSBOOKSHOWSIG;
 						log.debug("{} {} {} AutoPrnCls : --start Show Signal", brws, catagory, account);
-						SetSignal(firstOpenConn, !firstOpenConn, "0000000000", "0010000000");
+//20200821 test						SetSignal(firstOpenConn, !firstOpenConn, "0000000000", "0010000000");
+						SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0010000000");
+						//----
 					} else {
 						if ((System.currentTimeMillis() - this.lastCheckTime) > 10 * 1000) {
 							String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
@@ -2949,7 +2985,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 
 		case GETPASSBOOKSHOWSIG:
 			log.debug("{} {} {} :AutoPrnCls : Show Signal", brws, catagory, account);
-			if (SetSignal(!firstOpenConn, !firstOpenConn, "0000000000", "0010000000")) {
+			//2020021 test
+			//----
+			if (SetSignal(!firstOpenConn, firstOpenConn, "0000000000", "0010000000"))
+			{
 				this.curState = SETCPI;
 				prt.SetCPI(firstOpenConn, 6);
 				log.debug("{} {} {} AutoPrnCls : --start Set CPI", brws, catagory, account);

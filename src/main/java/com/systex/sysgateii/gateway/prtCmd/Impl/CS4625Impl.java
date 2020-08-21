@@ -880,6 +880,7 @@ public class CS4625Impl implements Printer {
 		if (this.curState == MS_Read) {
 			this.curState = MS_ReadRecvData;
 // 202090819 test for speed			Sleep(1500);
+			Sleep(500);
 			//----
 			this.iCnt = 0;
 			this.curmsdata = null;
@@ -1433,7 +1434,8 @@ public class CS4625Impl implements Printer {
 		}
 		if (this.curState == MS_Write_START_2) {
 			this.curState = MS_WriteRecvData;
-			Sleep(1500);
+//20200821			Sleep(1500);
+			Sleep(500);
 			this.iCnt = 0;
 			data = null;
 			log.debug("3 ===<><>{} chkChkState {} {}", this.curState, this.curChkState, data);
@@ -1895,6 +1897,7 @@ public class CS4625Impl implements Printer {
 		if (this.curState == ReadBarcode_START_2) {
 			this.curState = ReadBarcodeRecvData;
 //20200819 speed up			Sleep(1500);
+			Sleep(500);
 			this.iCnt = 0;
 			this.curbarcodedata = null;
 			data = Rcv_Data();
