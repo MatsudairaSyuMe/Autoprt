@@ -372,7 +372,14 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	
 	public void sendBytes(byte[] msg) throws IOException {
 		if (channel_ != null && channel_.isActive()) {
-			aslog.info(String.format("SEND %s[%04d]:%s", this.curSockNm, msg.length, new String(msg)));
+			//20200827 converto to UTF-8 message
+//			aslog.info(String.format("SEND %s[%04d]:%s", this.curSockNm, msg.length, new String(msg)));
+			try {
+				aslog.info(String.format("SEND %s[%04d]:%s", this.curSockNm, msg.length, charcnv.BIG5bytesUTF8str(msg)));
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			//----
 			ByteBuf buf = channel_.alloc().buffer().writeBytes(msg);
 			channel_.writeAndFlush(buf);
 		} else {
@@ -1058,7 +1065,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 //					System.out.print(String.format("%x", dsptb[ii]));
 //				System.out.println();
 				log.debug("crdb=0 crdb=1 pbpr_dscpt[11]=[{}] dspt[16]=[{}] {} len={}",dsptb[11],dsptb[16], dsptb, dsptb.length);
-
+				//20200826
+				atlog.info("crdb=0 pbpr_dscpt[11]=[{}]", dsptb[11]);
+				atlog.info("crdb=1 pbpr_dscpt[16]=[{}]", dsptb[16]);
+				//----
 				if (crdb[0] == (byte)'0') {
 					pbpr_crdb = String.format("%12s", new String(dsptb, "BIG5"));
 //					pbpr_crdblog = String.format("%12s", new String(dsptb));
@@ -1150,6 +1160,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				pr_datalog = pr_datalog + " " + pbpr_balance;
 				log.debug("pbpr_date=[{}] pbpr_wsno=[{}] pbpr_dscpt=[{}] pbpr_crdb=[{}] pbpr_balance=[{}] pr_data=[{}] pbpr_crdbT=[{}]", pbpr_date, pbpr_wsno, pbpr_dscpt, pbpr_crdb, pbpr_balance, pr_data, pbpr_crdbT);
 				log.debug("pr_datalog=[{}]", pr_datalog);
+				//20200826
+				atlog.info(": PbDataFormat() -- All Data=[{}]", pr_datalog);
+				//----
 				//Print Data
 				if ( i == 0 )
 				{
@@ -1195,7 +1208,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					}
 //					pr_data = "                                                     請翻下頁繼續補登\n"
 					this.iEnd = 1;
-					amlog.info("[{}][{}][{}]:62請翻下頁繼續補登..", brws, pasname, this.account);
+					amlog.info("[{}][{}][{}]:62請翻下頁繼續補登...", brws, pasname, this.account);
 //					if (prt.Prt_Text(pr_data.getBytes()) == false)
 //						return false;
 					sndbary = chgpgary;
@@ -1309,6 +1322,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				pr_datalog = pr_datalog + pbpr_balance;
 				log.debug("pbpr_date=[{}] pbpr_wsno=[{}] pbpr_dscpt=[{}] pbpr_crdb=[{}] pbpr_balance=[{}] pr_data=[{}] pbpr_crdbT=[{}]", pbpr_date, pbpr_wsno, pbpr_dscpt, pbpr_crdb, pbpr_balance, pr_data, pbpr_crdbT);
 				log.debug("pr_datalog=[{}]", pr_datalog);
+				//20200826
+				atlog.info(": FcDataFormat() -- All Data=[{}]", pr_datalog);
+				//----
+
 				//Print Data
 				if ( i == 0 )
 				{
@@ -1352,7 +1369,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					}
 //					pr_data = "                                                     請翻下頁繼續補登\n"
 					this.iEnd = 1;
-					amlog.info("[{}][{}][{}]:62請翻下頁繼續補登..", brws, pasname, this.account);
+					amlog.info("[{}][{}][{}]:62請翻下頁繼續補登...", brws, pasname, this.account);
 //					if (prt.Prt_Text(pr_data.getBytes()) == false)
 //						return false;
 					sndbary = chgpgary;
@@ -1531,6 +1548,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				pr_datalog = pr_datalog + " " + pbpr_balance;
 				log.debug("pbpr_date=[{}] pbpr_wsno=[{}] pbpr_dscpt=[{}] pbpr_crdb=[{}] pbpr_balance=[{}] pr_data=[{}] pbpr_crdbT=[{}]", pbpr_date, pbpr_wsno, pbpr_dscpt, pbpr_crdb, pbpr_balance, pr_data, pbpr_crdbT);
 				log.debug("pr_datalog=[{}]", pr_datalog);
+				//20200826
+				atlog.info(": GlDataFormat() -- All Data=[{}]", pr_datalog);
+				//----
 				//Print Data
 				if ( i == 0 )
 				{
@@ -1574,7 +1594,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					}
 //					pr_data = "                                                     請翻下頁繼續補登\n";
 					this.iEnd = 1;
-					amlog.info("[{}][{}][{}]:62請翻下頁繼續補登..", brws, pasname, this.account);
+					amlog.info("[{}][{}][{}]:62請翻下頁繼續補登...", brws, pasname, this.account);
 //					if (prt.Prt_Text(pr_data.getBytes()) == false)
 //						return false;
 					sndbary = chgpgary;
@@ -2496,7 +2516,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 							rtn = -1;
 						}
 					} else {
-						amlog.info("[{}][{}][{}]:04中心存摺已補登資料刪除中..", brws, pasname, this.account);
+						amlog.info("[{}][{}][{}]:04中心存摺已補登資料刪除中...", brws, pasname, this.account);
 						//20200506
 						this.startTime = System.currentTimeMillis();
 						//----
@@ -3368,7 +3388,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			break;
 
 		case STARTPROCTLM:
-			amlog.info("[{}][{}][{}]:06存摺資料補登中..", brws, pasname, account);
+			amlog.info("[{}][{}][{}]:06存摺資料補登中...", brws, pasname, account);
 			switch (this.iFig) {
 				case TXP.PBTYPE:
 					log.debug("STARTPROCTLM pb_arr.size=>{}=====check prtcliFSM", pb_arr.size());
