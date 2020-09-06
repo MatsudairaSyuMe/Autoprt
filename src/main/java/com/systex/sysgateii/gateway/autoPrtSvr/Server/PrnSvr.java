@@ -10,7 +10,10 @@ import java.lang.management.RuntimeMXBean;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.LinkedHashMap;
 
 /*
  * PrnSvr
@@ -22,6 +25,7 @@ import java.util.Date;
  */
 
 import java.util.List;
+import java.util.Map;
 import java.util.Timer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -31,8 +35,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
+import com.systex.sysgateii.gateway.Server;
 import com.systex.sysgateii.gateway.autoPrtSvr.Client.PrtCli;
+import com.systex.sysgateii.gateway.comm.Constants;
 import com.systex.sysgateii.gateway.conf.DynamicProps;
+import com.systex.sysgateii.gateway.dao.GwDao;
+import com.systex.sysgateii.gateway.listener.EventType;
 import com.systex.sysgateii.gateway.listener.MessageListener;
 import com.systex.sysgateii.gateway.util.Big5FontImg;
 import com.systex.sysgateii.gateway.util.LogUtil;
@@ -56,12 +64,22 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 	public static String svrtbsdytbfields = "";
 	//----
 
-
 	static PrnSvr server;
 	public static String logPath = "";
 	static FASSvr fasDespacther;
 	static ConcurrentHashMap<String, Object> cfgMap = null;
 	static List<ConcurrentHashMap<String, Object>> list = null;
+	//20200901
+	private static PrnSvr me;
+	static List<Thread> threadList = Collections.synchronizedList(new ArrayList<Thread>());
+	Map<String, PrtCli> nodeList = Collections.synchronizedMap(new LinkedHashMap<String, PrtCli>());
+	Thread monitorThread;
+	GwDao jsel2ins = null;
+	public static String cmdtbname = "";
+	public static String cmdtbsearkey = "";
+	public static String cmdtbfields = "";
+
+	//----
 	public static String verbrno = "";
 	public static int setResponseTimeout = 60 * 1000;// 毫秒
 
@@ -83,6 +101,7 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 	}
 
 	public void run() {
+
 		RuntimeMXBean bean = ManagementFactory.getRuntimeMXBean();
 		String jvmName = bean.getName();
 		String pid = jvmName.split("@")[0];
@@ -118,6 +137,136 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 	{
 		log.debug("Enter stop");
 	}
+
+	//20200901
+	public static void createServer(DynamicProps cfg, FASSvr setfassvr) {
+		createServer(cfg);
+		fasDespacther = setfassvr;
+		log.info("[0000]:------Call MaintainLog OK------");
+		atlog.info("------Call MaintainLog OK------");
+		RuntimeMXBean bean = ManagementFactory.getRuntimeMXBean();
+		String jvmName = bean.getName();
+		String pid = jvmName.split("@")[0];
+		MDC.put("WSNO", "0000");
+		log.info("[0000]:------MainThreadId={}------", pid);
+		atlog.info("------MainThreadId={}------", pid);
+		try {
+			Thread thread;
+			PrtCli conn;
+			threadList.clear();
+			getMe().nodeList.clear();
+			if (list != null && list.size() > 0) {
+				for (int i = 0; i < list.size(); i++) {
+					cfgMap = list.get(i);
+					conn = new PrtCli(cfgMap, fasDespacther, new Timer());
+					thread = new Thread(conn);
+					threadList.add(thread);
+					synchronized (getMe()) {
+						getMe().nodeList.put(conn.getId(), conn);
+					}
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			log.error(e.getMessage());
+		}
+	}
+
+	public void start() {
+		try {
+			if (!threadList.isEmpty()) {
+				for (Thread t : threadList) {
+					t.start();
+					log.info("thread [{}] start", t.getName());
+				}
+				monitorThread = new Thread(new Runnable() {
+					@Override
+					public void run() {
+						while (true) {
+							log.info("monitorThread");
+							if (PrnSvr.dburl != null && PrnSvr.dburl.trim().length() > 0) {
+								String selfld = "";
+								String selkey = "";
+								if (PrnSvr.cmdtbfields.indexOf(',') > -1) {
+									selfld = PrnSvr.cmdtbfields.substring(PrnSvr.cmdtbfields.indexOf(',') + 1);
+									selkey = PrnSvr.cmdtbfields.substring(0, PrnSvr.cmdtbfields.indexOf(','));
+								} else {
+									selfld = PrnSvr.cmdtbfields;
+									selkey = PrnSvr.cmdtbsearkey;
+								}
+								try {
+									jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
+									log.debug("current selfld=[{}] selkey=[{}] cmdtbsearkey=[{}]", selfld, selkey, PrnSvr.cmdtbsearkey);
+									String[] cmd = jsel2ins.SELMFLD(PrnSvr.cmdtbname, selfld, selkey, PrnSvr.svrid, false);
+									if(cmd != null && cmd.length > 0)
+										for (String s: cmd) {
+											s = s.trim();
+											log.debug("current row cmd [{}]", s);
+											if (s.length() > 0 && s.indexOf(',') > -1) {
+												String[] cmdary = s.split(",");
+												log.debug("cmd object node=[{}] curState=[{}] cmd getCurMode=[{}]", getMe().nodeList.get(cmdary[0]).getId(), getMe().nodeList.get(cmdary[0]).getCurState(), getMe().nodeList.get(cmdary[0]).getCurMode());
+												if (cmdary.length > 1) {
+													String curcmd = cmdary[1].toUpperCase();
+													switch (curcmd) {
+													case "START":
+														if (getMe().nodeList.get(cmdary[0]).getCurState() == -1) {
+															getMe().nodeList.get(cmdary[0]).onEvent(getMe().nodeList.get(cmdary[0]).getId(), EventType.ACTIVE);
+															log.debug("cmd object node=[{}] enable session getCurMode=[{}]", getMe().nodeList.get(cmdary[0]).getId(), getMe().nodeList.get(cmdary[0]).getCurMode());
+														}
+														break;
+													case "STOP":
+														if (getMe().nodeList.get(cmdary[0]).getCurState() != -1) {
+															getMe().nodeList.get(cmdary[0]).onEvent(getMe().nodeList.get(cmdary[0]).getId(), EventType.SHUTDOWN);
+															log.debug("cmd object node=[{}] stop session getCurMode=[{}]", getMe().nodeList.get(cmdary[0]).getId(), getMe().nodeList.get(cmdary[0]).getCurMode());
+														}
+														break;
+													case "RESTART":
+														break;
+													default:
+														log.debug("!!! cmd object node=[{}] cmd [{}] error", cmdary[0], cmdary[1]);
+														break;
+													}
+												}
+											} else
+												log.error("!!!current row cmd error [{}]", s);
+										}
+									jsel2ins.CloseConnect();
+									jsel2ins = null;
+								} catch (Exception e) {
+									e.printStackTrace();
+									log.info("monitorThread read database error [{}]", e.toString());
+								}
+							}
+							sleep(1);
+						} // while
+					}
+				});// monitorThread
+				monitorThread.start();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			log.error(e.getMessage());
+		}
+	}
+
+	public static void startServer() {
+		log.debug("Enter startServer");
+		/*20200901
+		if (server != null) {
+			server.start();
+		}
+		*/
+		getMe().start();
+		//----
+	}
+
+	public static PrnSvr getMe() {
+		if (me == null) {
+			me = new PrnSvr();
+		}
+		return me;
+	}
+	//----
 	
 	public static void createServer(DynamicProps cfg) {
 		log.debug("Enter createServer");
@@ -143,6 +292,11 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 		svrtbsdytbmkey = cfg.getConHashMap().get("system.svrtbsdytb[@mkey]");
 		svrtbsdytbfields = cfg.getConHashMap().get("system.svrtbsdytb[@fields]");
 		//----
+		//20200901
+		cmdtbname = cfg.getConHashMap().get("system.devcmdtb[@name]");
+		cmdtbsearkey = cfg.getConHashMap().get("system.devcmdtb[@mkey]");
+		cmdtbfields = cfg.getConHashMap().get("system.devcmdtb[@fields]");
+		//----
 		if (dburl != null && dburl.trim().length() > 0) {
 			log.debug("will use db url:[{}] user name:[{}] update status table [{}] main key [{}] fields [{}]", dburl, dbuser, statustbname, statustbmkey, statustbfields);
 			log.debug("check tbsdy from table [{}] main key [{}]=[{}] fields [{}]", svrtbsdytbname, svrtbsdytbmkey, svrid, svrtbsdytbfields);
@@ -163,8 +317,10 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 			e.printStackTrace();
 		}
 		log.debug("p_fun_flag={}", p_fun_flag);
-
-		server = new PrnSvr();
+//20200901
+//		server = new PrnSvr();
+		server = getMe();
+		//----
 	}
 
 	public static void startServer(FASSvr setfassvr) {

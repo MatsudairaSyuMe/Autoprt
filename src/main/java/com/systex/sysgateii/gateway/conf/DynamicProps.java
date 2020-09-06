@@ -96,6 +96,11 @@ public class DynamicProps {
 										|| entry.getKey().equals("system.svrtbsdytb[@mkey]")
 										|| entry.getKey().equals("system.svrtbsdytb[@fields]")
 										//----
+										//20200901
+										|| entry.getKey().equals("system.devcmdtb[@name]")
+										|| entry.getKey().equals("system.devcmdtb[@mkey]")
+										|| entry.getKey().equals("system.devcmdtb[@fields]")
+										//----
 										|| entry.getKey().equals("boards.board.ip")) {
 									conHashMap.put(entry.getKey().toString(), entry.getValue().toString());
 									log.info("ConfProc put to config map info! {}, {}", entry.getKey(),
@@ -214,6 +219,11 @@ public class DynamicProps {
 						|| entry.getKey().equals("system.svrtbsdytb[@name]")
 						|| entry.getKey().equals("system.svrtbsdytb[@mkey]")
 						|| entry.getKey().equals("system.svrtbsdytb[@fields]")
+						//----
+						//20200901
+						|| entry.getKey().equals("system.devcmdtb[@name]")
+						|| entry.getKey().equals("system.devcmdtb[@mkey]")
+						|| entry.getKey().equals("system.devcmdtb[@fields]")
 						//----
 						|| entry.getKey().equals("boards.board.brno") || entry.getKey().equals("boards.board.ip")) {
 					conHashMap.put(entry.getKey().toString(), entry.getValue().toString());

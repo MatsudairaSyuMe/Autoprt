@@ -35,8 +35,12 @@ public class Server {
 			FASSvr.createServer(dcf.getConHashMap());
 			FASSvr.startServer();
 
-			PrnSvr.createServer(dcf);
-			PrnSvr.startServer(FASSvr.getFASSvr());
+			//20200901
+//			PrnSvr.createServer(dcf);
+//			PrnSvr.startServer(FASSvr.getFASSvr());
+			PrnSvr.createServer(dcf, FASSvr.getFASSvr());
+			PrnSvr.startServer();
+			//----
 			log.info("sysgateii server start complete!");
 
 			while (!isShouldShutDown.get()) {

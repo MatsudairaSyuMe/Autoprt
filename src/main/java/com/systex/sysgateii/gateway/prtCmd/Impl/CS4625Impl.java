@@ -1651,7 +1651,7 @@ public class CS4625Impl implements Printer {
 			if (this.curState == Eject || this.curState == SetSignal_4) {
 				this.curChkState = CheckStatus_START;
 				//20200827
-				amlog.info("[{}][{}][{}]:95硬體錯誤代碼3[{}]", brws, "        ", "            ", new String(data));
+//				amlog.info("[{}][{}][{}]:95硬體錯誤代碼3[{}]", brws, "        ", "            ", new String(data));
 				//----
 				return false;
 			}

@@ -227,12 +227,15 @@ public class FASSvr implements MessageListener<byte[]>, Runnable {
 					req.writeBytes(dataUtil.to3ByteArray(sendlen));
 					req.writeBytes(header2.getBytes());
 					req.writeBytes(telmsg);
-					//---
-					faslog.debug(String.format(fasSendPtrn, header1.getBytes().length  + dataUtil.to3ByteArray(sendlen).length + header2.getBytes().length + telmsg.length, charcnv.BIG5bytesUTF8str(telmsg)));
-					//----
 					this.currConn.writeAndFlush(req.retain()).sync();
 					this.setTITA_TOTA_START(true);
 					rtn = true;
+					//---20200903 move after send and convert 0x00 to ' '
+//					for (int _tmpi = 0; _tmpi < telmsg.length; _tmpi++)
+//						if ((byte)telmsg[_tmpi] == (byte)0x0)
+//							telmsg[_tmpi] = (byte)' ';
+					faslog.debug(String.format(fasSendPtrn, header1.getBytes().length  + dataUtil.to3ByteArray(sendlen).length + header2.getBytes().length + telmsg.length, charcnv.BIG5bytesUTF8str(telmsg)));
+					//----
 //				} catch (UnsupportedEncodingException e) {
 //					// TODO Auto-generated catch block
 //					e.printStackTrace();
@@ -274,7 +277,13 @@ public class FASSvr implements MessageListener<byte[]>, Runnable {
 							System.arraycopy(telmbyteary, TXP.CONTROL_BUFFER_SIZE, rtn, 0,
 									telmbyteary.length - TXP.CONTROL_BUFFER_SIZE);
 							// ----
-							faslog.debug(String.format(fasRecvPtrn, telmbyteary.length, charcnv.BIG5bytesUTF8str(rtn)));
+							//20200903 convert 0x00 to byte ' '
+							byte [] faslogary = new byte[rtn.length];
+							System.arraycopy(rtn, 0, faslogary, 0, rtn.length);
+							for (int _tmpidx = 0; _tmpidx < rtn.length; _tmpidx++)
+								faslogary[_tmpidx] = (rtn[_tmpidx] == (byte)0x0 ? (byte)' ': rtn[_tmpidx]);
+							faslog.debug(String.format(fasRecvPtrn, telmbyteary.length, charcnv.BIG5bytesUTF8str(faslogary)));
+//							faslog.debug(String.format(fasRecvPtrn, telmbyteary.length, charcnv.BIG5bytesUTF8str(rtn)));
 							// ----
 							rtn = remove03(rtn);
 							log.debug("get rtn len= {}", rtn.length);

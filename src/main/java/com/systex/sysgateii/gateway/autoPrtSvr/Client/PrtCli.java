@@ -29,6 +29,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
+//20200828
+import com.systex.sysgateii.gateway.listener.EventListener;
+import com.systex.sysgateii.gateway.listener.EventType;
+//----
 import com.systex.sysgateii.gateway.autoPrtSvr.Server.FASSvr;
 import com.systex.sysgateii.gateway.autoPrtSvr.Server.PrnSvr;
 import com.systex.sysgateii.gateway.comm.Constants;
@@ -80,7 +84,7 @@ import io.netty.util.CharsetUtil;
 import io.netty.util.ReferenceCountUtil;
 
 @Sharable // 因為通道只有一組 handler instance 只有一個，所以可以 share
-public class PrtCli extends ChannelDuplexHandler implements Runnable {
+public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListener {
 	private static Logger log = LoggerFactory.getLogger(PrtCli.class);
 
 	private Logger aslog = null;
@@ -272,6 +276,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 	private long stateStartTime;
 	//----
 	private long lastCheckTime;
+	//20200906
+	private EventType curMode = EventType.ACTIVE;
+	//----
 
 	public List<ActorStatusListener> getActorStatusListeners() {
 		return actorStatusListeners;
@@ -453,6 +460,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				}
 			});
 		} catch (Exception ex) {
+
 			scheduleConnect(_wait / 3);
 
 		}
@@ -1064,10 +1072,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 //				for (int ii = 0; ii < dsptb.length; ii++)
 //					System.out.print(String.format("%x", dsptb[ii]));
 //				System.out.println();
-				log.debug("crdb=0 crdb=1 pbpr_dscpt[11]=[{}] dspt[16]=[{}] {} len={}",dsptb[11],dsptb[16], dsptb, dsptb.length);
+				log.debug("crdb=0 crdb=1 pbpr_dscpt[11]=[{}] dspt[16]=[{}] {} len={}",String.format("%x",(int)(dsptb[11] & 0xff)),String.format("%x",(int)(dsptb[16] & 0xff)), dsptb, dsptb.length);
 				//20200826
-				atlog.info("crdb=0 pbpr_dscpt[11]=[{}]", dsptb[11]);
-				atlog.info("crdb=1 pbpr_dscpt[16]=[{}]", dsptb[16]);
+				atlog.info("crdb=0 pbpr_dscpt[11]=[{}]", String.format("%x",(int)(dsptb[11] & 0xff)));
+				atlog.info("crdb=1 pbpr_dscpt[16]=[{}]", String.format("%x",(int)(dsptb[16] & 0xff)));
 				//----
 				if (crdb[0] == (byte)'0') {
 					pbpr_crdb = String.format("%12s", new String(dsptb, "BIG5"));
@@ -1285,13 +1293,21 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					dTxamt = Double.parseDouble(new String(q0880DataFormat.getTotaTextValueSrc("txamt", fc_arr.get(i))).trim()) / 100.0;
 					if (samtbuf.equals("1"))
 						dTxamt *= -1.0;
+					//20200903 add for convert dTxamt
+					String dTxamtcnvStr = dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT1);
 //					pr_data = pr_data + String.format("%19s   ", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT));
-					pr_data = pr_data + dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT1) + "  ";
+//20200903					pr_data = pr_data + dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT1) + "  ";
+					pr_data = pr_data + dTxamtcnvStr + "  ";
 					
 //					pbpr_crdbT = pbpr_crdbT + String.format("  %19s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT));
-					pbpr_crdbT = pbpr_crdbT + dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT1) + "  ";
+//20200903			pbpr_crdbT = pbpr_crdbT + dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT1) + "  ";
+					pbpr_crdbT = pbpr_crdbT + dTxamtcnvStr + "  ";
 					
-					pbpr_crdblog = pbpr_crdblog + dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT1) + "  ";
+//20200903			pbpr_crdblog = pbpr_crdblog + dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT1) + "  ";
+					pbpr_crdblog = pbpr_crdblog + dTxamtcnvStr + "  ";
+					//20200903
+					atlog.info(": FcDataFormat() -- 支出 obuff=[{}]", dTxamtcnvStr);
+					//----
 				} else {
 					//收入
 					String samtbuf = "";
@@ -1299,18 +1315,36 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					dTxamt = Double.parseDouble(new String(q0880DataFormat.getTotaTextValueSrc("txamt", fc_arr.get(i))).trim()) / 100.0;
 					if (samtbuf.equals("1"))
 						dTxamt *= -1.0;
-					pr_data = pr_data + "  " + dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT1);
+					//20200903 add for convert dTxamt
+					String dTxamtcnvStr = dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT1);
 
-					pbpr_crdbT = pbpr_crdbT + "  " + dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT1);
+					//20200903
+//					pr_data = pr_data + "  " + dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT1);
 
-					pbpr_crdblog = pbpr_crdblog + "   " + dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT1);
+//					pbpr_crdbT = pbpr_crdbT + "  " + dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT1);
+
+//					pbpr_crdblog = pbpr_crdblog + "   " + dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT1);
+					pr_data = pr_data + "  " + dTxamtcnvStr;
+
+					pbpr_crdbT = pbpr_crdbT + "  " + dTxamtcnvStr;
+
+					pbpr_crdblog = pbpr_crdblog + "   " + dTxamtcnvStr;
+					//20200903
+					atlog.info(": FcDataFormat() -- 收入 obuff=[{}]", dTxamtcnvStr);
+					//----
 				}
 				pr_datalog = pr_data;
 				//處理結存
 				log.debug("--->q0880text pbbal src [{}]", new String(q0880DataFormat.getTotaTextValueSrc("pbbal", fc_arr.get(i))).trim());
 				dTxamt = Double.parseDouble(new String(q0880DataFormat.getTotaTextValueSrc("pbbal", fc_arr.get(i))).trim()) / 100.0;
+				//20200903
+				atlog.info(": FcDataFormat() -- dbal=[{}]",dTxamt);
+				//----
 				log.debug("--->q0880text pbbal float [{}]", dTxamt);
 				pbpr_balance = dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT2);
+				//20200903
+				atlog.info(": FcDataFormat() -- obalbuff=[{}]",pbpr_balance);
+				//----
 				log.debug("--->q0880text pbbal convert=[{}]", pbpr_balance);
 				byte[] nl = new byte[2];
 				nl[0] = (byte)0x0d;
@@ -1410,7 +1444,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		String pbpr_balance = String.format("%12s", " ");// 結存 12
 		String pr_datalog = ""; // 80
 		String pr_data = ""; // 列印資料 80
-
+		//20200904
+		atlog.info(": GlDataFormat() -- m_gArr.Count=[{}]", gl_arr.size());
+		//----
 
 		if (this.curState == STARTPROCTLM) {
 			p0880DataFormat = new P0880TEXT();
@@ -1820,16 +1856,19 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			dsptext[dsplen - 1] = 0x20;
 		return dsptext;
 	}
-	private byte[] DataDEL(int iVal, int ifig, String mbal) {
+//20200902 	private byte[] DataDEL(int iVal, int ifig, String mbal) {
+	private byte[] DataDEL(int iVal, int currentifig, String mbal) {
 		byte[] rtn = null;
 		P85TEXT p85text = null;
 		Q98TEXT q98text = null;
 		P1885TEXT p1885text = null;
-		log.debug("1--->ifig={} mbal={}", ifig, mbal);
+		//20200902 change to currentifig
+		log.debug("1--->ifig={} mbal={}", currentifig, mbal);
 		try {
 			if (iVal == TXP.SENDTHOST) { // send to host
 				//***** Compose P85 TITA *****//
-				if (ifig == TXP.PBTYPE)
+				//20200902 change to currentifig
+				if (currentifig == TXP.PBTYPE)
 				{
 					p85text = new P85TEXT();
 					boolean p85titatextrtn = p85text.initP85TitaTEXT((byte) '0');
@@ -1845,7 +1884,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					else
 						tital.setValue("crdb", "0");
 					String sm = this.msrbal.substring(1);
-					atlog.info("pArr[0]=[{}]",sm);
+					//20200827
+//					atlog.info("pArr[0]=[{}]",sm);
+					atlog.info("-- pArr[0]=[{}]",charcnv.BIG5bytesUTF8str(pb_arr.get(0)));
+					//----
 					sm = tital.FilterMsr(sm, '-', '0');
 					tital.setValue("txamt", sm);
 					atlog.info("TITA_BASIC.txamt=[{}]",sm);
@@ -1885,7 +1927,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					log.debug("P85 tita len={} [{}]", rtn.length, new String(rtn));
 				}
 				//***** Compose Q98 TITA *****//
-				else if (ifig == TXP.FCTYPE)
+				//20200902 change to currentifig
+				else if (currentifig == TXP.FCTYPE)
 				{
 					q98text = new Q98TEXT();
 					boolean q98titatextrtn = q98text.initQ98TitaTEXT((byte) ' ');
@@ -1902,7 +1945,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 //					log.debug("fc_arr size() - 1={} [{}]", fc_arr.size() - 1, new String(fc_arr.get(fc_arr.size() - 1)));
 					log.debug("fc_arr {} [{}]", 0, new String(fc_arr.get(0)));
 					String sm = this.msrbal.substring(1);
-					atlog.info("fArr[0]=[{}]",sm);
+					//20200827
+//					atlog.info("fArr[0]=[{}]",sm);
+					atlog.info("-- fArr[0]=[{}]",charcnv.BIG5bytesUTF8str(fc_arr.get(0)));
+					//----
 					tital.setValue("txamt", sm);
 					atlog.info("TITA_BASIC.txamt=[{}]",sm);
 					q98text.setValue("newseq", tx_area.get("txseq"));
@@ -1925,7 +1971,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					log.debug("Q98 tita [{}]", new String(rtn));
 				}
 				//***** Compose Pxx TITA *****//
-				else if (ifig == TXP.GLTYPE)
+				//20200902 change to currentifig
+				else if (currentifig == TXP.GLTYPE)
 				{
 					p1885text = new P1885TEXT();
 					boolean p1885titatextrtn = p1885text.initP1885TitaTEXT((byte) ' ');
@@ -1941,9 +1988,13 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					else
 						tital.setValue("crdb", "0");
 					tital.setValue("nbcd", "8");
-					log.debug("fc_arr size() - 1={} [{}]", gl_arr.size() - 1, new String(gl_arr.get(gl_arr.size() - 1)));
+					log.debug("gl_arr size() - 1={} [{}]", gl_arr.size() - 1, new String(gl_arr.get(gl_arr.size() - 1)));
+					log.debug("gl_arr {} [{}]", 0, new String(gl_arr.get(0)));
 					String sm = "0" + this.msrbal;
-					atlog.info("gArr[0]=[{}]",sm);
+					//20200827
+//					atlog.info("gArr[0]=[{}]",sm);
+					atlog.info("-- gArr[0]=[{}]",charcnv.BIG5bytesUTF8str(gl_arr.get(0)));
+					//----
 					tital.setValue("txamt", sm);
 					log.debug("txamt[{}]", sm);
 					atlog.info("TITA_BASIC.txamt=[{}]",sm);
@@ -1968,13 +2019,18 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					rtn = tital.mkTITAmsg(tital.getTitalabel(), p1885text.getP1885Titatext());
 					log.debug("P1885 tita [{}]", new String(rtn));
 				//20200810
-				} else if (ifig == TXP.C0099TYPE) {
+					//20200902 change to currentifig
+				} else if (currentifig == TXP.C0099TYPE) {
 //					memcpy(TITA_BASIC.aptype,"C00",sizeof(TITA_BASIC.aptype)+sizeof(TITA_BASIC.apcode));
 //					memcpy(TITA_BASIC.stxno,"99",sizeof(TITA_BASIC.stxno));
 //					memcpy(TITA_BASIC.ptype,"0",sizeof(TITA_BASIC.ptype));
 //					memcpy(TITA_BASIC.dscpt,"S99  ",sizeof(TITA_BASIC.dscpt));
 //					memset(TITA_BASIC.actno,'0',sizeof(TITA_BASIC.actno));
 //					memcpy(&TITA_TEXT,"        ",8);
+					tital.setValue("apcode", "00");
+					tital.setValue("crdb", "0");
+					tital.setValue("nbcd", "0");
+
 					tital.setValue("aptype", "C00");
 					tital.setValue("stxno", "99");
 					tital.setValue("ptype", "0");
@@ -1988,15 +2044,15 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				//----
 			} else { //iVal == RECVFHOST
 				//***** Receive P001 TOTA and check error *****//
-				if (ifig == TXP.PBTYPE)
+				if (currentifig == TXP.PBTYPE)
 				{
 				}
 				//***** Receive Q980 TOTA and check error *****//
-				else if (ifig == TXP.FCTYPE)
+				else if (currentifig == TXP.FCTYPE)
 				{
 				}
 				//***** Receive P885 TOTA and check error *****//
-				else if (ifig == TXP.GLTYPE)
+				else if (currentifig == TXP.GLTYPE)
 				{
 				}
 			}
@@ -2010,7 +2066,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 
 	//20200723
 //	private byte[] DataINQ(int iVal, int ifig, String dCount, String con, byte[] opttotatext)
-	private byte[] DataINQ(int iVal, int ifig, String dCount, byte[] opttotatext)
+//20200902	private byte[] DataINQ(int iVal, int ifig, String dCount, byte[] opttotatext)
+	private byte[] DataINQ(int iVal, int currentifig, String dCount, byte[] opttotatext)
 	{
 		// optotatext only used while iVal == TXP.RECVFHOST mode
 		byte[] rtn = null;
@@ -2020,12 +2077,12 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		int begin = Integer.parseInt(dCount);
 		int totCnt = Integer.parseInt(con);
 		int inqiLine = Integer.parseInt(tx_area.get("cline").trim());
-		log.debug("1--->begin=>{} totCnt={} inqiLine={}", begin, totCnt, inqiLine);
+		log.debug("1--->iVal={} ifig={} begin=>{} totCnt={} inqiLine={}", iVal, currentifig, begin, totCnt, inqiLine);
 		if (opttotatext != null && opttotatext.length > 0)
 			log.debug("1.1--->opttotatext.length=>{}", opttotatext.length);
 		try {
 			if (iVal == TXP.SENDTHOST) { // send to host
-				if (ifig == TXP.PBTYPE) {
+				if (currentifig == TXP.PBTYPE) {
 					p0080text = new P0080TEXT();
 					boolean p0080titatextrtn = p0080text.initP0080TitaTEXT((byte) '0');
 					log.debug("p0080titatextrtn.initP0080TitaTEXT p0080titatextrtn={}", p0080titatextrtn);
@@ -2068,7 +2125,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					else
 						p0080text.setValueRtoLfill("begin", Integer.toString(begin + 1), (byte) '0');
 					rtn = tital.mkTITAmsg(tital.getTitalabel(), p0080text.getP0080Titatext());
-				} else if (iFig == TXP.FCTYPE) {
+				} else if (currentifig == TXP.FCTYPE) {  //20200902 change to currentifig
 					q0880text = new Q0880TEXT();
 					boolean q0880titatextrtn = q0880text.initQ0880TitaTEXT((byte) '0');
 					log.debug("q0880titatextrtn.initQ0880TitaTEXT q0880titatextrtn={}", q0880titatextrtn);
@@ -2109,7 +2166,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					tx_area.put("pbcol", this.cline);
 					tx_area.put("pbpage", this.cpage);
 					rtn = tital.mkTITAmsg(tital.getTitalabel(), q0880text.getQ0880Titatext());
-				} else if (iFig ==TXP.GLTYPE) {
+				} else if (currentifig == TXP.GLTYPE) {  //20200902 change to currentifig
 					p0880text = new P0880TEXT();
 					boolean p0880titatextrtn = p0880text.initP0880TitaTEXT((byte) '0');
 					log.debug("p0880titatextrtn.initP0880TitaTEXT p0880titatextrtn={}", p0880titatextrtn);
@@ -2167,13 +2224,18 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					rtn = tital.mkTITAmsg(tital.getTitalabel(), p0880text.getP0880Titatext());
 					log.debug("TxFlow : DataINQ() -- rtn={}", new String(rtn));
 				//20200810
-				} else if (ifig == TXP.C0099TYPE) {
+				} else if (currentifig == TXP.C0099TYPE) {   //20200902 change to currentifig
 //					memcpy(TITA_BASIC.aptype,"C00",sizeof(TITA_BASIC.aptype)+sizeof(TITA_BASIC.apcode));
 //					memcpy(TITA_BASIC.stxno,"99",sizeof(TITA_BASIC.stxno));
 //					memcpy(TITA_BASIC.ptype,"0",sizeof(TITA_BASIC.ptype));
 //					memcpy(TITA_BASIC.dscpt,"S99  ",sizeof(TITA_BASIC.dscpt));
 //					memset(TITA_BASIC.actno,'0',sizeof(TITA_BASIC.actno));
 //					memcpy(&TITA_TEXT,"        ",8);
+
+					tital.setValue("apcode", "00");
+					tital.setValue("crdb", "0");
+					tital.setValue("nbcd", "0");
+
 					tital.setValue("aptype", "C00");
 					tital.setValue("stxno", "99");
 					tital.setValue("ptype", "0");
@@ -2186,7 +2248,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 				}
 				//----
 			} else { //iVal == RECVFHOST
-				if (iFig == TXP.PBTYPE) {
+				if (currentifig == TXP.PBTYPE) {   //20200902 change to currentifig
 					rtn = new byte[0];
 					p0080text = new P0080TEXT();
 					byte[] texthead = Arrays.copyOfRange(opttotatext, 0, p0080text.getP0080TotaheadtextLen());
@@ -2243,7 +2305,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 						} else
 							rtn = new byte[0];
 					}
-				} else if (iFig == TXP.FCTYPE) {
+				} else if (currentifig == TXP.FCTYPE) { //20200902 change to currentifig
 					rtn = new byte[0];
 					q0880text = new Q0880TEXT();
 					byte[] texthead = Arrays.copyOfRange(opttotatext, 0, q0880text.getQ0880TotaheadtextLen());
@@ -2296,7 +2358,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 														new String(q0880text.getTotaTextValue("totatxday", i))) == 0)
 											break;
 										this.fc_arr.add(q0880text.getTotaTexOc(i));
-										atlog.info("m_fArr[{}]=[{}]", begin + i, new String(q0880text.getTotaTexOc(i)));
+										//20200903 convert to utf8 charcnv.BIG5bytesUTF8str
+//										atlog.info("m_fArr[{}]=[{}]", begin + i, new String(q0880text.getTotaTexOc(i)));
+										atlog.info("m_fArr[{}]=[{}]", begin + i, charcnv.BIG5bytesUTF8str(q0880text.getTotaTexOc(i)));
+										//----
 										//20200523
 										log.info("fc_arr [{}]=[{}]", begin + i, new String(q0880text.getTotaTexOc(i)));
 										//----
@@ -2325,7 +2390,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 							rtn = new byte[0];
 						}
 					}
-				} else if (iFig == TXP.GLTYPE) {
+				} else if (currentifig == TXP.GLTYPE) {  //20200902 change to currentifig
 					rtn = new byte[0];
 					p0880text = new P0880TEXT();
 					byte[] texthead = Arrays.copyOfRange(opttotatext, 0, p0880text.getP0880TotaheadtextLen());
@@ -2379,7 +2444,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 														new String(p0880text.getTotaTextValue("txday", i))) == 0)
 											break;
 										this.gl_arr.add(p0880text.getTotaTexOc(i));
-										atlog.info("m_gArr[{}]=[{}]",begin + i, new String(p0880text.getTotaTexOc(i)));
+										//20200903 convert to utf8 charcnv.BIG5bytesUTF8str
+//										atlog.info("m_gArr[{}]=[{}]",begin + i, new String(p0880text.getTotaTexOc(i)));
+										atlog.info("m_gArr[{}]=[{}]",begin + i, charcnv.BIG5bytesUTF8str(p0880text.getTotaTexOc(i)));
 										//20200523
 										log.info("gl_arr [{}]=[{}]",begin + i, new String(p0880text.getTotaTexOc(i)));
 										//----
@@ -2411,11 +2478,12 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 					}
 				}
 			}
-			if (iFig == TXP.PBTYPE)
+			//20200902 change to currentifig
+			if (currentifig == TXP.PBTYPE)
 				log.debug("4.1--->pb_arr.size=[{}]", pb_arr.size());
-			else if (iFig == TXP.FCTYPE)
+			else if (currentifig == TXP.FCTYPE)
 				log.debug("4.2--->fc_arr.size=[{}]", fc_arr.size());
-			else if (iFig == TXP.GLTYPE)
+			else if (currentifig == TXP.GLTYPE)
 				log.debug("4.3--->gl_arr.size=[{}]", gl_arr.size());
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -2880,6 +2948,38 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 		//----
 		log.debug("before {} last {} duration {} =======================check prtcliFSM", this.curState, this.lastState, this.durationTime);
 		int before = this.curState;
+		//20200906
+		if (getCurMode() == EventType.SHUTDOWN) {
+			if (this.curState <= CAPTUREPASSBOOK) {
+				log.info("CurMode {} curState == [{}] start shutdown now", getCurMode(), this.curState);
+				try {
+					publishInactiveEvent();
+					super.channelInactive(this.currentContext);
+					prt.getIsShouldShutDown().set(true);
+					prt.ClosePrinter();
+					aslog.info(String.format("DIS  %s[%04d]:", this.curSockNm, 0));
+					String updValue = String.format(updValueptrn, this.brws, this.rmtaddr.getAddress().getHostAddress(),
+							this.rmtaddr.getPort(), this.localaddr.getAddress().getHostAddress(),
+							this.localaddr.getPort(), this.typeid, Constants.STSUSEDINACT);
+					if (jsel2ins == null)
+						jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
+					int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey,
+							this.brws);
+					log.debug("total {} records update status [{}]", row, Constants.STSUSEDINACT);
+					jsel2ins.CloseConnect();
+					jsel2ins = null;
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				this.curState = SESSIONBREAK;
+				this.curSockNm = "";
+				this.clientMessageBuf.clear();
+				this.clientChannel = null;
+				close();
+			} else
+				log.info("CurMode {} curState == [{}] prepare to shutdown", getCurMode(), this.curState);
+		}
+		//----
 		switch (this.curState) {
 		case SESSIONBREAK:
 			prt.OpenPrinter(firstOpenConn);
@@ -3729,5 +3829,55 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable {
 			jsel2ins = null;
 		}
 		return;
+	}
+
+	//20200906
+	public int getCurState() {
+		return this.curState;
+	}
+	/**
+	 * 做為事件的被通知者
+	 */
+	@Override
+	public void onEvent(String id, EventType evt) {
+		// TODO Auto-generated method stub
+		switch (evt) {
+		case ACTIVE:// 被通知要開啟
+			log.debug(getId() + ">>> ACTIVE");
+			this.curMode = evt;
+			break;
+
+		case INACTIVE:
+			log.debug(getId() + " INACTIVE");
+			break;
+
+		case SHUTDOWN: // 被通知要關閉
+			log.debug(getId() + ">>> SHUTDOWN");
+			this.curMode = evt;
+			break;
+
+		default:
+			log.debug(getId() + " default");
+			break;
+		}
+	}
+	public String getId() {
+		return this.brws;
+	}
+	//----
+
+	//20200906
+	/**
+	 * @return the curMode
+	 */
+	public EventType getCurMode() {
+		return curMode;
+	}
+
+	/**
+	 * @param curMode the curMode to set
+	 */
+	public void setCurMode(EventType curMode) {
+		this.curMode = curMode;
 	}
 }

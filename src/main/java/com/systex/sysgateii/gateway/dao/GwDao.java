@@ -1,6 +1,5 @@
 package com.systex.sysgateii.gateway.dao;
 
-import java.beans.Statement;
 import java.sql.Blob;
 import java.sql.Clob;
 import java.sql.Connection;
@@ -17,6 +16,8 @@ import java.util.Vector;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.systex.sysgateii.gateway.autoPrtSvr.Server.PrnSvr;
 import com.systex.sysgateii.gateway.util.DataConvert;
 
 public class GwDao {
@@ -174,10 +175,35 @@ public class GwDao {
 				|| keyname == null || keyname.trim().length() == 0)
 			return rtnVal;
 		try {
+			log.debug("keyname = keyvalue=[{}]",  keyname + "=" + keyvalue);
+
+			//20200901
+
+			String keyset = "";
+			if (keyname.indexOf(',') > -1 && keyvalue.indexOf(',') > -1) {
+				String[] keynameary = keyname.split(",");
+				String[] keyvalueary = keyvalue.split(",");
+				if (keynameary.length != keyvalueary.length)
+					return rtnVal;
+				else {
+					for (int i = 0; i < keynameary.length; i++)
+						keyset = keyset + keynameary[i] + " = " + keyvalueary[i] + (i == (keynameary.length - 1) ? "" : " and ");
+				}
+			} else
+				keyset = keyname + " = " + keyvalue;
+
+			//----
 			java.sql.Statement stmt = selconn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE, ResultSet.CLOSE_CURSORS_AT_COMMIT);
+//20200901 change to use key set
+//			tbsdytblrs = ((java.sql.Statement) stmt).executeQuery("SELECT " + fieldn + " FROM " + fromTblName + " where "
+//					+ keyname + "=" + keyvalue);
+
 			tbsdytblrs = ((java.sql.Statement) stmt).executeQuery("SELECT " + fieldn + " FROM " + fromTblName + " where "
-					+ keyname + " = " + keyvalue);
+					+ keyset);
+
 			int type = -1;
+			log.debug("ketset=[{}]", keyset);
+
 			if (tbsdytblrs != null) {
 				ResultSetMetaData rsmd = tbsdytblrs.getMetaData();
 				int columnCount = 0;
@@ -189,9 +215,15 @@ public class GwDao {
 					tbsdytblcolumnNames.add(rsmd.getColumnName(columnCount));
 					tbsdytblcolumnTypes.add(type);
 				}
-				if (tbsdytblrs.next()) {
-					log.debug("-->[{}]",gettbsdytblValue(tbsdytblrs, fieldn, verbose));
-					rtnVal = tbsdytblrs.getString(fieldn);
+				//20200901
+				int idx = 0;
+				while (tbsdytblrs.next()) {
+//					log.debug("-->[{}]",gettbsdytblValue(tbsdytblrs, fieldn, verbose));
+					if (idx == 0)
+						rtnVal = tbsdytblrs.getString(fieldn);
+					else
+						rtnVal = rtnVal + "," + tbsdytblrs.getString(fieldn);
+					idx++;
 				}
 			}
 		} catch (Exception e) {
@@ -202,6 +234,83 @@ public class GwDao {
 		return rtnVal;
 	}
 	//----
+	//20200901
+	public String[] SELMFLD(String fromTblName, String fieldsn, String keyname, String keyvalue, boolean verbose)
+			throws Exception {
+		String[] rtnVal = {};
+		tbsdytblcolumnNames = new Vector<String>();
+		tbsdytblcolumnTypes = new Vector<Integer>();
+		if (fromTblName == null || fromTblName.trim().length() == 0 || fieldsn == null || fieldsn.trim().length() == 0
+				|| keyname == null || keyname.trim().length() == 0)
+			return rtnVal;
+		try {
+			log.debug("fieldsn=[{}] keyname = keyvalue=[{}]",  fieldsn, keyname + "=" + keyvalue);
+			String[] fieldset = null;
+			if (fieldsn.indexOf(',') > -1)
+				fieldset = fieldsn.split(",");
+			else
+				fieldset[0] = fieldsn;
+			String keyset = "";
+			if (keyname.indexOf(',') > -1 && keyvalue.indexOf(',') > -1) {
+				String[] keynameary = keyname.split(",");
+				String[] keyvalueary = keyvalue.split(",");
+				if (keynameary.length != keyvalueary.length)
+					return rtnVal;
+				else {
+					for (int i = 0; i < keynameary.length; i++)
+						keyset = keyset + keynameary[i] + " = " + keyvalueary[i] + (i == (keynameary.length - 1) ? "" : " and ");
+				}
+			} else
+				keyset = keyname + " = " + keyvalue;
+			java.sql.Statement stmt = selconn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE, ResultSet.CLOSE_CURSORS_AT_COMMIT);
+			tbsdytblrs = ((java.sql.Statement) stmt).executeQuery("SELECT " + fieldsn + " FROM " + fromTblName + " where "
+					+ keyset);
+
+			int type = -1;
+			log.debug("ketset=[{}]", keyset);
+
+			if (tbsdytblrs != null) {
+				ResultSetMetaData rsmd = tbsdytblrs.getMetaData();
+				int columnCount = 0;
+				while (columnCount < rsmd.getColumnCount()) {
+					columnCount++;
+					type = rsmd.getColumnType(columnCount);
+					if (verbose)
+						log.debug("ColumnName={} ColumnTypeName={} ", rsmd.getColumnName(columnCount), rsmd.getColumnTypeName(columnCount) );
+					tbsdytblcolumnNames.add(rsmd.getColumnName(columnCount));
+					tbsdytblcolumnTypes.add(type);
+				}
+				int idx = 0;
+				while (tbsdytblrs.next()) {
+					if (idx <= 0)
+						rtnVal = new String[1];
+					else {
+						String[] tmpv = rtnVal;
+						rtnVal = new String[idx + 1];
+						int j = 0;
+						for (String s: tmpv) {
+							rtnVal[j] = s;
+							j++;
+						}
+					}
+					for (int i = 0; i < fieldset.length; i++) {
+//						log.debug("i={}-->[{}]",i, gettbsdytblValue(tbsdytblrs, fieldset[i], verbose));
+						if (i == 0)
+							rtnVal[idx] = tbsdytblrs.getString(fieldset[i]);
+						else
+							rtnVal[idx] = rtnVal[idx] + "," + tbsdytblrs.getString(fieldset[i]);
+					}
+					idx++;
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			log.error("error : {}", e.toString());
+		}
+		log.debug("return SELMFLD length=[{}]", rtnVal.length);
+		return rtnVal;
+	}
+
 	private PreparedStatement setValueps(PreparedStatement ps, String[] updvalary, boolean updinsert) throws Exception {
 		// updinsert true for update, false for insert
 		int type;
