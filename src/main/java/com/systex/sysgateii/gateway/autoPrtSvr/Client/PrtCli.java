@@ -2966,6 +2966,12 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey,
 							this.brws);
 					log.debug("total {} records update status [{}]", row, Constants.STSUSEDINACT);
+					// 20200909 update cmd table
+					SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
+					String t = sdf.format(new java.util.Date());
+					row = jsel2ins.UPDT(PrnSvr.cmdtbname, "CMD, CMDRESULT,CMDRESULTTIME", "'','STOP','" + t + "'",
+							"SVRID,BRWS", PrnSvr.svrid + "," + this.brws);
+					log.debug("total {} records update status [{}]", row, this.curMode);
 					jsel2ins.CloseConnect();
 					jsel2ins = null;
 				} catch (Exception e) {
@@ -3845,6 +3851,23 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 		case ACTIVE:// 被通知要開啟
 			log.debug(getId() + ">>> ACTIVE");
 			this.curMode = evt;
+			//20200909 update cmd table
+			try {
+				if (jsel2ins == null)
+					jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
+				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
+				String t = sdf.format(new java.util.Date());
+				int row = jsel2ins.UPDT(PrnSvr.cmdtbname, "CMD, CMDRESULT,CMDRESULTTIME", "'','START','" + t + "'",
+						"SVRID,BRWS", PrnSvr.svrid + "," + this.brws);
+				log.debug("total {} records update status [{}]", row, this.curMode);
+				jsel2ins.CloseConnect();
+				jsel2ins = null;
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				log.debug("set event errot error e:[{}]", e.toString());
+			}
+			//--
 			break;
 
 		case INACTIVE:

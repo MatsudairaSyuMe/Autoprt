@@ -213,8 +213,10 @@ public class FASSvr implements MessageListener<byte[]>, Runnable {
 					this.currSeqF = this.currSeqMap.get(this.currConn);
 					try {
 						this.setSeqNo = Integer.parseInt(FileUtils.readFileToString(this.currSeqF, Charset.defaultCharset())) + 1;
-						if (this.setSeqNo > 999)
-							this.setSeqNo = 0;
+						//20200910 sdjust setSeqNO from 2 ~ 999
+						if (this.setSeqNo > 999 || this.setSeqNo == 1)
+							this.setSeqNo = 2;
+						//----
 						FileUtils.writeStringToFile(this.currSeqF, Integer.toString(this.setSeqNo), Charset.defaultCharset());
 						header2 = String.format("\u0001%03d\u000f\u000f",setSeqNo);
 					} catch (Exception e) {
@@ -272,7 +274,9 @@ public class FASSvr implements MessageListener<byte[]>, Runnable {
 						this.currSeqMap = this.ec2.getseqfMap();
 						this.currSeqF = this.currSeqMap.get(this.currConn);
 						try {
-							FileUtils.writeStringToFile(this.currSeqF, this.getSeqStr, Charset.defaultCharset());
+							//20200910 mark by Scott Hong for not write back seqno
+//							FileUtils.writeStringToFile(this.currSeqF, this.getSeqStr, Charset.defaultCharset());
+							//----
 							rtn = new byte[telmbyteary.length - TXP.CONTROL_BUFFER_SIZE];
 							System.arraycopy(telmbyteary, TXP.CONTROL_BUFFER_SIZE, rtn, 0,
 									telmbyteary.length - TXP.CONTROL_BUFFER_SIZE);

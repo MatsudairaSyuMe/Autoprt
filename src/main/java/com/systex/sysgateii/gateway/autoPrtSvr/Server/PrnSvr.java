@@ -212,12 +212,26 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 														if (getMe().nodeList.get(cmdary[0]).getCurState() == -1) {
 															getMe().nodeList.get(cmdary[0]).onEvent(getMe().nodeList.get(cmdary[0]).getId(), EventType.ACTIVE);
 															log.debug("cmd object node=[{}] enable session getCurMode=[{}]", getMe().nodeList.get(cmdary[0]).getId(), getMe().nodeList.get(cmdary[0]).getCurMode());
+														} else {
+															SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
+															String t = sdf.format(new java.util.Date());
+															int row = jsel2ins.UPDT(PrnSvr.cmdtbname, "CMD, CMDRESULT,CMDRESULTTIME", "'','START','" + t + "'",
+																	"SVRID,BRWS", PrnSvr.svrid + "," + cmdary[0]);
+															log.debug("total {} records update", row);
+															log.debug("cmd object node=[{}] already active!!!! getCurMode=[{}]", getMe().nodeList.get(cmdary[0]).getId(), getMe().nodeList.get(cmdary[0]).getCurMode());
 														}
 														break;
 													case "STOP":
 														if (getMe().nodeList.get(cmdary[0]).getCurState() != -1) {
 															getMe().nodeList.get(cmdary[0]).onEvent(getMe().nodeList.get(cmdary[0]).getId(), EventType.SHUTDOWN);
 															log.debug("cmd object node=[{}] stop session getCurMode=[{}]", getMe().nodeList.get(cmdary[0]).getId(), getMe().nodeList.get(cmdary[0]).getCurMode());
+														} else {
+															SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
+															String t = sdf.format(new java.util.Date());
+															int row = jsel2ins.UPDT(PrnSvr.cmdtbname, "CMD, CMDRESULT,CMDRESULTTIME", "'','STOP','" + t + "'",
+																	"SVRID,BRWS", PrnSvr.svrid + "," + cmdary[0]);
+															log.debug("total {} records update", row);
+															log.debug("cmd object node=[{}] already shutdown!!!! getCurMode=[{}]", getMe().nodeList.get(cmdary[0]).getId(), getMe().nodeList.get(cmdary[0]).getCurMode());
 														}
 														break;
 													case "RESTART":
@@ -226,7 +240,8 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 														log.debug("!!! cmd object node=[{}] cmd [{}] error", cmdary[0], cmdary[1]);
 														break;
 													}
-												}
+												} else
+													log.debug("!!! cmd object node=[{}] cmd null", cmdary[0]);													
 											} else
 												log.error("!!!current row cmd error [{}]", s);
 										}
