@@ -59,8 +59,10 @@
 		<port>0</port>
 		<logpath>/home/scotthong/tmp</logpath>
 		<db url="jdbc:db2://172.16.71.128:50000/BISDB" user="BIS_USER" pass="bisuser"/>
-		<statustb name="BISAP.TB_AUDEVSTS" mkey="BRWS" fields="BRWS,IP,PORT,SYSIP,SYSPORT,ACTPAS,DEVTPE,CURSTUS,VERSION,CREATOR,MODIFIER"/>
-		<svrtbsdytb name="BISAP.TB_AUSVRPRM" mkey="SVRID" fields="SVRID,TBSDY"/>
+<!--		<statustb name="BISAP.TB_AUDEVSTS" mkey="BRWS" fields="BRWS,IP,PORT,SYSIP,SYSPORT,ACTPAS,DEVTPE,CURSTUS,VERSION,CREATOR,MODIFIER"/>
+		<svrtbsdytb name="BISAP.TB_AUSVRPRM" mkey="SVRID" fields="SVRID,TBSDY"/> -->
+		<statustb name="BISAP.TB_AUDEVSTS" mkey="BRWS" fields="IP,PORT,SYSIP,SYSPORT,ACTPAS,DEVTPE,CURSTUS,VERSION,CREATOR,MODIFIER"/>
+		<svrtbsdytb name="BISAP.TB_AUSVRPRM" mkey="SVRID" fields="TBSDY"/>
 		<devcmdtb name="BISAP.TB_AUDEVCMD" mkey="SVRID,BRWS" fields="SVRID,BRWS,CMD"/>
 	</system>
 	<svrsubport>

@@ -264,7 +264,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 	private String statusfields = "";
 	//"'9838901',10.24.1.230,'4002','10.24.1.230','3301','0','3','0','1','SYSTEM',''"
 	//                                        printer type,status
-	private String updValueptrn = "'%s',%s,'%s','%s','%s','0','%s','%s','1','SYSTEM',''";
+//change to use new UPSERT
+	//	private String updValueptrn = "'%s',%s,'%s','%s','%s','0','%s','%s','1','SYSTEM',''";
+	private String updValueptrn = "'%s','%s','%s','%s','0','%s','%s','1','SYSTEM',''";
 	//分行設備分類0: 匯率顯示版 1:利率顯示版 2: AUTO46 自動補褶機 3: AUTO52 自動補褶機
 	private String typeid = "2"; //default for AUTP46
 	private GwDao jsel2ins = null;
@@ -361,7 +363,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 			log.error("Address format error!!! {}", e.getMessage());
 		}
 //		log.info("rmt addr {} port {} local addr {} port {}",this.rmtaddr.getAddress().getHostAddress(), this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort());
-		String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
+//20200910 change to used new UPSERT
+//		String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
+//				this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDINACT);
+		String updValue = String.format(updValueptrn,this.rmtaddr.getAddress().getHostAddress(),
 				this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDINACT);
 		try {
 			if (jsel2ins == null)
@@ -537,11 +542,15 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 		showStateMsg = false;
 		this.curSockNm = String.format("%04d", (int) ((Math.random() * ((9999 - 4) + 1)) + 4));
 		aslog.info(String.format("CON  %s[%04d]:", this.curSockNm, 0));
-		String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
+//		String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
+//				this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDACT);
+//20200910 change to use new UPSERT
+		String updValue = String.format(updValueptrn,this.rmtaddr.getAddress().getHostAddress(),
 				this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDACT);
 		if (jsel2ins == null)
 			jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
 		int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, this.brws);
+//----
 		log.debug("total {} records update status [{}]", row, Constants.STSUSEDACT);
 		jsel2ins.CloseConnect();
 		jsel2ins =  null;
@@ -573,7 +582,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 		prt.getIsShouldShutDown().set(true);
 		prt.ClosePrinter();
 		aslog.info(String.format("DIS  %s[%04d]:", this.curSockNm, 0));
-		String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
+//20200910 change to use new UPSERT
+//		String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
+//				this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDINACT);
+		String updValue = String.format(updValueptrn,this.rmtaddr.getAddress().getHostAddress(),
 				this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDINACT);
 		if (jsel2ins == null)
 			jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
@@ -646,7 +658,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 	@Override
 	public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
 		log.debug(clientId + " channelUnregistered");
-		String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
+		//20200910 change to use new UPSERT
+//		String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
+//				this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDINACT);
+		String updValue = String.format(updValueptrn,this.rmtaddr.getAddress().getHostAddress(),
 				this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDINACT);
 		try {
 			if (jsel2ins == null)
@@ -2676,7 +2691,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 								if (totatext.length >= 22) {
 									System.arraycopy(totatext, 20, this.fepdd, 0, 2);
 									atlog.info("set fepdd=[{}]", new String(this.fepdd));
-									String updTBSDY = PrnSvr.svrid + ",'" + new String(totatext, 14, 8) + "',";
+									//20200910 change to use new UPSERT
+//									String updTBSDY = PrnSvr.svrid + ",'" + new String(totatext, 14, 8) + "',";
+									String updTBSDY = "'" + new String(totatext, 14, 8) + "'";
 									if (jsel2ins == null)
 										jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
 									int row = jsel2ins.UPSERT(PrnSvr.svrtbsdytbname, PrnSvr.svrtbsdytbfields, updTBSDY, PrnSvr.svrtbsdytbmkey, PrnSvr.svrid);
@@ -2958,7 +2975,11 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					prt.getIsShouldShutDown().set(true);
 					prt.ClosePrinter();
 					aslog.info(String.format("DIS  %s[%04d]:", this.curSockNm, 0));
-					String updValue = String.format(updValueptrn, this.brws, this.rmtaddr.getAddress().getHostAddress(),
+//20200910 change to use new UPSERT
+//					String updValue = String.format(updValueptrn, this.brws, this.rmtaddr.getAddress().getHostAddress(),
+//							this.rmtaddr.getPort(), this.localaddr.getAddress().getHostAddress(),
+//							this.localaddr.getPort(), this.typeid, Constants.STSUSEDINACT);
+					String updValue = String.format(updValueptrn, this.rmtaddr.getAddress().getHostAddress(),
 							this.rmtaddr.getPort(), this.localaddr.getAddress().getHostAddress(),
 							this.localaddr.getPort(), this.typeid, Constants.STSUSEDINACT);
 					if (jsel2ins == null)
@@ -3041,7 +3062,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				}
 				//----
 				this.lastCheckTime = System.currentTimeMillis();
-				String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
+//20200910 change to use UPSERT
+//				String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
+//						this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDACT);
+				String updValue = String.format(updValueptrn,this.rmtaddr.getAddress().getHostAddress(),
 						this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDACT);
 				try {
 					if (jsel2ins == null)
@@ -3083,7 +3107,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 						//----
 					} else {
 						if ((System.currentTimeMillis() - this.lastCheckTime) > 10 * 1000) {
-							String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
+//20200910 change to use new UPSERT
+//							String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
+//									this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDACT);
+							String updValue = String.format(updValueptrn, this.rmtaddr.getAddress().getHostAddress(),
 									this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDACT);
 							try {
 								if (jsel2ins == null)

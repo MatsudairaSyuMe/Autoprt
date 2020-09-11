@@ -65,7 +65,7 @@ public class GwDao {
 		this.verbose = v;
 	}
 
-	public int UPSERT(String fromTblName, String field, String updval, String keyname, String selkeyval)
+	public int UPSERT2(String fromTblName, String field, String updval, String keyname, String selkeyval)
 			throws Exception {
 		columnNames = new Vector<String>();
 		columnTypes = new Vector<Integer>();
@@ -169,12 +169,10 @@ public class GwDao {
 		}
 		return row;
 	}
-	public int UPSERT2(String fromTblName, String field, String updval, String keyname, String selkeyval)
+	public int UPSERT(String fromTblName, String field, String updval, String keyname, String selkeyval)
 			throws Exception {
 		columnNames = new Vector<String>();
 		columnTypes = new Vector<Integer>();
-		// STEP 4: Execute a query
-		//20200908 add check for field and keyname
 		if (fromTblName == null || fromTblName.trim().length() == 0 || field == null || field.trim().length() == 0
 				|| keyname == null || keyname.trim().length() == 0)
 			throw new Exception("given table name or field or keyname error =>" + fromTblName);
@@ -182,25 +180,17 @@ public class GwDao {
 		java.sql.Statement stmt = selconn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE, ResultSet.CLOSE_CURSORS_AT_COMMIT);
 		//20200908
 		String keyset = "";
-		if (keyname.indexOf(',') > -1 && selkeyval.indexOf(',') > -1) {
-			String[] keynameary = keyname.split(",");
-			String[] keyvalueary = selkeyval.split(",");
-			if (keynameary.length != keyvalueary.length)
-				throw new Exception("given fields keyname can't correspond to keyvfield =>keynames [" + keyname + "] selkayvals [" + selkeyval + "]");
-			else {
-				for (int i = 0; i < keynameary.length; i++)
-					keyset = keyset + keynameary[i] + " = " + keyvalueary[i] + (i == (keynameary.length - 1) ? "" : " and ");
-			}
-		} else
-			keyset = keyname + " = " + selkeyval;
-		//----
-        //20200908 modify for multiple fields key value
-//		rs = ((java.sql.Statement) stmt)
-//				.executeQuery("SELECT " + field + " FROM " + fromTblName + " where " + keyname + "=" + selkeyval);
+		String[] keynameary = keyname.split(",");
+		String[] keyvalueary = selkeyval.split(",");
+		if (keynameary.length != keyvalueary.length)
+			throw new Exception("given fields keyname can't correspond to keyvfield =>keynames [" + keyname + "] selkayvals [" + selkeyval + "]");
+		else {
+			for (int i = 0; i < keynameary.length; i++)
+				keyset = keyset + keynameary[i] + " = " + keyvalueary[i] + (i == (keynameary.length - 1) ? "" : " and ");
+		}
 		rs = ((java.sql.Statement) stmt)
-				.executeQuery("SELECT " + field + " FROM " + fromTblName + " where " + keyset);
-		//----
-		log.debug("update value [{}]", updval);
+				.executeQuery("SELECT " + keyname + "," + field + " FROM " + fromTblName + " where " + keyset);
+		log.debug("update value [{}] selkeyval [{}]", updval, selkeyval);
 		String[] valary = updval.split(",");
 		for (int i = 0; i < valary.length; i++) {
 			int s = valary[i].indexOf('\'');
@@ -208,27 +198,46 @@ public class GwDao {
 			if (s != l && s >= 0 && l >= 0 && s < l)
 				valary[i] = valary[i].substring(s + 1, l);
 		}
+		String[] selkeyvalary = selkeyval.split(",");
+		for (int i = 0; i < selkeyvalary.length; i++) {
+			int s = selkeyvalary[i].indexOf('\'');
+			int l = selkeyvalary[i].lastIndexOf('\'');
+			if (s != l && s >= 0 && l >= 0 && s < l)
+				selkeyvalary[i] = selkeyvalary[i].substring(s + 1, l);
+		}
 		int type = -1;
 		int row = 0;
 
 		if (rs != null) {
 			ResultSetMetaData rsmd = rs.getMetaData();
 			int columnCount = 0;
-			verbose = true;
+			boolean updateMode = false;
+			log.debug("table request fields {}", field);
+			if (rs.next()) {
+				log.debug("update mode");
+				updateMode = true;
+			} else
+				log.debug("insert mode");
 			while (columnCount < rsmd.getColumnCount()) {
 				columnCount++;
 				type = rsmd.getColumnType(columnCount);
-				if (verbose)
-					log.debug("ColumnName={} ColumnTypeName={} ", rsmd.getColumnName(columnCount), rsmd.getColumnTypeName(columnCount) );
-				columnNames.add(rsmd.getColumnName(columnCount));
-				columnTypes.add(type);
+				if (updateMode && field.indexOf(rsmd.getColumnName(columnCount).trim()) > -1) {
+					columnNames.add(rsmd.getColumnName(columnCount));
+					columnTypes.add(type);
+					if (verbose)
+						log.debug("updateMode ColumnName={} ColumnTypeName={} ", rsmd.getColumnName(columnCount), rsmd.getColumnTypeName(columnCount) );
+				} else if (!updateMode && (field.indexOf(rsmd.getColumnName(columnCount).trim()) > -1 || keyname.indexOf(rsmd.getColumnName(columnCount).trim()) > -1)) {
+					columnNames.add(rsmd.getColumnName(columnCount));
+					columnTypes.add(type);					
+					if (verbose)
+						log.debug("insert Mode ColumnName={} ColumnTypeName={} ", rsmd.getColumnName(columnCount), rsmd.getColumnTypeName(columnCount) );
+				}
 			}
 			String colNames = "";
 			String vals = "";
 			String updcolNames = "";
 			String updvals = "";
-			log.debug("table fields {}", Arrays.toString(columnNames.toArray()));
-			log.debug("given vals {}", Arrays.toString(valary));
+			log.debug("given vals {} selkeyvalary {}", Arrays.toString(valary), Arrays.toString(selkeyvalary));
 
 			for (columnCount = 0; columnCount < columnNames.size(); columnCount++) {
 				if (colNames.trim().length() > 0) {
@@ -238,7 +247,7 @@ public class GwDao {
 					colNames = columnNames.get(columnCount);
 					vals = "?";
 				}
-				if (!columnNames.get(columnCount).equalsIgnoreCase(keyname)) {
+				if (updateMode) {
 					if (updcolNames.trim().length() > 0) {
 						updcolNames = updcolNames + "," + columnNames.get(columnCount);
 						updvals = updvals + ",?";
@@ -254,18 +263,17 @@ public class GwDao {
 //					+ keyname + " = " + selkeyval;
 			String SQL_UPDATE = "UPDATE " + fromTblName + " SET (" + updcolNames + ") = (" + updvals + ") WHERE "
 					+ keyset;
-			log.debug("given SQL_INSERT = {}", SQL_INSERT);
-			log.debug("given SQL_UPDATE = {}", SQL_UPDATE);
 			//----
-			if (rs.next()) {
+			if (updateMode) {
 				preparedStatement = selconn.prepareStatement(SQL_UPDATE);
 				log.debug("record exist using update:{}", SQL_UPDATE);
 				log.debug("record exist using valary:{} len={}", valary, valary.length);
-				setValueps(preparedStatement, valary, true);
+				setValueps(preparedStatement, valary, false);
 
 			} else {
 				preparedStatement = selconn.prepareStatement(SQL_INSERT);
-				setValueps(preparedStatement, valary, false);
+				String[] insvalary = com.systex.sysgateii.gateway.util.dataUtil.concatArray(selkeyvalary, valary);
+				setValueps(preparedStatement, insvalary, false);
 				log.debug("record not exist using insert:{}", SQL_INSERT);
 			}
 
@@ -841,19 +849,19 @@ public class GwDao {
 
 			jsel2ins = null;
 
-			String selField = "BRWS,IP,PORT,SYSIP,SYSPORT,ACTPAS,DEVTPE,CURSTUS,VERSION,CREATOR,MODIFIER";
-			String updValue = "'9838901',10.24.1.230,'4002','10.24.1.230','3301','0','3','0','1','SYSTEM',''";
+			String selField = "IP,PORT,SYSIP,SYSPORT,ACTPAS,DEVTPE,CURSTUS,VERSION,CREATOR,MODIFIER";
+			String updValue = "'10.24.1.230','4002','10.24.1.230','3301','0','3','0','1','SYSTEM',''";
 			String keyName = "BRWS";
 			String keyValue = "9838901";
 
 			total = 0;
-			/*
-			while (true) {
-				if (jsel2ins == null)
-					jsel2ins = new GwDao(fromurl, fromuser, frompass, verbose);
-				total = jsel2ins.UPSERT(fn, selField, updValue, keyName, keyValue);
-				jsel2ins.CloseConnect();
-				jsel2ins = null;
+			
+/*			while (true) {
+//				if (jsel2ins == null)
+//					jsel2ins = new GwDao(fromurl, fromuser, frompass, verbose);
+//				total = jsel2ins.UPSERT(fn, selField, updValue, keyName, keyValue);
+//				jsel2ins.CloseConnect();
+//				jsel2ins = null;
 //			System.out.println("total " + total + " records transferred");
 //			System.out.println("TBSDY= " + jsel2ins.SELTBSDY("BISAP.TB_AUSVRPRM", "TBSDY", "SVRID", 1));
 //			System.out.println("TBSDY= " + jsel2ins.SELONEFLD("BISAP.TB_AUSVRPRM", "SVRID,TBSDY", "SVRID", "1", false));
@@ -865,13 +873,16 @@ public class GwDao {
 				Thread.sleep(2 * 1000);
 			}
 			*/
+			
 			if (jsel2ins == null)
 				jsel2ins = new GwDao(fromurl, fromuser, frompass, verbose);
-			total = jsel2ins.UPSERT2(fn, selField, updValue, keyName, keyValue);
+//			total = jsel2ins.UPSERT(fn, selField, updValue, keyName, keyValue);
+			total = jsel2ins.UPSERT("BISAP.TB_AUSVRPRM", "TBSDY", "01090910", "SVRID", "1");
 			jsel2ins.CloseConnect();
 			jsel2ins = null;
 			System.out.println("total " + total + " records transferred");
-
+			
+/*
 			if (jsel2ins == null)
 				jsel2ins = new GwDao(fromurl, fromuser, frompass, verbose);
 			String tb = "BISAP.TB_AUDEVCMD";
@@ -889,7 +900,7 @@ public class GwDao {
 
 			jsel2ins.CloseConnect();
 			jsel2ins = null;
-
+*/
 		} catch (SQLException se) {
 			// Handle errors for JDBC
 			se.printStackTrace();
