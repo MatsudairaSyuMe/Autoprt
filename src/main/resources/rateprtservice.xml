@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
+<center>y</center>
  <boards>
 - 	<board>
 			<brno>984</brno>
@@ -57,8 +58,11 @@
 		<svrid>1</svrid>
 		<ip>*</ip>
 		<port>0</port>
-		<logpath>/home/scotthong/tmp</logpath>
+		<logpath>/gwlog/autosvr</logpath>
 		<db url="jdbc:db2://172.16.71.128:50000/BISDB" user="BIS_USER" pass="bisuser"/>
+		<svrprmtb name="BISAP.TB_AUSVRPRM" mkey="SVRID" fields="AUID,BRNO,IP,PORT,DEVTPE,RECVTIMEOUT,LOGPATH"/>
+		<fasprmtb name="BISAP.TB_AUFASPRM" mkey="AUID" fields="CONNPRM"/>
+		<devprmtb name="BISAP.TB_AUDEVPRM" mkey="SVRID" fields="BRWS,IP,PORT,DEVTPE,AUTOTURNPAGE"/>
 <!--		<statustb name="BISAP.TB_AUDEVSTS" mkey="BRWS" fields="BRWS,IP,PORT,SYSIP,SYSPORT,ACTPAS,DEVTPE,CURSTUS,VERSION,CREATOR,MODIFIER"/>
 		<svrtbsdytb name="BISAP.TB_AUSVRPRM" mkey="SVRID" fields="SVRID,TBSDY"/> -->
 		<statustb name="BISAP.TB_AUDEVSTS" mkey="BRWS" fields="IP,PORT,SYSIP,SYSPORT,ACTPAS,DEVTPE,CURSTUS,VERSION,CREATOR,MODIFIER"/>
@@ -72,7 +76,7 @@
 		<svrport>15000</svrport>
 		<localip>10.24.1.230</localip>
 		<localport>15010</localport>
-		<recvtimeout>30000</recvtimeout>
+		<recvtimeout>15000</recvtimeout>
 		<verhbrno>984</verhbrno>
 		<verhwsno>80</verhwsno>
 	</svrsubport>

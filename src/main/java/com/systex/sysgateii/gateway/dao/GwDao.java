@@ -488,7 +488,7 @@ public class GwDao {
 				|| keyname == null || keyname.trim().length() == 0)
 			return rtnVal;
 		try {
-			log.debug("fieldsn=[{}] keyname = keyvalue=[{}]",  fieldsn, keyname + "=" + keyvalue);
+			log.debug("fieldsn=[{}] keyname = keyvalue : [{}]",  fieldsn, keyname + "=" + keyvalue);
 			String[] fieldset = null;
 			if (fieldsn.indexOf(',') > -1)
 				fieldset = fieldsn.split(",");
