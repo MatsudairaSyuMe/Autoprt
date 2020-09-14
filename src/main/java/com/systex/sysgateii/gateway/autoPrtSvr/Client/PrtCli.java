@@ -371,7 +371,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 		try {
 			if (jsel2ins == null)
 				jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
-			int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, this.brws);
+			int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, this.brws + "," + PrnSvr.svrid);
 			log.debug("total {} records update  status [{}]", row, Constants.STSUSEDINACT);
 			jsel2ins.CloseConnect();
 			jsel2ins = null;
@@ -549,7 +549,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDACT);
 		if (jsel2ins == null)
 			jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
-		int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, this.brws);
+		int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, this.brws + "," + PrnSvr.svrid);
 //----
 		log.debug("total {} records update status [{}]", row, Constants.STSUSEDACT);
 		jsel2ins.CloseConnect();
@@ -589,7 +589,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDINACT);
 		if (jsel2ins == null)
 			jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
-		int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, this.brws);
+		int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, this.brws + "," + PrnSvr.svrid);
 		log.debug("total {} records update  status [{}]", row, Constants.STSUSEDINACT);
 		jsel2ins.CloseConnect();
 		jsel2ins = null;
@@ -666,7 +666,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 		try {
 			if (jsel2ins == null)
 				jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
-			int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, this.brws);
+			int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, this.brws + "," + PrnSvr.svrid);
 			log.debug("total {} records update  status [{}]", row, Constants.STSUSEDINACT);
 			jsel2ins.CloseConnect();
 			jsel2ins = null;
@@ -2985,7 +2985,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					if (jsel2ins == null)
 						jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
 					int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey,
-							this.brws);
+							this.brws + "," + PrnSvr.svrid);
 					log.debug("total {} records update status [{}]", row, Constants.STSUSEDINACT);
 					// 20200909 update cmd table
 					SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
@@ -3070,7 +3070,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				try {
 					if (jsel2ins == null)
 						jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
-					int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, this.brws);
+					int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, this.brws + "," + PrnSvr.svrid);
 					log.debug("total {} records update status [{}]", row, Constants.STSUSEDACT);
 					jsel2ins.CloseConnect();
 					jsel2ins = null;
@@ -3115,7 +3115,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 							try {
 								if (jsel2ins == null)
 									jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
-								int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, this.brws);
+								int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, this.brws + "," + PrnSvr.svrid);
 								log.debug("total {} records update status [{}]", row, Constants.STSUSEDACT);
 								jsel2ins.CloseConnect();
 								jsel2ins = null;
