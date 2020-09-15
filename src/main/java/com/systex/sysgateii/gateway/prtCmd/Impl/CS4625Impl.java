@@ -18,6 +18,9 @@ import com.systex.sysgateii.gateway.prtCmd.Printer;
 import com.systex.sysgateii.gateway.util.CharsetCnv;
 import com.systex.sysgateii.gateway.util.LogUtil;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class CS4625Impl implements Printer {
@@ -218,6 +221,9 @@ public class CS4625Impl implements Printer {
 	private AtomicBoolean p_fun_flag = new AtomicBoolean(false);
 	private int nCPI = 0;
 	private int nLPI = 0;
+	//20200915 for keep skip control code data
+	private ByteBuf skiplinebuf = Unpooled.buffer(16384);
+	//--
 
 	public CS4625Impl(final PrtCli pc, final String brws, final String type, final String autoturnpage) {
 		this.pc = pc;
@@ -451,7 +457,6 @@ public class CS4625Impl implements Printer {
 			rtn = null;
 		return rtn;
 	}
-
 	@Override
 	public boolean Prt_Text(byte[] buff) {
 		// TODO Auto-generated method stub
@@ -730,6 +735,293 @@ public class CS4625Impl implements Printer {
 					System.arraycopy(hBuf, 3, sendhBuf, 0, sendhBuf.length);
 					Send_hData(sendhBuf);
 					log.debug("6.2 ===<><>{} {} Prt_Text leave S4625_PSO wlen={} i={}", this.curState, this.curChkState, wlen, i);
+				}
+			}
+//		}
+		return true;
+	}
+
+	@Override
+	public boolean Prt_Text(byte[] skipbuff, byte[] buff) {
+		// TODO Auto-generated method stub
+		int i = 0, wlen = 0;
+		if (buff == null || buff.length == 0)
+			return (false);
+		int len = buff.length;
+		byte bcc = 0x0;
+		byte chrtmp = 0x0;
+		byte chrtmp1 = 0x0;
+		boolean dblword = false; // chinese character
+		byte[] data = null;
+		boolean bPrinterNoFont = false;
+
+		byte[] linefeed = null;
+		int j, offset = 0;
+		boolean bLineFeed;
+		boolean bHalf = false;
+		byte[] hBuf = new byte[600];
+
+		// filter space 91.10.09
+		bLineFeed = false;
+
+		for (j = len - 1; j >= 0; j--) {
+			if (buff[j] != (byte)0x0a && buff[j] != (byte)0x0d)
+				break;
+			else
+				bLineFeed = true;
+		}
+/*		if (bLineFeed) {
+			linefeed = new byte[len - j - 1];
+			System.arraycopy(buff, j + 1, linefeed, 0, len - j - 1);
+			offset = j;
+			linefeed = new byte[offset + 1];
+			System.arraycopy(buff, 0, linefeed, 0, offset + 1);
+			buff = linefeed;
+		}*/
+		len = buff.length;
+		if (this.notSetCLPI.get() == true)
+		{
+			if (nCPI != 0)
+				SetCPI(true, nCPI);
+			else if (nLPI != 0)
+				SetLPI(true, nLPI);
+			notSetCLPI.set(false);
+		}
+		boolean bBeginRedSession=m_bColorRed.get();
+		boolean bBeginSISession=false;
+		this.curState = Prt_Text_START;
+//		while (i < len ) {
+//			chrtmp = buff[i];
+//			chrtmp1 = buff[i+1];
+/*			if((this.p_fun_flag.get() == true) && (int)(chrtmp & 0xff) >= (int)((byte)0x80 & 0xff))
+			{
+				log.debug("0 ===<><>{} Prt_Text check chinese Font chkChkState {} i={}", this.curState, this.curChkState, i, String.format("0x%02x%02x", chrtmp, chrtmp1));
+
+				if (ChkAddFont((int)((chrtmp & 0x00ff)<<8)+(int)((chrtmp1 & 0xff))) == true)
+				{
+					AddFont((int)((chrtmp & 0x00ff)<<8)+(int)((chrtmp1 & 0xff)));
+					log.debug("1 ===<><>{} Prt_Text enter S4625_PSI chkChkState {} i={} AddFont", this.curState, this.curChkState, i, String.format("0x%02x%02x", chrtmp, chrtmp1));
+					i+=2;
+					continue;
+				}
+				if (ChkExtFont((int)((chrtmp & 0x00ff)<<8)+((int)((chrtmp1 & 0xff)))) == true)
+				{
+					AddExtFont(chrtmp,chrtmp1);
+					log.debug("2 ===<><>{} Prt_Text enter S4625_PSI chkChkState {} i={} AddExtFont", this.curState, this.curChkState, i, String.format("0x%02x%02x", chrtmp, chrtmp1));
+					i+=2;
+					continue;
+				}
+			}*/
+//			log.debug("Prt_Text i={} len={}", i, len);
+/*			if ( len > 1 ) {
+				if ( buff[i] == (byte)0x0a &&
+					 buff[i-1] != (byte)0x0d )
+				{
+					Send_hData(S4625_PNON_PRINT_AREA);
+					Send_hData(S4625_PENLARGE_OD);
+					//20060906 if addfont is the last char and follows a 0x0a , then slip won't catch newline
+					if ( i == ( len -  1 ) )
+						Send_hData(S4625_PENLARGE_OA);
+					//Sleep(250);
+//					PurgeBuffer();
+					//see what happen in r8
+					if (this.curState == Prt_Text_START || this.curState == Prt_Text) {
+						if (this.curState == Prt_Text_START) {
+							this.curChkState = CheckStatus_START;
+							this.curState = Prt_Text;
+						}
+						data = CheckStatus();
+						log.debug("2 ===<><>{} Prt_Text chkChkState {} {}", this.curState, this.curChkState, data);
+						if (CheckDis(data) != 0) {
+							this.curState = ResetPrinterInit_START;
+							log.debug("{} {} {} {} 94補摺機狀態錯誤！", iCnt, brws, "", "");
+							return false;
+						}
+						if (!CheckError(data)) {
+							log.debug("{} {} {} {} 94存摺資料補登時發生錯誤！", iCnt, brws, "", "");
+							return false;
+						} else {
+							this.curState = Prt_Text_START;
+						}
+					}
+					i++;
+				}
+			}
+			else {
+				if ( buff[0] == (byte)0x0a ||
+					 buff[0] == (byte)0x0d )
+				{
+					Send_hData(S4625_PNON_PRINT_AREA);
+					Send_hData(S4625_PENLARGE_OD);
+					Send_hData(S4625_PENLARGE_OA);
+					//Sleep(250);
+//					PurgeBuffer();
+					//see what happen in r8
+					//data=CheckStatus();
+					//CheckError(data);
+					i++;
+				}
+			}*/
+/*			if (len > 1) {
+				if (buff[i] == (byte) 0x0a && buff[i - 1] != (byte) 0x0d) {
+					System.arraycopy(S4625_PNON_PRINT_AREA, 0, hBuf, wlen+3, S4625_PNON_PRINT_AREA.length);
+					wlen += S4625_PNON_PRINT_AREA.length;
+					System.arraycopy(S4625_PENLARGE_OD, 0, hBuf, wlen+3, S4625_PENLARGE_OD.length);
+					wlen += S4625_PENLARGE_OD.length;
+					System.arraycopy(S4625_PENLARGE_OA, 0, hBuf, wlen+3, S4625_PENLARGE_OA.length);
+					i++;
+					log.debug("2.1 ===<><>{} {} Prt_Text wlen={} i={}", this.curState, this.curChkState, wlen, i);
+				}
+			} else {
+				if (buff[0] == (byte) 0x0a || buff[0] == (byte) 0x0d) {
+					System.arraycopy(S4625_PNON_PRINT_AREA, 0, hBuf, wlen+3, S4625_PNON_PRINT_AREA.length);
+					wlen += S4625_PNON_PRINT_AREA.length;
+					System.arraycopy(S4625_PENLARGE_OD, 0, hBuf, wlen+3, S4625_PENLARGE_OD.length);
+					wlen += S4625_PENLARGE_OD.length;
+					System.arraycopy(S4625_PENLARGE_OA, 0, hBuf, wlen+3, S4625_PENLARGE_OA.length);
+					i++;
+					log.debug("2.2 ===<><>{} {} Prt_Text wlen={} i={}", this.curState, this.curChkState, wlen, i);
+				}
+			}*/
+			{
+				Arrays.fill(hBuf, (byte)0x0);
+				while (i < len)
+				{
+					if ( bBeginRedSession == true ) {
+						//set to red
+					}
+//					log.debug("3 ===<><>{} Prt_Text chkChkState {} wlen={} i={} len={} {} {} {}", this.curState, this.curChkState,wlen,i,len, (char)buff[i], Byte.toString(buff[i]), Byte.toString(buff[i+1]));
+					hBuf[wlen+3] = buff[i];
+					hBuf[wlen+4] = buff[i+1];
+					chrtmp = buff[i];
+					chrtmp1 = buff[i+1];
+//					log.debug("3 ===<><>Prt_Text chkChkState {} {}", (int)(chrtmp & 0xff), (int)(0x80 & 0xff));
+//20200729					if ( (int)(chrtmp & 0xff) >= (int)(0x80 & 0xff))
+					if((this.p_fun_flag.get() == true) && (int)(chrtmp & 0xff) >= (int)((byte)0x80 & 0xff))
+					{
+						dblword = true;
+						// check only , BNE 6319 , break
+	/*					if (ChkAddFont(((chrtmp<<8)+(chrtmp1))) == true)
+						{
+							dblword = false;
+							break;
+						}
+						if (ChkExtFont(((chrtmp<<8)+(chrtmp1))) == true)
+						{
+							dblword = false;
+							break;
+						}*/
+
+						log.debug("0 ===<><>{} {} Prt_Text check chinese Font i={} [{}]", this.curState, this.curChkState, i, String.format("0x%02x%02x", chrtmp, chrtmp1));
+
+						if (ChkAddFont((int)((chrtmp & 0x00ff)<<8)+(int)((chrtmp1 & 0xff))) == true)
+						{
+							log.debug("1 ===<><>{} {} Prt_Text i={} AddFont [{}]", this.curState, this.curChkState, i, String.format("0x%02x%02x", chrtmp, chrtmp1));
+							if (AddFont((int)((chrtmp & 0x00ff)<<8)+(int)((chrtmp1 & 0xff)))) {
+								System.arraycopy(this.command, 0, hBuf, wlen+3, this.command.length);
+								wlen+=this.command.length;
+								bBeginSISession=false;
+							} else
+								log.error("1 ===<><>{} {} Prt_Text i={} AddFont [{}] error", this.curState, this.curChkState, i, String.format("0x%02x%02x", chrtmp, chrtmp1));								
+							i+=2;
+							dblword = false;
+							continue;
+						}
+						if (ChkExtFont((int)((chrtmp & 0x00ff)<<8)+((int)((chrtmp1 & 0xff)))) == true)
+						{
+							log.debug("2 ===<><>{} {} Prt_Text i={} AddExtFont [{}]", this.curState, this.curChkState, i, String.format("0x%02x%02x", chrtmp, chrtmp1));
+							if (AddExtFont(chrtmp,chrtmp1)) {
+								System.arraycopy(this.command, 0, hBuf, wlen+3, this.command.length);
+								wlen+=this.command.length;
+								bBeginSISession=false;
+							} else
+								log.error("2.1 ===<><>{} {} Prt_Text i={} AddExtFont error [{}] ", this.curState, this.curChkState, i, String.format("0x%02x%02x", chrtmp, chrtmp1));								
+							i+=2;
+							dblword = false;
+							continue;
+						}
+
+//----
+						if ( bBeginSISession == false ) {
+							log.debug("4 ===<><>{} {} Prt_Text enter S4625_PSI wlen={} i={}", this.curState, this.curChkState, wlen, i);
+
+//							memcpy(&hBuf[wlen+3],S4625_PSI,5);
+							System.arraycopy(S4625_PSI, 0, hBuf, wlen+3, 5);
+							bBeginSISession=true;
+							wlen+=5;
+							hBuf[wlen+3] = buff[i];
+							hBuf[wlen+4] = buff[i+1];
+						}
+					}
+					if (dblword == true)
+					{
+						//bcc = bcc + buff[i] + buff[i+1];
+						i+=2;
+						wlen+=2;
+						dblword = false;
+					}
+					else
+					{
+						if ( bBeginSISession == true ) {
+							log.debug("5 ===<><>{} {} Prt_Text leave S4625_PSO wlen={} i={}", this.curState, this.curChkState, wlen, i);
+							System.arraycopy(S4625_PSO, 0, hBuf, wlen+3, 5);
+							bBeginSISession=false;
+							wlen+=5;
+							hBuf[wlen+3] = buff[i];
+						}
+						if (((int)(buff[i] & 0xff) < (int)(0x20 & 0xff)) && buff[i] != (byte)0x0d && buff[i] != (byte)0x0a)
+						{
+							buff[i] = 0x20;
+							hBuf[wlen+3] = buff[i];
+						}
+						if ( buff[i] == (byte)0x0d &&
+							 buff[i+1] == (byte)0x0a )
+						{
+							i++;
+							System.arraycopy(S4625_PNON_PRINT_AREA, 0, hBuf, wlen+3, S4625_PNON_PRINT_AREA.length);
+							wlen += S4625_PNON_PRINT_AREA.length;
+							System.arraycopy(S4625_PENLARGE_OD, 0, hBuf, wlen+3, S4625_PENLARGE_OD.length);
+							wlen += S4625_PENLARGE_OD.length;
+							System.arraycopy(S4625_PENLARGE_OA, 0, hBuf, wlen+3, S4625_PENLARGE_OA.length);
+
+							log.debug("5.2 ===<><>{} {} Prt_Text wlen={} i={}", this.curState, this.curChkState, wlen, i);
+						}
+						if ( buff[i] == (byte)0x0a &&
+							 buff[i-1] != (byte)0x0d )
+						{
+							log.debug("5.3 ===<><>{} {} Prt_Text wlen={} i={}", this.curState, this.curChkState, wlen, i);
+							break;
+						}
+						if ( buff[i] == (byte)0x0d &&
+							 buff[i-1] != (byte)0x0a )
+						{
+							log.debug("5.4 ===<><>{} {} Prt_Text wlen={} i={}", this.curState, this.curChkState, wlen, i);
+							break;
+						}
+						i++;
+						wlen++;
+					}
+				}
+				log.debug("6 ===<><>{} {} Prt_Text leave S4625_PSO chkChkState wlen={} i={}", this.curState, this.curChkState, wlen, i);
+				if ( wlen > 0 ) {
+					hBuf[0]=hBuf[1]=hBuf[2]=' ';
+					if ( bBeginSISession == true ) {
+						log.debug("6.1 ===<><>{} {} Prt_Text leave S4625_PSO wlen={} i={}", this.curState, this.curChkState, wlen, i);
+						System.arraycopy(S4625_PSO, 0, hBuf, wlen+3, 5);
+						bBeginSISession=false;
+						wlen+=5;
+					}
+					//20060905 , to compromise the bne at last digit, 0x0a set in upper logic
+					hBuf[wlen+3]=(byte)0x0;
+					//20060905
+//					wlen = 0;
+					byte[] sendhBuf = new byte[wlen];
+					System.arraycopy(hBuf, 3, sendhBuf, 0, sendhBuf.length);
+					byte[] sendhBuf2 = new byte[skipbuff.length + sendhBuf.length];
+					System.arraycopy(skipbuff, 0, sendhBuf2, 0, skipbuff.length);
+					System.arraycopy(sendhBuf, 0, sendhBuf2, skipbuff.length, sendhBuf.length);
+					Send_hData(sendhBuf2);
+					log.debug("6.2 ===<><>{} {} Prt_Text leave S4625_PSO wlen={} i={}", this.curState, this.curChkState, sendhBuf2, i);
 				}
 			}
 //		}
@@ -1281,7 +1573,37 @@ public class CS4625Impl implements Printer {
 		// TODO Auto-generated method stub
 		return false;
 	}
+	//20200915 for keep skip control code data
+	public void PrepareSkipBuffer() {
+		this.skiplinebuf.clear();
+	}
+	public boolean SkipnLineBuf(int nLine) {
+		if (nLine == 0)
+			return true;
+		if (nLine < 0) {
+			nLine = nLine * -1;
+			for(int i = 0;i < nLine; i++)
+				this.skiplinebuf.writeBytes(S4625_PREVERSE_LINEFEED);
+		} else {
+			byte[] pData = {ESQ, (byte)0x49, 0x0, 0x0, 0x0};
+			String sptrn = String.format("%03d",nLine);
+			int i = 0;
+			for (final byte b: sptrn.getBytes())
+				pData[2 + i++] = b;
+			this.skiplinebuf.writeBytes(pData);
+		}
+		return true;
 
+	}
+	public byte[] GetSkipLineBuf() {
+		byte[] rtn = null;
+		if (this.skiplinebuf.readableBytes() > 0) {
+			rtn = new byte[this.skiplinebuf.readableBytes()];
+			this.skiplinebuf.readBytes(rtn);	
+		}
+		return rtn;
+	}
+	//----
 	@Override
 	public boolean SkipnLine(int nLine) {
 		// TODO Auto-generated method stub

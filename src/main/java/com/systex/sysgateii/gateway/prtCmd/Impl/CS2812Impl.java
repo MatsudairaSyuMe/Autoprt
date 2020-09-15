@@ -12,6 +12,9 @@ import com.systex.sysgateii.gateway.autoPrtSvr.Client.PrtCli;
 import com.systex.sysgateii.gateway.autoPrtSvr.Server.PrnSvr;
 import com.systex.sysgateii.gateway.prtCmd.Printer;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+
 public class CS2812Impl implements Printer {
 	private static Logger log = LoggerFactory.getLogger(CS2812Impl.class);
 	public static Logger amlog = null;
@@ -198,6 +201,9 @@ public class CS2812Impl implements Printer {
 	private AtomicBoolean p_fun_flag = new AtomicBoolean(false);
 	private int nCPI = 0;
 	private int nLPI = 0;
+	//20200915 for keep skip control code data
+	private ByteBuf skiplinebuf = Unpooled.buffer(16384);
+	//--
 
 	public CS2812Impl(final PrtCli pc, final String brws, final String type, final String autoturnpage) {
 		this.pc = pc;
@@ -375,6 +381,11 @@ public class CS2812Impl implements Printer {
 		return false;
 	}
 
+	@Override
+	public boolean Prt_Text(byte[] skipbuff, byte[] buff) {
+		// TODO Auto-generated method stub
+		return false;
+	}
 	@Override
 	public boolean ChkAddFont(int fontno) {
 		// TODO Auto-generated method stub
@@ -561,6 +572,22 @@ public class CS2812Impl implements Printer {
 	public boolean SetEnlarge(int type) {
 		// TODO Auto-generated method stub
 		return false;
+	}
+	//20200915 for keep skip control code data
+	public void PrepareSkipBuffer() {
+		this.skiplinebuf.clear();
+	}
+	public boolean SkipnLineBuf(int nLine) {
+		return true;
+
+	}
+	public byte[] GetSkipLineBuf() {
+		byte[] rtn = null;
+		if (this.skiplinebuf.readableBytes() > 0) {
+			rtn = new byte[this.skiplinebuf.readableBytes()];
+			this.skiplinebuf.readBytes(rtn);	
+		}
+		return rtn;
 	}
 
 	@Override

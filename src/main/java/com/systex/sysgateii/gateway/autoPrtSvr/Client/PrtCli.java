@@ -1187,6 +1187,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				atlog.info(": PbDataFormat() -- All Data=[{}]", pr_datalog);
 				//----
 				//Print Data
+				//20200915
+				prt.PrepareSkipBuffer();
+				//----
 				if ( i == 0 )
 				{
 					for (int k=1; k <= (tl-1); k++)
@@ -1195,11 +1198,17 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 						{
 							// tl 起始行數 > 12
 //							prt.Parsing(firstOpenConn, "SKIP=3".getBytes());
-							prt.SkipnLine(3);
+//							prt.SkipnLine(3);
+							//20200915
+							prt.SkipnLineBuf(3);
+							//----
 						}
 						else
 //							prt.Parsing(firstOpenConn, "SKIP=1".getBytes());
-							prt.SkipnLine(1);
+//							prt.SkipnLine(1);
+							//20200915
+							prt.SkipnLineBuf(1);
+							//----
 					}
 				}
 				else
@@ -1208,18 +1217,28 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					{
 						// tl 起始行數 < 13
 //						prt.Parsing(firstOpenConn, "SKIP=2".getBytes());
-						prt.SkipnLine(2);
+//						prt.SkipnLine(2);
+						//20200915
+						prt.SkipnLineBuf(2);
+						//----
 					}
 					
 				}
 				log.debug("after skip line------------tl+i=[{}] total=[{}] i + 1=[{}]", tl+i, total, i + 1);   //20200603 test
+				//20200915
+				byte[] skipbytes =	prt.GetSkipLineBuf();
 				byte[] sndbary = new byte[pr_dataprev.getBytes().length + pbpr_crdbT.getBytes().length];
 				System.arraycopy(pr_dataprev.getBytes(), 0, sndbary, 0, pr_dataprev.getBytes().length);
 				System.arraycopy(pbpr_crdbT.getBytes(), 0, sndbary, pr_dataprev.getBytes().length, pbpr_crdbT.getBytes().length);
 				System.arraycopy(dsptbsnd, 0, sndbary, pr_dataprev.getBytes().length+1, dsptbsnd.length);
 				
 //				prt.Prt_Text(pr_data.getBytes());
-				prt.Prt_Text(sndbary);
+				//20200915
+				if (skipbytes != null && skipbytes.length > 0) 
+					prt.Prt_Text(skipbytes, sndbary);
+				else
+					prt.Prt_Text(sndbary);
+				//----
 				//若印滿 24 筆且尚有補登資料，加印「請翻下頁繼續補登」
 				if ( (tl+i) == 24 && (total >= (i+1)) )
 				{
@@ -1376,6 +1395,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				//----
 
 				//Print Data
+				//20200915
+				prt.PrepareSkipBuffer();
+				//----
 				if ( i == 0 )
 				{
 					for (int k=1; k <= (tl-1); k++)
@@ -1384,11 +1406,17 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 						{
 							// tl 起始行數 > 12
 //							prt.Parsing(firstOpenConn, "SKIP=3".getBytes());
-							prt.SkipnLine(3);
+//							prt.SkipnLine(3);
+							//20200915
+							prt.SkipnLineBuf(3);
+							//----
 						}
 						else
 //							prt.Parsing(firstOpenConn, "SKIP=1".getBytes());
-							prt.SkipnLine(1);
+//							prt.SkipnLine(1);
+							//20200915
+							prt.SkipnLineBuf(1);
+							//----
 					}
 				}
 				else
@@ -1397,16 +1425,24 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					{
 						// tl 起始行數 < 13
 //						prt.Parsing(firstOpenConn, "SKIP=2".getBytes());
-						prt.SkipnLine(2);
+						//20200915
+						prt.SkipnLineBuf(2);
+						//----
 					}
 					
 				}
 				log.debug("after skip line------------tl+i=[{}] total=[{}] i+1=[{}]", tl+i, total, i+1);   //20200603 test
+				//20200915
+				byte[] skipbytes =	prt.GetSkipLineBuf();
 				byte[] sndbary = new byte[pr_dataprev.getBytes().length + pbpr_crdbT.getBytes().length];
 				System.arraycopy(pr_dataprev.getBytes(), 0, sndbary, 0, pr_dataprev.getBytes().length);
 				System.arraycopy(pbpr_crdbT.getBytes(), 0, sndbary, pr_dataprev.getBytes().length, pbpr_crdbT.getBytes().length);
 				System.arraycopy(dsptb, 0, sndbary, pr_dataprev.getBytes().length, dsptb.length);
-				prt.Prt_Text(sndbary);
+				//20200915
+				if (skipbytes != null && skipbytes.length > 0) 
+					prt.Prt_Text(skipbytes, sndbary);
+				else
+					prt.Prt_Text(sndbary);
 				//若印滿 24 筆且尚有補登資料，加印「請翻下頁繼續補登」
 				if ( (tl+i) == 24 && (total >= (i+1)) )
 				{
@@ -1603,6 +1639,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				atlog.info(": GlDataFormat() -- All Data=[{}]", pr_datalog);
 				//----
 				//Print Data
+				//20200915
+				prt.PrepareSkipBuffer();
+				//----
 				if ( i == 0 )
 				{
 					for (int k=1; k <= (tl-1); k++)
@@ -1611,11 +1650,17 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 						{
 							// tl 起始行數 > 12
 //							prt.Parsing(firstOpenConn, "SKIP=3".getBytes());
-							prt.SkipnLine(3);
+//							prt.SkipnLine(3);
+							//20200915
+							prt.SkipnLineBuf(3);
+							//----
 						}
 						else
 //							prt.Parsing(firstOpenConn, "SKIP=1".getBytes());
-							prt.SkipnLine(1);
+//							prt.SkipnLine(1);
+							//20200915
+							prt.SkipnLineBuf(1);
+							//----
 					}
 				}
 				else
@@ -1624,16 +1669,25 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					{
 						// tl 起始行數 < 13
 //						prt.Parsing(firstOpenConn, "SKIP=2".getBytes());
-						prt.SkipnLine(2);
+//						prt.SkipnLine(2);
+						//20200915
+						prt.SkipnLineBuf(2);
+						//----
 					}
 					
 				}
 				log.debug("after skip line------------tl+i=[{}] total=[{}] i+1=[{}]", tl+i, total, i+1);   //20200603 test
+				//20200915
+				byte[] skipbytes =	prt.GetSkipLineBuf();
 				byte[] sndbary = new byte[pr_dataprev.getBytes().length + pbpr_crdbT.getBytes().length];
 				System.arraycopy(pr_dataprev.getBytes(), 0, sndbary, 0, pr_dataprev.getBytes().length);
 				System.arraycopy(pbpr_crdbT.getBytes(), 0, sndbary, pr_dataprev.getBytes().length, pbpr_crdbT.getBytes().length);
 				System.arraycopy(dsptb, 0, sndbary, pr_dataprev.getBytes().length + 1, dsptb.length);
-				prt.Prt_Text(sndbary);
+				//20200915
+				if (skipbytes != null && skipbytes.length > 0) 
+					prt.Prt_Text(skipbytes, sndbary);
+				else
+					prt.Prt_Text(sndbary);
 				//若印滿 24 筆且尚有補登資料，加印「請翻下頁繼續補登」
 				if ( (tl+i) == 24 && (total >= (i+1)) )
 				{

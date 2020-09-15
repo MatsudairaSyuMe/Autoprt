@@ -62,6 +62,7 @@ public interface Printer {
 	*	Prt_Text : Print the text data			         *
 	*********************************************************************/
 	public boolean Prt_Text(byte[]  buff);
+	public boolean Prt_Text(byte[] skipline, byte[]  buff);
 	
 	/********************************************************************
 	*	ChkAddFont : Check the additional chinese char	*
@@ -144,6 +145,11 @@ public interface Printer {
 	**************************************************************************/
 	public boolean SetEnlarge(int type);
 
+	//20200915
+	public void PrepareSkipBuffer();
+	public boolean SkipnLineBuf(int nLine);
+	public byte[] GetSkipLineBuf();
+	//----
 	/*************************************************************************
 	*	SkipnLine : Skip n Line						             *
 	**************************************************************************/
