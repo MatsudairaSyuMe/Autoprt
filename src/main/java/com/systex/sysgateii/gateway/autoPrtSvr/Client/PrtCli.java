@@ -1057,7 +1057,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					dsptb = FilterBig5(dsptb);
 				} else {
 					String desc = new String(p0080DataFormat.getTotaTextValueSrc("dscpt", pb_arr.get(i))).trim();
-					if (DscptMappingTable.m_Dscpt.containsKey(desc))
+					if (DscptMappingTable.m_Dscpt2.containsKey(desc))
 ////						dsptb = DscptMappingTable.m_Dscpt.get(desc).getBytes();
 						dsptb = DscptMappingTable.m_Dscpt2.get(desc);
 					else

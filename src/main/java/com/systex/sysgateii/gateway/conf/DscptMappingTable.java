@@ -3,11 +3,17 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.systex.sysgateii.gateway.autoPrtSvr.Server.PrnSvr;
 
 public class DscptMappingTable {
 	private static Logger log = LoggerFactory.getLogger(DscptMappingTable.class);
@@ -16,7 +22,65 @@ public class DscptMappingTable {
 	public static ConcurrentHashMap<String, byte[]> m_Dscpt2 = new ConcurrentHashMap<String, byte[]>();
 
 	public DscptMappingTable () {
-		new DscptMappingTable(this.defname);
+//20200916		new DscptMappingTable(this.defname);
+		String JDBC_DRIVER = "com.ibm.db2.jcc.DB2Driver";
+		String DB_URL = PrnSvr.dburl;
+		String USER = PrnSvr.dbuser;
+		String PASS = PrnSvr.dbpass;
+		Connection conn = null;
+		Statement stmt = null;
+		ResultSet rs = null;
+		m_Dscpt.clear();
+		int total = 0;
+		String id = "";
+		byte[] flddm = null;
+		byte[] dm = null;
+		try {
+			conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			log.debug("Connected database successfully...");
+			// STEP 2: Register JDBC driver
+			Class.forName(JDBC_DRIVER);
+			// STEP 3: Open a connection
+
+			log.debug("Connecting to a selected database...");
+			// STEP 4: Execute a Select
+			log.debug("select records from the table...");
+			stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE,
+					ResultSet.CLOSE_CURSORS_AT_COMMIT);
+			rs = ((Statement) stmt).executeQuery("SELECT ID, NAME FROM BISAP.TB_AUDMPRM");
+			while (rs.next()) {
+				id = rs.getString("ID");
+				flddm = rs.getBytes("NAME");
+				if (flddm != null && flddm.length > 0) {
+					int sz = 0;
+					for (int i = flddm.length - 1; i >= 0; i--)
+						if ((byte) flddm[i] == (byte) 0x0)
+							sz += 1;
+					if (sz > 0) {
+						dm = new byte[flddm.length - sz];
+						System.arraycopy(flddm, 0, dm, 0, (flddm.length - sz));
+					} else
+						dm = flddm;
+				} else
+					dm = flddm;
+				m_Dscpt2.put(id.trim(), dm);
+				total++;
+			}
+			if (conn != null)
+				conn.close();
+			log.debug("total " + total + " records");
+			log.debug("total m_Dscpt2 " + m_Dscpt2.size() + " records");
+		} catch (Exception e) {
+			e.getStackTrace();
+			log.error("ERROR!! " + e.getMessage());
+			try {
+				if (conn != null)
+					conn.close();
+			} catch (Exception e2) {
+				e.getStackTrace();
+				log.error("connect close ERROR!! " + e2.getMessage());
+			}
+		}
 	}
 	public DscptMappingTable (String filename) {
 		BufferedReader reader;
@@ -108,6 +172,7 @@ public class DscptMappingTable {
       log.debug("total {} records", total);
 	}
 	public static void main(String[] args) {
+		//pstmt.setObject(1, bserviceID, java.sql.Types.BINARY); 
 		DscptMappingTable d = new DscptMappingTable ("DMTABLE.INI");
 		System.out.println(d.m_Dscpt.size());
 		System.out.println(d.m_Dscpt.get("000E6"));
