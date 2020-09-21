@@ -62,7 +62,8 @@ public class FASClientChannelHandler extends ChannelInboundHandlerAdapter {
 	private String fasSendPtrn = "-->FAS len %4d :[............%s]";
 	private String fasRecvPtrn = "<--FAS len %4d :[............%s]";
 	private CharsetCnv charcnv = new CharsetCnv();
-	private final static AtomicBoolean isConnected = new AtomicBoolean(false);
+	//20200921 change isConnected from static to none static
+	private final AtomicBoolean isConnected = new AtomicBoolean(false);
 
 	List<ActorStatusListener> actorStatusListeners = new ArrayList<ActorStatusListener>();
 

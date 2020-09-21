@@ -2879,7 +2879,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 								log.debug("iCont={} iCon={} iLine={} (iLine - 1 + iCount)={}", iCount, iCon, iLine,
 										(iLine - 1 + iCount));
 								if ((iLine - 1 + iCount) >= 24) {
-									atlog.info("[{}] TOTA_TEXT=[{}]", resultmsg.length, new String(resultmsg));
+									//20200918
+//									atlog.info("[{}] TOTA_TEXT=[{}]", resultmsg.length, new String(resultmsg));
+									atlog.info("[{}] TOTA_TEXT=[{}]", resultmsg.length, charcnv.BIG5bytesUTF8str(resultmsg));
 									amlog.info("[{}][{}][{}]:55存摺補登資料接收成功！", brws, pasname, this.account);
 									this.curState = STARTPROCTLM;
 									break;
