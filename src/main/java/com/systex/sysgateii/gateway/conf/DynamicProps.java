@@ -291,7 +291,7 @@ public class DynamicProps {
 															prttype.add("AUTO46");
 															log.debug("DEVICE parameter [{}] set prttype [{}]", idx, "AUTO46");
 														} else if (devfldsary[idx].trim().equalsIgnoreCase("3")) {
-															prttype.add("AUTO46");
+															prttype.add("AUTO52"); //error set to "AUTO46
 															log.debug("DEVICE parameter [{}] set prttype [{}]", idx, "AUTO52");
 														}
 														break;
@@ -578,7 +578,7 @@ public class DynamicProps {
 													prttype.add("AUTO46");
 													log.debug("DEVICE parameter [{}] set prttype [{}]", idx, "AUTO46");
 												} else if (devfldsary[idx].trim().equalsIgnoreCase("3")) {
-													prttype.add("AUTO46");
+													prttype.add("AUTO52"); // error set to AUTO46
 													log.debug("DEVICE parameter [{}] set prttype [{}]", idx, "AUTO52");
 												}
 												break;
