@@ -3135,7 +3135,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					e.printStackTrace();
 					log.error("update state table {} error:{}", PrnSvr.statustbname, e.getMessage());
 				}
-				prt.DetectPaper(firstOpenConn, 0);
+//20200925				prt.DetectPaper(firstOpenConn, 0);
+				prt.DetectPaper(firstOpenConn, responseTimeout);
 			}
 			//20200718
 			lastCheck(before);
@@ -3155,7 +3156,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				} else {*/
 
 
-					if (prt.DetectPaper(!firstOpenConn, 0)) {
+//20200925			if (prt.DetectPaper!firstOpenConn, 0))
+					if (prt.DetectPaper(!firstOpenConn, responseTimeout))
+					{
 						this.curState = GETPASSBOOKSHOWSIG;
 						log.debug("{} {} {} AutoPrnCls : --start Show Signal", brws, catagory, account);
 //20200821 test						SetSignal(firstOpenConn, !firstOpenConn, "0000000000", "0010000000");
@@ -3862,12 +3865,15 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 		if (this.durationTime > responseTimeout) {
 			// 20200722
 			if (before == this.curState && (this.curState == CAPTUREPASSBOOK && this.iFirst == 1)) { // 翻頁列印逾時
+				//20200925
+				amlog.info("[{}][{}][{}]:96超過時間尚未重新插入存摺！", brws, "        ", "            ");
+				amlog.info("[{}][{}][{}]:63等待逾時或發生錯誤...[{}]", brws, pasname, String.format("%12s", this.account), responseTimeout);
+				//----
 				resetPassBook();
 				this.curState = ENTERPASSBOOKSIG;
 				log.error("ERROR!!! eject print host timeout {}", responseTimeout);
 				if (this.account == null)
 					this.account = "";
-				amlog.info("[{}][{}][{}]:63等待逾時或發生錯誤...[{}]", brws, pasname, String.format("%12s", this.account), responseTimeout);
 			} else {
 				// ----
 				this.curState = EJECTAFTERPAGEERROR;
