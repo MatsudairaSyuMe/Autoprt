@@ -68,6 +68,7 @@
 		<!--<svrtbsdytb name="BISAP.TB_AUSVRPRM" mkey="SVRID" fields="SVRID,TBSDY"/>-->
 <!--		<statustb name="BISAP.TB_AUDEVSTS" mkey="BRWS" fields="IP,PORT,SYSIP,SYSPORT,ACTPAS,DEVTPE,CURSTUS,VERSION,CREATOR,MODIFIER"/>-->
 		<statustb name="BISAP.TB_AUDEVSTS" mkey="BRWS,SVRID" fields="IP,PORT,SYSIP,SYSPORT,ACTPAS,DEVTPE,CURSTUS,VERSION,CREATOR,MODIFIER"/>
+		<svrstatustb name="BISAP.TB_AUSVRSTS" mkey="SVRID" fields="AUID,BRNO,IP,CURSTUS,PID,CREATOR,MODIFIER,LASTUPDATE"/>
 		<svrtbsdytb name="BISAP.TB_AUSVRPRM" mkey="SVRID" fields="TBSDY"/>
 		<devcmdtb name="BISAP.TB_AUDEVCMD" mkey="SVRID,BRWS" fields="SVRID,BRWS,CMD"/>
 	</system>

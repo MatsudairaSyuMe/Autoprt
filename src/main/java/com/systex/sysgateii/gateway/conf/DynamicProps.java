@@ -45,6 +45,10 @@ public class DynamicProps {
 	private boolean readCfgFromCenter = false;
 	GwDao jsel2ins = null;
 	//----
+	//20200926
+	private String auid = "";
+	private String svrip = "";
+	//----
 
 	public DynamicProps(String string) {
 		Parameters params = new Parameters();
@@ -101,6 +105,10 @@ public class DynamicProps {
 										|| entry.getKey().equals("system.statustb[@name]")
 										|| entry.getKey().equals("system.statustb[@mkey]")
 										|| entry.getKey().equals("system.statustb[@fields]")
+										//20200926
+										|| entry.getKey().equals("system.svrstatustb[@name]")
+										|| entry.getKey().equals("system.svrstatustb[@mkey]")
+										|| entry.getKey().equals("system.svrstatustb[@fields]")
 										//----
 										//20200815
 										|| entry.getKey().equals("system.svrtbsdytb[@name]")
@@ -216,6 +224,12 @@ public class DynamicProps {
 											svrfldsary = s.split(",");
 											for (int idx = 0; idx < svrfldsary.length; idx++) {
 												switch (idx) {
+													//20200925
+													case 0:
+														setAuid(svrfldsary[idx].trim());
+														log.debug("SERVICE parameter [{}] set auid [{}]", idx, svrfldsary[idx]);
+														break;
+													//----
 													case 1:
 														origStr = conHashMap.get("svrsubport.verhbrno").trim();
 														conHashMap.put("svrsubport.verhbrno", svrfldsary[idx].trim());
@@ -278,6 +292,9 @@ public class DynamicProps {
 														log.debug("DEVICE parameter [{}] set prtbrws [{}]", idx, devfldsary[idx].trim());
 														break;
 													case 1:
+														//20200926
+														setSvrip(svrfldsary[idx]);
+														//----
 														log.debug("DEVICE parameter [{}] set ip for prtcltip [{}]", idx, devfldsary[idx].trim());
 														break;
 													case 2:
@@ -396,6 +413,10 @@ public class DynamicProps {
 						|| entry.getKey().equals("system.statustb[@name]")
 						|| entry.getKey().equals("system.statustb[@mkey]")
 						|| entry.getKey().equals("system.statustb[@fields]")
+						//20200926
+						|| entry.getKey().equals("system.svrstatustb[@name]")
+						|| entry.getKey().equals("system.svrstatustb[@mkey]")
+						|| entry.getKey().equals("system.svrstatustb[@fields]")
 						//----
 						//20200815
 						|| entry.getKey().equals("system.svrtbsdytb[@name]")
@@ -503,12 +524,21 @@ public class DynamicProps {
 									svrfldsary = s.split(",");
 									for (int idx = 0; idx < svrfldsary.length; idx++) {
 										switch (idx) {
+												//20200926
+											case 0:
+												setAuid(svrfldsary[idx].trim());
+												log.debug("SERVICE parameter [{}] set auid [{}]", idx, svrfldsary[idx]);
+												break;
+												//----
 											case 1:
 												origStr = conHashMap.get("svrsubport.verhbrno").trim();
 												conHashMap.put("svrsubport.verhbrno", svrfldsary[idx].trim());
 												log.debug("SERVICE parameter [{}] set svrsubport.verhbrno [{}]", idx, svrfldsary[idx]);
 												break;
 											case 2:
+												//20200926
+												setSvrip(svrfldsary[idx]);
+												//----
 												log.debug("SERVICE parameter [{}] prepare to set service ip for device [{}]", idx, svrfldsary[idx]);
 												break;
 											case 3:
@@ -648,6 +678,38 @@ public class DynamicProps {
 	public static void main(String[] args) throws Exception {
 		DynamicProps dcf = new DynamicProps("rateprtservice.xml");
 		dcf.Chat();
+	}
+
+	/**
+	 * 20200926
+	 * @return the auid
+	 */
+	public String getAuid() {
+		return auid;
+	}
+
+	/**
+	 * 20200926
+	 * @param auid the auid to set
+	 */
+	public void setAuid(String auid) {
+		this.auid = auid;
+	}
+
+	/**
+	 * 20200926
+	 * @return the svrip
+	 */
+	public String getSvrip() {
+		return svrip;
+	}
+
+	/**
+	 * 20200926
+	 * @param svrip the svrip to set
+	 */
+	public void setSvrip(String svrip) {
+		this.svrip = svrip;
 	}
 
 
