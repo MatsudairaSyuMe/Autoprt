@@ -3263,6 +3263,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 			if (null != (cusid = prt.MS_Read(!firstOpenConn, brws))) {
 				if (cusid.length == 1) {
 					this.curState = EJECTAFTERPAGEERROR;
+					SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000001000");
+					SetSignal(!firstOpenConn, firstOpenConn, "0000000000", "0000001000");
+					amlog.info("[{}][{}][{}]:11磁條讀取失敗！", brws, "        ", "            ");
+					log.debug("{} {} {} AutoPrnCls : read MSR ERROR", brws);
 				} else {
 					this.curState = CHKACTNO;
 					for (int i = 0; i < cusid.length; i++)

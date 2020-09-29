@@ -1211,12 +1211,19 @@ public class CS4625Impl implements Printer {
 						System.gc();
 					} else {
 						iCnt = 0;
-						amlog.info("[{}][{}][{}]:94補摺機狀態錯誤！(MSR-1)", brws, "        ", "            ");
+						amlog.info("[{}][{}][{}]:94補摺機狀態錯誤！(MSR-1格式錯誤)", brws, "        ", "            ");
+						//20200929
+						/*
 						this.curState = ResetPrinterInit_START;
 						ResetPrinterInit();
 						pc.close();
 						this.curmsdata = null;
-						return null;						
+						return null;
+						*/
+						byte[] nr = new byte[1];
+						nr[0] = (byte)'X';
+						this.curmsdata = nr;
+						return this.curmsdata;
 					}
 				} else {
 					iCnt = 0;
