@@ -11,3 +11,5 @@ SEQNO
 .project
 .settings
 .attach_pid*
+# Ignore Ant compile build fiile
+build.xml
