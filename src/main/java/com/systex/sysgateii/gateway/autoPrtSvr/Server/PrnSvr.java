@@ -74,7 +74,7 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 	static List<Thread> threadList = Collections.synchronizedList(new ArrayList<Thread>());
 	Map<String, PrtCli> nodeList = Collections.synchronizedMap(new LinkedHashMap<String, PrtCli>());
 	Thread monitorThread;
-	GwDao jsel2ins = null;
+	GwDao jdawcon = null;
 	public static String cmdtbname = "";
 	public static String cmdtbsearkey = "";
 	public static String cmdtbfields = "";
@@ -82,6 +82,9 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 	//----
 	public static String verbrno = "";
 	public static int setResponseTimeout = 60 * 1000;// 毫秒
+	//20201004
+	static DynamicProps dcf = null;
+	//----
 
 	public PrnSvr() {
 		log.info("[0000]:=============[Start]=============");
@@ -195,9 +198,9 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 									selkey = PrnSvr.cmdtbsearkey;
 								}
 								try {
-									jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
+									jdawcon = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
 									log.debug("current selfld=[{}] selkey=[{}] cmdtbsearkey=[{}]", selfld, selkey, PrnSvr.cmdtbsearkey);
-									String[] cmd = jsel2ins.SELMFLD(PrnSvr.cmdtbname, selfld, selkey, PrnSvr.svrid, false);
+									String[] cmd = jdawcon.SELMFLD(PrnSvr.cmdtbname, selfld, selkey, PrnSvr.svrid, false);
 									if(cmd != null && cmd.length > 0)
 										for (String s: cmd) {
 											s = s.trim();
@@ -215,7 +218,7 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 														} else {
 															SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
 															String t = sdf.format(new java.util.Date());
-															int row = jsel2ins.UPDT(PrnSvr.cmdtbname, "CMD, CMDRESULT,CMDRESULTTIME", "'','START','" + t + "'",
+															int row = jdawcon.UPDT(PrnSvr.cmdtbname, "CMD, CMDRESULT,CMDRESULTTIME", "'','START','" + t + "'",
 																	"SVRID,BRWS", PrnSvr.svrid + "," + cmdary[0]);
 															log.debug("total {} records update", row);
 															log.debug("cmd object node=[{}] already active!!!! getCurMode=[{}]", getMe().nodeList.get(cmdary[0]).getId(), getMe().nodeList.get(cmdary[0]).getCurMode());
@@ -228,7 +231,7 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 														} else {
 															SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
 															String t = sdf.format(new java.util.Date());
-															int row = jsel2ins.UPDT(PrnSvr.cmdtbname, "CMD, CMDRESULT,CMDRESULTTIME", "'','STOP','" + t + "'",
+															int row = jdawcon.UPDT(PrnSvr.cmdtbname, "CMD, CMDRESULT,CMDRESULTTIME", "'','STOP','" + t + "'",
 																	"SVRID,BRWS", PrnSvr.svrid + "," + cmdary[0]);
 															log.debug("total {} records update", row);
 															log.debug("cmd object node=[{}] already shutdown!!!! getCurMode=[{}]", getMe().nodeList.get(cmdary[0]).getId(), getMe().nodeList.get(cmdary[0]).getCurMode());
@@ -245,8 +248,8 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 											} else
 												log.error("!!!current row cmd error [{}]", s);
 										}
-									jsel2ins.CloseConnect();
-									jsel2ins = null;
+									jdawcon.CloseConnect();
+									jdawcon = null;
 								} catch (Exception e) {
 									e.printStackTrace();
 									log.info("monitorThread read database error [{}]", e.toString());
@@ -285,6 +288,9 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 	
 	public static void createServer(DynamicProps cfg) {
 		log.debug("Enter createServer");
+		//20201004
+		cfg = cfg;
+		//----
 		cfgMap = null;
 		verbrno = cfg.getConHashMap().get("svrsubport.verhbrno");
 		list = cfg.getCfgPrtMapList();

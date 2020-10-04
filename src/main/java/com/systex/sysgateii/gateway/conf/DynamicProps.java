@@ -712,6 +712,189 @@ public class DynamicProps {
 		this.svrip = svrip;
 	}
 
+	/**
+	 * 20201004
+	 * 
+	 */
+	public CopyOnWriteArrayList<ConcurrentHashMap<String, Object>> getLastcfgPrtMapList() {
+		CopyOnWriteArrayList<ConcurrentHashMap<String, Object>> lastcfgPrtMapList = new CopyOnWriteArrayList<ConcurrentHashMap<String, Object>>();
+		if (readCfgFromCenter) {
+			String SvrId = conHashMap.get("system.svrid").trim();
+			log.info("start to load new data from repository current SVRID=[{}]", SvrId);
+			String fromurl = conHashMap.get("system.db[@url]").trim();
+			String fromuser = conHashMap.get("system.db[@user]").trim();
+			String frompass = conHashMap.get("system.db[@pass]").trim();
+			String svrprmtb = conHashMap.get("system.svrprmtb[@name]").trim();
+			String svrprmkey = conHashMap.get("system.svrprmtb[@mkey]").trim();
+			String svrprmfields = conHashMap.get("system.svrprmtb[@fields]").trim();
+			String fasprmtb = conHashMap.get("system.fasprmtb[@name]").trim();
+			String fasprmkey = conHashMap.get("system.fasprmtb[@mkey]").trim();
+			String fasprmfields = conHashMap.get("system.fasprmtb[@fields]").trim();
+			String devprmtb = conHashMap.get("system.devprmtb[@name]").trim();
+			String devprmkey = conHashMap.get("system.devprmtb[@mkey]").trim();
+			String devprmfields = conHashMap.get("system.devprmtb[@fields]").trim();
+			if (fromurl.length() <= 0 || fromuser.length() <= 0 || frompass.length() <= 0 || svrprmtb.length() <= 0
+					|| svrprmkey.length() <= 0 || svrprmfields.length() <= 0 || fasprmtb.length() <= 0
+					|| fasprmkey.length() <= 0 || fasprmfields.length() <= 0 || devprmtb.length() <= 0
+					|| devprmkey.length() <= 0 || devprmfields.length() <= 0 || SvrId.length() <= 0)
+				log.info("connect parameters error {} {} {} SvrID=[{}]", fromurl, fromuser, frompass, SvrId);
+			else {
+				log.info("using {} {} {}", fromurl, fromuser, frompass);
+				log.info("svrprmtb {} {} {}", svrprmtb, svrprmkey, svrprmfields);
+				log.info("fasprmtb {} {} {}", fasprmtb, fasprmkey, fasprmfields);
+				log.info("devprmtb {} {} {}", devprmtb, devprmkey, devprmfields);
+				try {
+					jsel2ins = new GwDao(fromurl, fromuser, frompass, false);
+					log.debug("current svrprmtb=[{}] svrprmtbkey=[{}] svrprmtbsearkey=[{}]", svrprmtb, svrprmkey,
+							SvrId);
+					String[] svrflds = jsel2ins.SELMFLD(svrprmtb, svrprmfields, svrprmkey, SvrId, false);
+					String[] svrfldsary = null; // store values of AUID,BRNO,IP,PORT,DEVTPE,RECVTIMEOUT,LOGPATH
+					String fasfld = ""; // store values of CONNPRM
+					String[] devfldsary = null; // store values of BRWS,IP,PORT,DEVTPE,AUTOTURNPAGE
+					if (svrflds != null && svrflds.length > 0)
+						for (String s : svrflds) {
+							s = s.trim();
+							log.debug("current svrfld [{}]", s);
+							if (s.length() > 0 && s.indexOf(',') > -1) {
+								svrfldsary = s.split(",");
+								for (int idx = 0; idx < svrfldsary.length; idx++) {
+									switch (idx) {
+									// 20200926
+									case 0:
+										setAuid(svrfldsary[idx].trim());
+										log.debug("SERVICE parameter [{}] set auid [{}]", idx, svrfldsary[idx]);
+										break;
+									// ----
+									case 1:
+										conHashMap.put("svrsubport.verhbrno", svrfldsary[idx].trim());
+										log.debug("SERVICE parameter [{}] set svrsubport.verhbrno [{}]", idx,
+												svrfldsary[idx]);
+										break;
+									case 2:
+										// 20200926
+										setSvrip(svrfldsary[idx]);
+										// ----
+										log.debug("SERVICE parameter [{}] prepare to set service ip for device [{}]",
+												idx, svrfldsary[idx]);
+										break;
+									case 3:
+										log.debug("SERVICE parameter [{}] prepare to set service port for device [{}]",
+												idx, svrfldsary[idx]);
+										break;
+									case 4:
+										log.debug("SERVICE parameter [{}] [{}]", idx, svrfldsary[idx]);
+										break;
+									case 5:
+										conHashMap.put("svrsubport.recvtimeout", svrfldsary[idx].trim());
+										log.debug("SERVICE parameter [{}] svrsubport.recvtimeout [{}]", idx,
+												svrfldsary[idx]);
+										break;
+									case 6:
+										conHashMap.put("system.logpath", svrfldsary[idx].trim());
+										log.debug("SERVICE parameter [{}] set system.logpath [{}]", idx,
+												svrfldsary[idx]);
+										break;
+									default:
+										break;
+									}
+								}
+							} else
+								log.error("!!!!SERVICE parameters in service table [{}] error !!!", svrprmtb);
+						}
+					if (svrfldsary.length > 5) {
+						log.debug("current fasprmtb=[{}] fasprmtbkey=[{}] fasprmtbsearkey=[{}]", fasprmtb, fasprmkey,
+								svrfldsary[0]);
+						String[] fasflds = jsel2ins.SELMFLD(fasprmtb, fasprmfields, fasprmkey, svrfldsary[0], false);
+						if (fasflds != null && fasflds.length > 0)
+							for (String s : fasflds) {
+								s = s.trim();
+								fasfld = s;
+								conHashMap.put("svrsubport.svrip", fasfld);
+								log.debug("current fasfld set svrsubport.svrip [{}]", fasfld);
+							}
+						log.debug("current devprmtb=[{}] devprmtbkey=[{}] devprmtbsearkey=[{}]", devprmtb, devprmkey,
+								SvrId);
+						String[] devflds = jsel2ins.SELMFLD(devprmtb, devprmfields, devprmkey, SvrId, false);
+						String prtcltipStr = "";
+						prtbrws.clear();
+						prttype.clear();
+						prtcltip.clear();
+						prtcltautoturnpage.clear();
+						if (devflds != null && devflds.length > 0)
+							for (String s : devflds) {
+								s = s.trim();
+								log.debug("current devflds [{}]", s);
+								if (s.length() > 0 && s.indexOf(',') > -1) {
+									devfldsary = s.split(",");
+									for (int idx = 0; idx < devfldsary.length; idx++) {
+										switch (idx) {
+										case 0:
+											prtbrws.add(devfldsary[idx].trim());
+											log.debug("DEVICE parameter [{}] set prtbrws [{}]", idx,
+													devfldsary[idx].trim());
+											break;
+										case 1:
+											log.debug("DEVICE parameter [{}] set ip for prtcltip [{}]", idx,
+													devfldsary[idx].trim());
+											break;
+										case 2:
+											// localhost:4002=localhost:3301
+											prtcltipStr = devfldsary[1].trim() + ":" + devfldsary[idx].trim() + "="
+													+ svrfldsary[2].trim() + ":" + svrfldsary[3].trim();
+											prtcltip.add(prtcltipStr);
+											log.debug("DEVICE parameter [{}] set port [{}] for prtcltip [{}]", idx,
+													devfldsary[idx], prtcltipStr);
+											break;
+										case 3:
+											if (devfldsary[idx].trim().equalsIgnoreCase("2")) {
+												prttype.add("AUTO46");
+												log.debug("DEVICE parameter [{}] set prttype [{}]", idx, "AUTO46");
+											} else if (devfldsary[idx].trim().equalsIgnoreCase("3")) {
+												prttype.add("AUTO52"); // error set to AUTO46
+												log.debug("DEVICE parameter [{}] set prttype [{}]", idx, "AUTO52");
+											}
+											break;
+										case 4:
+											if (devfldsary[idx].trim().equalsIgnoreCase("N")) {
+												prtcltautoturnpage.add("false");
+												log.debug("DEVICE parameter [{}] set prtcltautoturnpage [{}]", idx,
+														"false");
+											} else {
+												prtcltautoturnpage.add("true");
+												log.debug("DEVICE parameter [{}] set prtcltautoturnpage [{}]", idx,
+														"true");
+											}
+											break;
+										default:
+											break;
+										}
+									}
 
-
+								} else
+									log.error("!!!!DEVICE parameters in [{}] error !!!", devprmtb);
+							}
+					} else
+						log.error("!!!!field parameters in fas parameter table [{}] error !!!", fasprmtb);
+					jsel2ins.CloseConnect();
+					jsel2ins = null;
+				} catch (Exception e) {
+					e.printStackTrace();
+					log.info("read database error [{}]", e.toString());
+				}
+			}
+		}
+		// ----
+		if (prtbrws != null && prtbrws.size() > 0) {
+			for (int i = 0; i < prtbrws.size(); i++) {
+				ConcurrentHashMap<String, Object> cfgPrtMap = new ConcurrentHashMap<String, Object>();
+				cfgPrtMap.put("brws", prtbrws.get(i));
+				cfgPrtMap.put("type", prttype.get(i));
+				cfgPrtMap.put("ip", prtcltip.get(i));
+				cfgPrtMap.put("autoturnpage", prtcltautoturnpage.get(i));
+				lastcfgPrtMapList.add(cfgPrtMap);
+				log.info("lastcfgPrtMapList add idx={}", i);
+			}
+		}
+		return lastcfgPrtMapList;
+	}
 }

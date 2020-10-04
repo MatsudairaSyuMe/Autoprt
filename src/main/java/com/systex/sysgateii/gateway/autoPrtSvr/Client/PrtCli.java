@@ -423,6 +423,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 
 	private void doConnect(int _wait) {
 		try {
+			//20201004
+			if (getCurMode() != EventType.SHUTDOWN) {
+			//----
 			ChannelFuture f = bootstrap.connect(rmtaddr, localaddr);
 			f.addListener(new ChannelFutureListener() {
 				@Override
@@ -469,6 +472,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 
 				}
 			});
+			//20201004
+			}
+			//----
 		} catch (Exception ex) {
 
 			scheduleConnect(_wait / 3);
@@ -3958,6 +3964,12 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 		// TODO Auto-generated method stub
 		switch (evt) {
 		case ACTIVE:// 被通知要開啟
+			//20201004
+			if (this.curMode == evt.ACTIVE) {
+				log.debug("current mode already in ACTIVE [{}]",this.curMode);
+				return;
+			}
+			//----
 			log.debug(getId() + ">>> ACTIVE");
 			this.curMode = evt;
 			//20200909 update cmd table
@@ -3977,6 +3989,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				log.debug("set event errot error e:[{}]", e.toString());
 			}
 			//--
+			//20201004
+			doConnect(3000);
+			//----
 			break;
 
 		case INACTIVE:
