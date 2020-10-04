@@ -401,9 +401,14 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 
 	public void close() {
 		try {
-			channel_.close().sync();
-			aslog.info(String.format("DIS  %s[%04d]:", this.curSockNm, 0));
-			this.curSockNm = "";
+			if (channel_ != null) {
+				channel_.close().sync();
+				aslog.info(String.format("DIS  %s[%04d]:", this.curSockNm, 0));
+				this.curSockNm = "";
+				// 20201004
+				channel_ = null;
+			}
+			//----
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
@@ -3054,11 +3059,22 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
-				this.curState = SESSIONBREAK;
+				// 20201004 test
+				if (this.lastState != SESSIONBREAK)
+					amlog.info("[{}][{}][{}]:99接收指令停止與補摺機連線...", brws, "        ", "            ");
+//				this.curState = SESSIONBREAK;
 				this.curSockNm = "";
 				this.clientMessageBuf.clear();
 				this.clientChannel = null;
 				close();
+				// 20201004 test
+				if (this.lastState != SESSIONBREAK) {
+					log.info("CurMode {} curState == [{}] stop the thread", getCurMode(), this.curState);
+					Thread.currentThread().interrupt();
+				}
+				this.curState = SESSIONBREAK;
+				return;
+				// 20201004----
 			} else
 				log.info("CurMode {} curState == [{}] prepare to shutdown", getCurMode(), this.curState);
 		}
@@ -3434,8 +3450,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 
 		case EJECTAFTERPAGEERROR:
 			log.debug("{} {} {} :AutoPrnCls : process EJECTAFTERPAGEERROR", brws,catagory, account);
-			if (!this.passSNDANDRCVTLM)
-				atlog.info(" -- ACTNO or PAGE ... ERROR！");
+			if (!this.passSNDANDRCVTLM)  //20201002 add for log
+				atlog.info((this.cusid.length > 1 ? " -- ACTNO or PAGE ... ERROR！":"MS_Read() -- Read MSR Error !"));
 			else
 				atlog.info("after Send_Recv() -- ... ERROR！");
 			if (prt.Eject(firstOpenConn))

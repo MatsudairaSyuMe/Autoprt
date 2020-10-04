@@ -378,6 +378,7 @@ public class CS4625Impl implements Printer {
 					rtn = new byte[3];
 					log.debug("Rcv_Data get 3 bytes");
 					pc.clientMessageBuf.readBytes(rtn, 0, rtn.length);
+					atlog.info("[{}]-[{}]",rtn.length,new String(rtn, 0, rtn.length)); //20201002
 					return rtn;
 				}
 			}
