@@ -425,54 +425,55 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 		try {
 			//20201004
 			if (getCurMode() != EventType.SHUTDOWN) {
-			//----
-			ChannelFuture f = bootstrap.connect(rmtaddr, localaddr);
-			f.addListener(new ChannelFutureListener() {
-				@Override
-				public void operationComplete(ChannelFuture future) throws Exception {
-					if (!future.isSuccess()) {// if is not successful, reconnect
-						future.channel().close();
-						if (iRetry > MAXDELAY)
-							iRetry = MAXDELAY;
-						final int _newwait = iRetry * RECONNECT * 100;
-						if (curState == SESSIONBREAK && !showStateMsg) {
-							amlog.info("[{}][{}][{}]:99補摺機斷線，請檢查線路！", brws, "        ", "            ");
-							showStateMsg = true;
+				// ----
+				ChannelFuture f = bootstrap.connect(rmtaddr, localaddr);
+				f.addListener(new ChannelFutureListener() {
+					@Override
+					public void operationComplete(ChannelFuture future) throws Exception {
+						if (!future.isSuccess()) {// if is not successful, reconnect
+							future.channel().close();
+							if (iRetry > MAXDELAY)
+								iRetry = MAXDELAY;
+							final int _newwait = iRetry * RECONNECT * 100;
+							if (curState == SESSIONBREAK && !showStateMsg) {
+								amlog.info("[{}][{}][{}]:99補摺機斷線，請檢查線路！", brws, "        ", "            ");
+								showStateMsg = true;
+							}
+							MDC.put("WSNO", brws.substring(3));
+							MDC.put("PID", pid);
+							atlog.info("Error , please check ... [{}:{}:{}]", rmtaddr.getAddress().toString(),
+									rmtaddr.getPort(), localaddr.getPort());
+							clientMessageBuf.clear();
+							if (!future.channel().isActive()) {
+								prtcliFSM(firstOpenConn);
+							}
+							Sleep(_newwait);
+							iRetry += 1;
+							bootstrap.connect(rmtaddr, localaddr).addListener(this);
+						} else {// good, the connection is ok
+							showStateMsg = false;
+							channel_ = future.channel();
+							// add a listener to detect the connection lost
+							addCloseDetectListener(channel_);
+							connectionEstablished();
 						}
-						MDC.put("WSNO", brws.substring(3));
-						MDC.put("PID", pid);
-						atlog.info("Error , please check ... [{}:{}:{}]", rmtaddr.getAddress().toString(), rmtaddr.getPort(), localaddr.getPort());
-						clientMessageBuf.clear();
-						if (!future.channel().isActive()) {
-							prtcliFSM(firstOpenConn);
-						}
-						Sleep(_newwait);
-						iRetry += 1;
-						bootstrap.connect(rmtaddr, localaddr).addListener(this);
-					} else {// good, the connection is ok
-						showStateMsg = false;
-						channel_ = future.channel();
-						// add a listener to detect the connection lost
-						addCloseDetectListener(channel_);
-						connectionEstablished();
 					}
-				}
 
-				private void addCloseDetectListener(Channel channel) {
-					// if the channel connection is lost, the
-					// ChannelFutureListener.operationComplete() will be called
-					channel.closeFuture().addListener(new ChannelFutureListener() {
-						@Override
-						public void operationComplete(ChannelFuture future) throws Exception {
-							connectionLost();
-							log.debug("addCloseDetectListener {}", iRetry);
-							scheduleConnect(_wait);
-						}
-					});
+					private void addCloseDetectListener(Channel channel) {
+						// if the channel connection is lost, the
+						// ChannelFutureListener.operationComplete() will be called
+						channel.closeFuture().addListener(new ChannelFutureListener() {
+							@Override
+							public void operationComplete(ChannelFuture future) throws Exception {
+								connectionLost();
+								log.debug("addCloseDetectListener {}", iRetry);
+								scheduleConnect(_wait);
+							}
+						});
 
-				}
-			});
-			//20201004
+					}
+				});
+				// 20201004
 			}
 			//----
 		} catch (Exception ex) {
@@ -3073,14 +3074,15 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				this.clientMessageBuf.clear();
 				this.clientChannel = null;
 				close();
-				// 20201004 test
+				// 20201006
 				if (this.lastState != SESSIONBREAK) {
 					log.info("CurMode {} curState == [{}] stop the thread", getCurMode(), this.curState);
+					PrnSvr.closeNode(this.brws, true);
 					Thread.currentThread().interrupt();
 				}
 				this.curState = SESSIONBREAK;
 				return;
-				// 20201004----
+				// 20201006----
 			} else
 				log.info("CurMode {} curState == [{}] prepare to shutdown", getCurMode(), this.curState);
 		}

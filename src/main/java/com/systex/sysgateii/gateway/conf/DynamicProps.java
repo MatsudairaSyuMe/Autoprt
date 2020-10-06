@@ -713,7 +713,7 @@ public class DynamicProps {
 	}
 
 	/**
-	 * 20201004
+	 * 20201006
 	 * 
 	 */
 	public CopyOnWriteArrayList<ConcurrentHashMap<String, Object>> getLastcfgPrtMapList() {

@@ -11,7 +11,9 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+//20201006
 import java.util.Collections;
+//----
 import java.util.Date;
 import java.util.LinkedHashMap;
 
@@ -30,6 +32,7 @@ import java.util.Timer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +48,7 @@ import com.systex.sysgateii.gateway.listener.MessageListener;
 import com.systex.sysgateii.gateway.util.Big5FontImg;
 import com.systex.sysgateii.gateway.util.LogUtil;
 
-public class PrnSvr implements MessageListener<byte[]>, Runnable  {
+public class PrnSvr implements MessageListener<byte[]> {
 	private static Logger log = LoggerFactory.getLogger(PrnSvr.class);
 	public static Logger amlog = null;
 	public static Logger atlog = null;
@@ -71,6 +74,10 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 	static List<ConcurrentHashMap<String, Object>> list = null;
 	//20200901
 	private static PrnSvr me;
+	//20201006
+	Map<String, Thread> threadMap = Collections.synchronizedMap(new LinkedHashMap<String, Thread>());
+	List<ConcurrentHashMap<String, Object>> lastcfglist = null;
+	//----
 	static List<Thread> threadList = Collections.synchronizedList(new ArrayList<Thread>());
 	Map<String, PrtCli> nodeList = Collections.synchronizedMap(new LinkedHashMap<String, PrtCli>());
 	Thread monitorThread;
@@ -82,7 +89,7 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 	//----
 	public static String verbrno = "";
 	public static int setResponseTimeout = 60 * 1000;// 毫秒
-	//20201004
+	//20201006
 	static DynamicProps dcf = null;
 	//----
 
@@ -102,8 +109,8 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 		// TODO Auto-generated method stub
 		log.debug("msg received");
 	}
-
-	public void run() {
+//20201006 mark
+/*	public void run() {
 
 		RuntimeMXBean bean = ManagementFactory.getRuntimeMXBean();
 		String jvmName = bean.getName();
@@ -134,7 +141,8 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 			e.printStackTrace();
 			log.error(e.getMessage());
 		}
-	}
+	}*/
+	//----
 
 	public void stop()
 	{
@@ -160,14 +168,27 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 			getMe().nodeList.clear();
 			if (list != null && list.size() > 0) {
 				for (int i = 0; i < list.size(); i++) {
+					//20201006
+					/*
 					cfgMap = list.get(i);
 					conn = new PrtCli(cfgMap, fasDespacther, new Timer());
 					thread = new Thread(conn);
 					threadList.add(thread);
+					*/
 					synchronized (getMe()) {
+						//20201006
+						cfgMap = list.get(i);
+						conn = new PrtCli(cfgMap, fasDespacther, new Timer());
+						thread = new Thread(conn);
+						getMe().threadMap.put(conn.getId(), thread);
+						//----
 						getMe().nodeList.put(conn.getId(), conn);
 					}
 				}
+				//20201006
+				//for Java8 approach
+				threadList = getMe().threadMap.values().stream().collect(Collectors.toList());
+				//----
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -207,11 +228,24 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 											log.debug("current row cmd [{}]", s);
 											if (s.length() > 0 && s.indexOf(',') > -1) {
 												String[] cmdary = s.split(",");
-												log.debug("cmd object node=[{}] curState=[{}] cmd getCurMode=[{}]", getMe().nodeList.get(cmdary[0]).getId(), getMe().nodeList.get(cmdary[0]).getCurState(), getMe().nodeList.get(cmdary[0]).getCurMode());
+												//20201006
+//												log.debug("cmd object node=[{}] curState=[{}] cmd getCurMode=[{}]", getMe().nodeList.get(cmdary[0]).getId(), getMe().nodeList.get(cmdary[0]).getCurState(), getMe().nodeList.get(cmdary[0]).getCurMode());
+												//----
 												if (cmdary.length > 1) {
+//													if (!getMe().nodeList.containsKey(cmdary[0])) {
+//														log.debug("!!! cmd object node=[{}] not found in nodeList !!!", cmdary[0]);
+//														continue;
+//													}
+													//20201006
+//													log.debug("cmd object node=[{}] curState=[{}] cmd getCurMode=[{}]",
+//															getMe().nodeList.get(cmdary[0]).getId(), getMe().nodeList.get(cmdary[0]).getCurState(), getMe().nodeList.get(cmdary[0]).getCurMode());
+													//----
 													String curcmd = cmdary[1].toUpperCase();
 													switch (curcmd) {
 													case "START":
+														//20201006
+														createNode(cmdary[0]);
+														//----
 														if (getMe().nodeList.get(cmdary[0]).getCurState() == -1) {
 															getMe().nodeList.get(cmdary[0]).onEvent(getMe().nodeList.get(cmdary[0]).getId(), EventType.ACTIVE);
 															log.debug("cmd object node=[{}] enable session getCurMode=[{}]", getMe().nodeList.get(cmdary[0]).getId(), getMe().nodeList.get(cmdary[0]).getCurMode());
@@ -244,7 +278,7 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 														break;
 													}
 												} else
-													log.debug("!!! cmd object node=[{}] cmd null", cmdary[0]);													
+													log.debug("!!! cmd object node=[{}] format error !!!", cmdary[0]);													
 											} else
 												log.error("!!!current row cmd error [{}]", s);
 										}
@@ -266,7 +300,76 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 			log.error(e.getMessage());
 		}
 	}
+	//20201006
+	public static int closeNode(String nid, boolean isRemove) {
+		int rtn = 0;
+		log.debug("start current threadMap size=[{}]", getMe().threadMap.size());
+		log.debug("start current nodeList size=[{}]", getMe().nodeList.size());
+		if (!getMe().nodeList.containsKey(nid))
+			log.debug("!!! cmd object node=[{}] not found in nodeList !!!", nid);
+		else {
+			synchronized(getMe())
+			{
+				log.debug("!!! start to remove node=[{}] !!!", nid);
+				Thread t = getMe().threadMap.get(nid);
+				try {
+					t.interrupt();
+					t.join(1 * 1000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+					log.error("!!! error for stop thread for [{}] !!!: [{}]", nid, e.toString());
+				}
+				getMe().threadMap.remove(nid);
+				getMe().nodeList.remove(nid);
+				rtn += 1;
+			}
+		}
+		log.debug("stop current threadMap size=[{}]", getMe().threadMap.size());
+		log.debug("stop current nodeList size=[{}]", getMe().nodeList.size());
+		return rtn;
+	};
+	public int createNode(String nid) {
+		int ret = 0;
+		if (getMe().nodeList != null && getMe().nodeList.size() > 0) {
+			if (getMe().nodeList.containsKey(nid)) {
+				log.error("!!! cmd object node=[{}] already in nodeList please STOP this node before START !!!", nid);
+				return ret;
+			} else
+				log.debug("!!! cmd object node=[{}] not in nodeList will be created", nid);
+		}
+		log.debug("start current threadMap size=[{}]", getMe().threadMap.size());
+		log.debug("start current nodeList size=[{}]", getMe().nodeList.size());
 
+		if (dcf != null)
+			lastcfglist = dcf.getLastcfgPrtMapList();
+		else
+			log.info("dcf == null !!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+		if (lastcfglist != null && lastcfglist.size() > 0) {
+			log.info("lastcfglist.size() == [{}]", lastcfglist.size());
+			for(int i=0; i < lastcfglist.size(); i++) {
+				ConcurrentHashMap<String, Object> newcfgMap = lastcfglist.get(i);
+				log.debug("check brws cmd [{}] lastcfglist [{}]", nid, newcfgMap.get("brws"));
+				if (nid.trim().equals(newcfgMap.get("brws"))) {
+					log.debug("prepare to create node brws [{}]", newcfgMap.get("brws"));
+					PrtCli conn = new PrtCli(newcfgMap, fasDespacther, new Timer());
+					Thread thread = new Thread(conn);
+					getMe().threadMap.put(conn.getId(), thread);
+					getMe().nodeList.put(conn.getId(), conn);
+					ret += 1;
+					thread.start();
+					i = lastcfglist.size();
+					break;
+				}
+			}
+		} else
+			log.debug("create node return 0");
+		log.debug("stop current threadMap size=[{}]", getMe().threadMap.size());
+		log.debug("stop current nodeList size=[{}]", getMe().nodeList.size());
+
+		return ret;
+	}
+	//----
 	public static void startServer() {
 		log.debug("Enter startServer");
 		/*20200901
@@ -288,8 +391,8 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 	
 	public static void createServer(DynamicProps cfg) {
 		log.debug("Enter createServer");
-		//20201004
-		cfg = cfg;
+		//20201006
+		dcf = cfg;
 		//----
 		cfgMap = null;
 		verbrno = cfg.getConHashMap().get("svrsubport.verhbrno");
@@ -344,13 +447,15 @@ public class PrnSvr implements MessageListener<byte[]>, Runnable  {
 		//----
 	}
 
-	public static void startServer(FASSvr setfassvr) {
+	//20201006 mark
+/*	public static void startServer(FASSvr setfassvr) {
 		log.debug("Enter startServer");
 		if (server != null) {
 			fasDespacther = setfassvr;
 			server.run();
 		}
-	}
+	}*/
+	//----
 
 	public static void stopServer() {
 		log.debug("Enter stopServer");
