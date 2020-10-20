@@ -556,6 +556,68 @@ public class GwDao {
 		log.debug("return SELMFLD length=[{}]", rtnVal.length);
 		return rtnVal;
 	}
+	//20201019
+	public String[] SELMFLDNOIDX(String fromTblName, String fieldsn, boolean verbose)
+			throws Exception {
+		String[] rtnVal = {};
+		tbsdytblcolumnNames = new Vector<String>();
+		tbsdytblcolumnTypes = new Vector<Integer>();
+		if (fromTblName == null || fromTblName.trim().length() == 0 || fieldsn == null || fieldsn.trim().length() == 0)
+			return rtnVal;
+		try {
+			log.debug("fieldsn=[{}]",  fieldsn);
+			String[] fieldset = null;
+			if (fieldsn.indexOf(',') > -1)
+				fieldset = fieldsn.split(",");
+			else {
+				fieldset = new String[1];
+				fieldset[0] = fieldsn;
+			}
+			java.sql.Statement stmt = selconn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE, ResultSet.CLOSE_CURSORS_AT_COMMIT);
+			tbsdytblrs = ((java.sql.Statement) stmt).executeQuery("SELECT " + fieldsn + " FROM " + fromTblName);
+
+			int type = -1;
+
+			if (tbsdytblrs != null) {
+				ResultSetMetaData rsmd = tbsdytblrs.getMetaData();
+				int columnCount = 0;
+				while (columnCount < rsmd.getColumnCount()) {
+					columnCount++;
+					type = rsmd.getColumnType(columnCount);
+					if (verbose)
+						log.debug("ColumnName={} ColumnTypeName={} ", rsmd.getColumnName(columnCount), rsmd.getColumnTypeName(columnCount) );
+					tbsdytblcolumnNames.add(rsmd.getColumnName(columnCount));
+					tbsdytblcolumnTypes.add(type);
+				}
+				int idx = 0;
+				while (tbsdytblrs.next()) {
+					if (idx <= 0)
+						rtnVal = new String[1];
+					else {
+						String[] tmpv = rtnVal;
+						rtnVal = new String[idx + 1];
+						int j = 0;
+						for (String s: tmpv) {
+							rtnVal[j] = s;
+							j++;
+						}
+					}
+					for (int i = 0; i < fieldset.length; i++) {
+						if (i == 0)
+							rtnVal[idx] = tbsdytblrs.getString(fieldset[i]);
+						else
+							rtnVal[idx] = rtnVal[idx] + "," + tbsdytblrs.getString(fieldset[i]);
+					}
+					idx++;
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			log.error("error : {}", e.toString());
+		}
+		log.debug("return SELMFLD length=[{}]", rtnVal.length);
+		return rtnVal;
+	}
 
 	private PreparedStatement setValueps(PreparedStatement ps, String[] updvalary, boolean updinsert) throws Exception {
 		// updinsert true for update, false for insert

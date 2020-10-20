@@ -68,7 +68,7 @@ public class Server {
 				String updValue = String.format(updValueptrn,auid,PrnSvr.verbrno, svrip,
 						Constants.STSUSEDACT, ManagementFactory.getRuntimeMXBean().getName().split("@")[0],t);
 				int row = jsel2ins.UPSERT(svrstatustbname, svrstatustbfields, updValue, svrsstatustbmkey, PrnSvr.svrid);
-				log.debug("total {} records update  status [{}]", row, Constants.STSUSEDACT);
+				log.debug("total {} records update", row);
 				jsel2ins.CloseConnect();
 				jsel2ins = null;
 				//----

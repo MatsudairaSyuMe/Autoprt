@@ -76,11 +76,11 @@
 <!-- 	<svrip>10.24.1.230:15000=10.24.1.230:15102,10.24.1.230:15000=10.24.1.230:15103</svrip>-->
 <!--		<svrip>10.24.1.230:15000=10.24.1.230:15102,10.24.1.230:15000=10.24.1.230:15103</svrip>-->
 		<svrip>localhost:15000=localhost:15102, localhost:15000=localhost:15103</svrip>
-		<svrport>15000</svrport>
-		<localip>10.24.1.230</localip>
-		<localport>15010</localport>
+<!--		<svrport>15000</svrport>-->
+<!--		<localip>10.24.1.230</localip>-->
+<!--		<localport>15010</localport>-->
 		<recvtimeout>15000</recvtimeout>
 		<verhbrno>984</verhbrno>
-		<verhwsno>80</verhwsno>
+<!--		<verhwsno>80</verhwsno>-->
 	</svrsubport>
 </configuration>
