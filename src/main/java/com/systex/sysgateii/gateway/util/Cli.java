@@ -72,6 +72,7 @@ public class Cli {
 							case 1: //list status of service sid
 								System.out.println("list command status of all device by service sid");
 								sidS = sary[0];
+								listcr = true;
 								break;
 							case 2: //list status of device BRWS by service sid
 								     //or list status of device BRWS
@@ -80,6 +81,7 @@ public class Cli {
 								if (sary[1].length() > 0)
 									brwsS = sary[1];
 								System.out.println("list status of device BRWS");
+								listcr = true;
 								break;
 							default:
 								System.err.println("command format error please check -help " + args[i]);
@@ -131,8 +133,8 @@ public class Cli {
 						System.err.println("command " + args[i] + " format error please check -help");	
 						System.exit(-1);
 					}
-					listcr = true;
 				}
+				System.out.println("listcr=" + listcr);
 				if (listcr) {
 					dcf = new DynamicProps("rateprtservice.xml");
 					url = dcf.getConHashMap().get("system.db[@url]");
@@ -184,99 +186,105 @@ public class Cli {
 						}
 					jsel2ins.CloseConnect();
 					jsel2ins = null;
-				} else if (setcmdS.length() > 0) {
-					dcf = new DynamicProps("rateprtservice.xml");
-					url = dcf.getConHashMap().get("system.db[@url]");
-					user = dcf.getConHashMap().get("system.db[@user]");
-					usinsg = dcf.getConHashMap().get("system.db[@pass]");
-					String cmdtbname = dcf.getConHashMap().get("system.devcmdtb[@name]");
-					String cmdtbmkey = dcf.getConHashMap().get("system.devcmdtb[@mkey]");
-					String cmdtbfields = "AUID,CMD,CMDCREATETIME,CMDRESULT,CMDRESULTTIME";
-					GwDao jselonefield = null;
-					String svrprmtbname = dcf.getConHashMap().get("system.svrprmtb[@name]");
-					String svrprmtbmkey = dcf.getConHashMap().get("system.svrprmtb[@mkey]");
-					String svrprmtbfields = "AUID";
-					String auidS = "";
+				} else {
+					if (setcmdS.length() > 0) {
+						dcf = new DynamicProps("rateprtservice.xml");
+						url = dcf.getConHashMap().get("system.db[@url]");
+						user = dcf.getConHashMap().get("system.db[@user]");
+						usinsg = dcf.getConHashMap().get("system.db[@pass]");
+						String cmdtbname = dcf.getConHashMap().get("system.devcmdtb[@name]");
+						String cmdtbmkey = dcf.getConHashMap().get("system.devcmdtb[@mkey]");
+						String cmdtbfields = "AUID,CMD,CMDCREATETIME,CMDRESULT,CMDRESULTTIME";
+						GwDao jselonefield = null;
+						String svrprmtbname = dcf.getConHashMap().get("system.svrprmtb[@name]");
+						String svrprmtbmkey = dcf.getConHashMap().get("system.svrprmtb[@mkey]");
+						String svrprmtbfields = "AUID";
+						String auidS = "";
 
-					if (jsel2ins == null) {
-						jsel2ins = new GwDao(url, user, usinsg, false);
-						jselonefield = new GwDao(url, user, usinsg, false);
-						auidS = jselonefield.SELONEFLD(svrprmtbname, svrprmtbfields, svrprmtbmkey, sidS, true).trim();
-						System.out.println("current AUID=" + auidS);
-					}
-					SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
-					String t = sdf.format(new java.util.Date());
-					String updValue = String.format(updcmdPtrn, Integer.parseInt(auidS), setcmdS, t, "", sdf.format(0l));
-					System.out.println("update " + updValue + " ");
-					int row = jsel2ins.UPSERT(cmdtbname, cmdtbfields, updValue, cmdtbmkey, sidS + "," + brwsS);
-					System.out.println("total " + row + " records update");
-					jsel2ins.CloseConnect();
-					jsel2ins = null;
-					jselonefield.CloseConnect();
-					jselonefield = null;
-				} else if (brwsS.length() > -1 || sidS.length() > -1) {
-					dcf = new DynamicProps("rateprtservice.xml");
-					url = dcf.getConHashMap().get("system.db[@url]");
-					user = dcf.getConHashMap().get("system.db[@user]");
-					usinsg = dcf.getConHashMap().get("system.db[@pass]");
-					String svrstatustbname = dcf.getConHashMap().get("system.svrstatustb[@name]");
-					String svrsstatustbmkey = dcf.getConHashMap().get("system.svrstatustb[@mkey]");
-					String svrstatustbfields = dcf.getConHashMap().get("system.svrstatustb[@fields]");
-					String devstatustbname = dcf.getConHashMap().get("system.statustb[@name]");
-					String devstatustbmkey = "BRWS";
-					String devstatustbfields = "BRWS," + dcf.getConHashMap().get("system.statustb[@fields]");
-					if (jsel2ins == null)
-						jsel2ins = new GwDao(url, user, usinsg, false);
-					if (brwsS.length() < 1) {
-						String[] cmd = null;
-						if (sidS.length() > 0)
-							cmd = jsel2ins.SELMFLD(svrstatustbname, svrstatustbfields, svrsstatustbmkey, sidS,
-									false);
-						else
-							cmd = jsel2ins.SELMFLDNOIDX(svrstatustbname, svrstatustbfields, false);
-						if (cmd != null && cmd.length > 0)
-							for (String s : cmd) {
-								s = s.trim();
-								System.out.println("current row data [" + s + "]");
-								if (s.length() > 0 && s.indexOf(',') > -1) {
-									String[] cmdary = s.split(",");
-									if (cmdary.length > 1) {
-										System.out.println(
-												String.format("SVRIP=[%s] CURSTS=[%s] PID=[%s] lastupdatetime=[%s]",
-														cmdary[2], cmdary[3], cmdary[4], cmdary[7]));
+						if (jsel2ins == null) {
+							jsel2ins = new GwDao(url, user, usinsg, false);
+							jselonefield = new GwDao(url, user, usinsg, false);
+							auidS = jselonefield.SELONEFLD(svrprmtbname, svrprmtbfields, svrprmtbmkey, sidS, true)
+									.trim();
+							System.out.println("current AUID=" + auidS);
+						}
+						SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
+						String t = sdf.format(new java.util.Date());
+						String updValue = String.format(updcmdPtrn, Integer.parseInt(auidS), setcmdS, t, "",
+								sdf.format(0l));
+						System.out.println("update " + updValue + " ");
+						int row = jsel2ins.UPSERT(cmdtbname, cmdtbfields, updValue, cmdtbmkey, sidS + "," + brwsS);
+						System.out.println("total " + row + " records update");
+						jsel2ins.CloseConnect();
+						jsel2ins = null;
+						jselonefield.CloseConnect();
+						jselonefield = null;
+					} else if (brwsS.length() > -1 || sidS.length() > -1) {
+						dcf = new DynamicProps("rateprtservice.xml");
+						url = dcf.getConHashMap().get("system.db[@url]");
+						user = dcf.getConHashMap().get("system.db[@user]");
+						usinsg = dcf.getConHashMap().get("system.db[@pass]");
+						String svrstatustbname = dcf.getConHashMap().get("system.svrstatustb[@name]");
+						String svrsstatustbmkey = dcf.getConHashMap().get("system.svrstatustb[@mkey]");
+						String svrstatustbfields = dcf.getConHashMap().get("system.svrstatustb[@fields]");
+						String devstatustbname = dcf.getConHashMap().get("system.statustb[@name]");
+						String devstatustbmkey = "BRWS";
+						String devstatustbfields = "BRWS," + dcf.getConHashMap().get("system.statustb[@fields]");
+						if (jsel2ins == null)
+							jsel2ins = new GwDao(url, user, usinsg, false);
+						if (brwsS.length() < 1) {
+							String[] cmd = null;
+							if (sidS.length() > 0)
+								cmd = jsel2ins.SELMFLD(svrstatustbname, svrstatustbfields, svrsstatustbmkey, sidS,
+										false);
+							else
+								cmd = jsel2ins.SELMFLDNOIDX(svrstatustbname, svrstatustbfields, false);
+							if (cmd != null && cmd.length > 0)
+								for (String s : cmd) {
+									s = s.trim();
+									System.out.println("current row data [" + s + "]");
+									if (s.length() > 0 && s.indexOf(',') > -1) {
+										String[] cmdary = s.split(",");
+										if (cmdary.length > 1) {
+											System.out.println(
+													String.format("SVRIP=[%s] CURSTS=[%s] PID=[%s] lastupdatetime=[%s]",
+															cmdary[2], cmdary[3], cmdary[4], cmdary[7]));
+										} else
+											System.out.println(
+													"!!! data object node=[" + cmdary[0] + "] format error !!!");
 									} else
-										System.out.println(
-												"!!! data object node=[" + cmdary[0] + "] format error !!!");
-								} else
-									System.out.println("!!!current row data error [" + s + "]");
-							}
-					} else {
-						String[] cmd = null;
-						if (brwsS.trim().equals("*"))
-							cmd = jsel2ins.SELMFLDNOIDX(devstatustbname, devstatustbfields, false);
-						else
-							cmd = jsel2ins.SELMFLD(devstatustbname, devstatustbfields, devstatustbmkey, brwsS,
-									false);
-						
-						if (cmd != null && cmd.length > 0)
-							for (String s : cmd) {
-								s = s.trim();
-								if (s.length() > 0 && s.indexOf(',') > -1) {
-									String[] cmdary = s.split(",");
-									if (cmdary.length > 1) {
-										System.out.println(
-												String.format("BRWS=[%s] DEVIP=[%s] DEVPORT=[%s] SVRIP=[%s] SVRPORT=[%s] DEVTYPE=[%s] CURSTUS=[%s]",
-														cmdary[0], cmdary[1], cmdary[2], cmdary[3], cmdary[4], cmdary[6], cmdary[7]));
+										System.out.println("!!!current row data error [" + s + "]");
+								}
+						} else {
+							String[] cmd = null;
+							if (brwsS.trim().equals("*"))
+								cmd = jsel2ins.SELMFLDNOIDX(devstatustbname, devstatustbfields, false);
+							else
+								cmd = jsel2ins.SELMFLD(devstatustbname, devstatustbfields, devstatustbmkey, brwsS,
+										false);
+
+							if (cmd != null && cmd.length > 0)
+								for (String s : cmd) {
+									s = s.trim();
+									if (s.length() > 0 && s.indexOf(',') > -1) {
+										String[] cmdary = s.split(",");
+										if (cmdary.length > 1) {
+											System.out.println(String.format(
+													"BRWS=[%s] DEVIP=[%s] DEVPORT=[%s] SVRIP=[%s] SVRPORT=[%s] DEVTYPE=[%s] CURSTUS=[%s]",
+													cmdary[0], cmdary[1], cmdary[2], cmdary[3], cmdary[4], cmdary[6],
+													cmdary[7]));
+										} else
+											System.out.println(
+													"!!! data object node=[" + cmdary[0] + "] format error !!!");
 									} else
-										System.out.println(
-												"!!! data object node=[" + cmdary[0] + "] format error !!!");
-								} else
-									System.out.println("!!!current row data error [" + s + "]");
-							}
+										System.out.println("!!!current row data error [" + s + "]");
+								}
+						}
+						jsel2ins.CloseConnect();
+						jsel2ins = null;
 					}
-					jsel2ins.CloseConnect();
-					jsel2ins = null;
 				}
+
 			} else {
 				System.out.println("Cli -h show help message");
 				System.out.println("Cli -s {sid}:                                 list status of service sid");
