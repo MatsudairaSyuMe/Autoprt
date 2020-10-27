@@ -281,6 +281,11 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 	//20200906
 	private EventType curMode = EventType.ACTIVE;
 	//----
+	//20201026 fir cmdhis
+	private String sno = "";
+	private String hisfldvalssptrn2 = "'%s','%s','%s','%s','%s','%s','%s','%s'";
+	private GwDao cmdhiscon = null;
+	//----
 
 	public List<ActorStatusListener> getActorStatusListeners() {
 		return actorStatusListeners;
@@ -3063,6 +3068,21 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					log.debug("total {} records update status [{}]", row, this.curMode);
 					jsel2ins.CloseConnect();
 					jsel2ins = null;
+					//20201026
+					cmdhiscon = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
+					String fldvals2 = String.format(hisfldvalssptrn2, "", "STOP", t, this.rmtaddr.getAddress().getHostAddress(),
+							this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(),"0");
+//					sno = cmdhiscon.INSSELChoiceKey(PrnSvr.devcmdhistbname, "SVRID,AUID,BRWS,CMD,CMDCREATETIME,CMDRESULT,CMDRESULTTIME,RESULTSTUS", "1,1,'9838901','','2020-10-21 09:46:38.368000','START','2020-10-21 09:46:38.368000','0','2'", "SNO", "31", false, true);
+					String[] rsno = cmdhiscon.INSSELChoiceKey(PrnSvr.devcmdhistbname, "CMD,CMDRESULT,CMDRESULTTIME,DEVIP,DEVPORT,SVRIP,SVRPORT,RESULTSTUS", fldvals2, PrnSvr.devcmdhistbsearkey, sno, false, true);
+					if (rsno != null) {
+						for (int i = 0; i < rsno.length; i++)
+							log.debug("rsno[{}]=[{}]",i,rsno[i]);
+					} else
+						log.error("rsno null");
+					cmdhiscon.CloseConnect();
+					cmdhiscon = null;
+					//----
+
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -3960,10 +3980,12 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 	}
 	/**
 	 * 做為事件的被通知者
+	 * 20201026 for cmdhis
 	 */
 	@Override
-	public void onEvent(String id, EventType evt) {
+	public void onEvent(String id, EventType evt, String onsno) {
 		// TODO Auto-generated method stub
+		sno = onsno;
 		switch (evt) {
 		case ACTIVE:// 被通知要開啟
 			//20201004
@@ -3972,7 +3994,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				return;
 			}
 			//----
-			log.debug(getId() + ">>> ACTIVE");
+			log.debug(getId() + ">>> ACTIVE sno=[{}]", sno);
 			this.curMode = evt;
 			//20200909 update cmd table
 			try {
@@ -3985,6 +4007,22 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				log.debug("total {} records update status [{}]", row, this.curMode);
 				jsel2ins.CloseConnect();
 				jsel2ins = null;
+				//----
+				//20201026
+				cmdhiscon = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
+				String fldvals2 = String.format(hisfldvalssptrn2, "", "START", t, this.rmtaddr.getAddress().getHostAddress(),
+						this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(),"2");
+//				sno = cmdhiscon.INSSELChoiceKey(PrnSvr.devcmdhistbname, "SVRID,AUID,BRWS,CMD,CMDCREATETIME,CMDRESULT,CMDRESULTTIME,CURSTUS", "1,1,'9838901','','2020-10-21 09:46:38.368000','START','2020-10-21 09:46:38.368000','0','2'", "SNO", "31", false, true);
+				String[] rsno = cmdhiscon.INSSELChoiceKey(PrnSvr.devcmdhistbname, "CMD,CMDRESULT,CMDRESULTTIME,DEVIP,DEVPORT,SVRIP,SVRPORT,RESULTSTUS", fldvals2, PrnSvr.devcmdhistbsearkey, sno, false, true);
+				if (rsno != null) {
+					for (int i = 0; i < rsno.length; i++)
+						log.debug("update =======> rsno[{}]=[{}]",i,rsno[i]);
+				} else
+					log.error("rsno null");
+				cmdhiscon.CloseConnect();
+				cmdhiscon = null;
+				//----
+
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -4029,4 +4067,13 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 	public void setCurMode(EventType curMode) {
 		this.curMode = curMode;
 	}
+	//20201026
+	public InetSocketAddress getRmtaddr() {
+		return this.rmtaddr;
+	}
+	public InetSocketAddress getLocaladdr() {
+		return this.localaddr;
+	}
+
+	//----
 }

@@ -70,7 +70,12 @@
 		<statustb name="BISAP.TB_AUDEVSTS" mkey="BRWS,SVRID" fields="IP,PORT,SYSIP,SYSPORT,ACTPAS,DEVTPE,CURSTUS,VERSION,CREATOR,MODIFIER"/>
 		<svrstatustb name="BISAP.TB_AUSVRSTS" mkey="SVRID" fields="AUID,BRNO,IP,CURSTUS,PID,CREATOR,MODIFIER,LASTUPDATE"/>
 		<svrtbsdytb name="BISAP.TB_AUSVRPRM" mkey="SVRID" fields="TBSDY"/>
-		<devcmdtb name="BISAP.TB_AUDEVCMD" mkey="SVRID,BRWS" fields="SVRID,BRWS,CMD"/>
+		<!--  20201026 devcmdtb fields add AUID and CMDCREATETIME-->
+		<devcmdtb name="BISAP.TB_AUDEVCMD" mkey="SVRID,BRWS" fields="SVRID,BRWS,CMD,AUID,CMDCREATETIME"/>
+		<!-- 20201026 add for command history processing and am error log -->
+		<devcmdhistb name="BISAP.TB_AUDEVCMDHIS" mkey="SNO" fields="SVRID,AUID,BRWS,CMD,CMDCREATETIME,CMDRESULT,CMDRESULTTIME,DEVIP,DEVPORT,SVRIP,SVRPORT,CURSTUS,RESULTSTUS"/>
+		<devamtb name="BISAP.TB_AUTB_AUAMLOG" mkey="SNO" fields="RECTIME,BRWS,TYPE,ACTNO,ERRDESC"/>
+		<!-- 20201026 -->
 	</system>
 	<svrsubport>
 <!-- 	<svrip>10.24.1.230:15000=10.24.1.230:15102,10.24.1.230:15000=10.24.1.230:15103</svrip>-->

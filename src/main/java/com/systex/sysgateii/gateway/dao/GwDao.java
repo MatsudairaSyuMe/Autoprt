@@ -618,7 +618,196 @@ public class GwDao {
 		log.debug("return SELMFLD length=[{}]", rtnVal.length);
 		return rtnVal;
 	}
+	//20201028
+	public String[] INSSELChoiceKey(String fromTblName, String field, String updval, String keyname, String selkeyval, boolean usekey, boolean verbose) throws Exception {
+		String[] rtnVal = null;
+		columnNames = new Vector<String>();
+		columnTypes = new Vector<Integer>();
+		if (fromTblName == null || fromTblName.trim().length() == 0 || field == null || field.trim().length() == 0
+				|| keyname == null || keyname.trim().length() == 0)
+			throw new Exception("given table name or field or keyname error =>" + fromTblName);
+		log.debug(String.format("test Select from table %s... where %s=%s", fromTblName, keyname, selkeyval));
+		java.sql.Statement stmt = selconn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE, ResultSet.CLOSE_CURSORS_AT_COMMIT);
+		//20201028
+		String keyset = "";
+		String[] keynameary = keyname.split(",");
+		String[] keyvalueary = selkeyval.split(",");
+		if (keynameary.length != keyvalueary.length)
+			throw new Exception("given fields keyname can't correspond to keyvfield =>keynames [" + keyname + "] selkayvals [" + selkeyval + "]");
+		else {
+			for (int i = 0; i < keynameary.length; i++)
+				keyset = keyset + keynameary[i] + " = " + keyvalueary[i] + (i == (keynameary.length - 1) ? "" : " and ");
+		}
+		if (usekey)
+			rs = ((java.sql.Statement) stmt)
+				.executeQuery("SELECT " + keyname + "," + field + " FROM " + fromTblName + " where " + keyset);
+		else
+			rs = ((java.sql.Statement) stmt)
+			.executeQuery("SELECT " + field + " FROM " + fromTblName + " where " + keyset);
+		log.debug("update value [{}] selkeyval [{}]", updval, selkeyval);
+		String[] valary = updval.split(",");
+		for (int i = 0; i < valary.length; i++) {
+			int s = valary[i].indexOf('\'');
+			int l = valary[i].lastIndexOf('\'');
+			if (s != l && s >= 0 && l >= 0 && s < l)
+				valary[i] = valary[i].substring(s + 1, l);
+		}
+		String[] selkeyvalary = selkeyval.split(",");
+		for (int i = 0; i < selkeyvalary.length; i++) {
+			int s = selkeyvalary[i].indexOf('\'');
+			int l = selkeyvalary[i].lastIndexOf('\'');
+			if (s != l && s >= 0 && l >= 0 && s < l)
+				selkeyvalary[i] = selkeyvalary[i].substring(s + 1, l);
+		}
+		int type = -1;
+		int row = 0;
 
+		if (rs != null) {
+			ResultSetMetaData rsmd = rs.getMetaData();
+			int columnCount = 0;
+			boolean updateMode = false;
+			log.debug("table request fields {}", field);
+			if (rs.next()) {
+				log.debug("update mode");
+				updateMode = true;
+			} else
+				log.debug("insert mode");
+			while (columnCount < rsmd.getColumnCount()) {
+				columnCount++;
+				type = rsmd.getColumnType(columnCount);
+				if (updateMode && field.indexOf(rsmd.getColumnName(columnCount).trim()) > -1) {
+					columnNames.add(rsmd.getColumnName(columnCount));
+					columnTypes.add(type);
+					if (verbose)
+						log.debug("updateMode ColumnName={} ColumnTypeName={} ", rsmd.getColumnName(columnCount), rsmd.getColumnTypeName(columnCount) );
+				} else if (!updateMode && (field.indexOf(rsmd.getColumnName(columnCount).trim()) > -1 || keyname.indexOf(rsmd.getColumnName(columnCount).trim()) > -1)) {
+					columnNames.add(rsmd.getColumnName(columnCount));
+					columnTypes.add(type);					
+					if (verbose)
+						log.debug("insert Mode ColumnName={} ColumnTypeName={} ", rsmd.getColumnName(columnCount), rsmd.getColumnTypeName(columnCount) );
+				}
+			}
+			String colNames = "";
+			String vals = "";
+			String updcolNames = "";
+			String updvals = "";
+			log.debug("given vals {} selkeyvalary {}", Arrays.toString(valary), Arrays.toString(selkeyvalary));
+
+			for (columnCount = 0; columnCount < columnNames.size(); columnCount++) {
+				if (colNames.trim().length() > 0) {
+					colNames = colNames + "," + columnNames.get(columnCount);
+					vals = vals + ",?";
+				} else {
+					colNames = columnNames.get(columnCount);
+					vals = "?";
+				}
+				if (updateMode) {
+					if (updcolNames.trim().length() > 0) {
+						updcolNames = updcolNames + "," + columnNames.get(columnCount);
+						updvals = updvals + ",?";
+					} else {
+						updcolNames = columnNames.get(columnCount);
+						updvals = "?";
+					}
+				}
+			}
+			String SQL_INSERT = "SELECT " + keyname + " FROM NEW TABLE (INSERT INTO " + fromTblName + " (" + colNames + ") VALUES (" + vals + "))";
+			String SQL_UPDATE = "UPDATE " + fromTblName + " SET (" + updcolNames + ") = (" + updvals + ") WHERE "
+					+ keyset;
+			String cnvInsertStr = "";
+			if (updateMode) {
+				preparedStatement = selconn.prepareStatement(SQL_UPDATE);
+				log.debug("record exist using update:{}", SQL_UPDATE);
+				log.debug("record exist using valary:{} len={}", valary, valary.length);
+				setValueps(preparedStatement, valary, usekey);
+			} else {
+				try {
+				String[] insvalary = null;
+				if (usekey)
+					insvalary = com.systex.sysgateii.gateway.util.dataUtil.concatArray(selkeyvalary, valary);
+				else
+					insvalary = valary;
+				cnvInsertStr = generateActualSql(SQL_INSERT, insvalary);
+				log.debug("record not exist using select insert:{} toString=[{}]", SQL_INSERT, cnvInsertStr);
+				} catch(Exception e) {
+					e.printStackTrace();
+					throw new Exception("format error");
+				}
+			}
+			if (updateMode) {
+				row = preparedStatement.executeUpdate();
+				log.debug("executeUpdate() row=[{}]", row);
+				if (keyvalueary.length > 0)
+					rtnVal = keyvalueary;
+				else {
+					rtnVal = new String[1];
+					rtnVal[0] = selkeyval;
+				}
+			} else {
+				rs = ((java.sql.Statement) stmt).executeQuery(cnvInsertStr);
+				log.debug("executeQuery()");
+				int idx = 0;
+				while (rs.next()) {
+//					rtnVal = rs.getString("SNO");
+					if (idx <= 0)
+						rtnVal = new String[1];
+					else {
+						String[] tmpv = rtnVal;
+						rtnVal = new String[idx + 1];
+						int j = 0;
+						for (String s: tmpv) {
+							rtnVal[j] = s;
+							j++;
+						}
+					}
+					for (int i = 0; i < keynameary.length; i++) {
+						if (i == 0)
+							rtnVal[idx] = rs.getString(keynameary[i]);
+						else
+							rtnVal[idx] = rtnVal[idx] + "," + rs.getString(keynameary[i]);
+					}
+					idx++;
+				}
+			}
+		}
+		return rtnVal;
+	}
+
+	private String generateActualSql(String sqlQuery, Object... parameters) throws Exception {
+	    String[] parts = sqlQuery.split("\\?");
+	    StringBuilder sb = new StringBuilder();
+
+	    // This might be wrong if some '?' are used as litteral '?'
+	    for (int i = 0; i < parts.length; i++) {
+	        String part = parts[i];
+	        sb.append(part);
+	        if (i < parameters.length) {
+	            sb.append(getValueps(i, (String[]) parameters));
+	        }
+	    }
+
+	    return sb.toString();
+	}
+	private String formatParameter(Object parameter) {
+	    if (parameter == null) {
+	        return "NULL";
+	    } else {
+	        if (parameter instanceof String) {
+	            return "'" + ((String) parameter).replace("'", "''") + "'";
+	        } else if (parameter instanceof Timestamp) {
+	            return "to_timestamp('" + new SimpleDateFormat("MM/dd/yyyy HH:mm:ss.SSS").
+	                    format(parameter) + "', 'mm/dd/yyyy hh24:mi:ss.ff3')";
+	        } else if (parameter instanceof Date) {
+	            return "to_date('" + new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").
+	                    format(parameter) + "', 'mm/dd/yyyy hh24:mi:ss')";
+	        } else if (parameter instanceof Boolean) {
+	            return ((Boolean) parameter).booleanValue() ? "1" : "0";
+	        } else {
+	            return parameter.toString();
+	        }
+	    }
+	}
+	//----
 	private PreparedStatement setValueps(PreparedStatement ps, String[] updvalary, boolean updinsert) throws Exception {
 		// updinsert true for update, false for insert
 		int type;
@@ -627,12 +816,14 @@ public class GwDao {
 		if (!updinsert)
 			j = 0;
 		int i = 1;
-//		log.debug("j={} columnNames.size()={}",j,columnNames.size());
+//		verbose = true;
+		if (verbose)
+			log.debug("j={} columnNames.size()={}",j,columnNames.size());
 		for (; j < columnNames.size(); j++) {
 			type = columnTypes.get(j);
 			obj = updvalary[j];
 			if (verbose)
-				log.debug("\t" + obj + ":");
+				log.debug("\tj=" + j + ":[" + obj + "]");
 			switch (type) {
 			case Types.VARCHAR:
 			case Types.CHAR:
@@ -697,6 +888,77 @@ public class GwDao {
 		if (verbose)
 			System.out.println();
 		return ps;
+	}
+	private String getValueps(int j, String[] updvalary) throws Exception {
+		// updinsert true for update, false for insert
+		String rtn = "";
+		int type;
+		String obj = "";
+		verbose = true;
+		type = columnTypes.get(j);
+		obj = updvalary[j];
+		if (verbose)
+			log.debug("\tj=" + j + ":[" + obj + "]");
+		switch (type) {
+		case Types.VARCHAR:
+		case Types.CHAR:
+			if (verbose)
+				log.debug("getString");
+			rtn = "'" + obj + "'";
+			break;
+		case Types.DECIMAL:
+			if (verbose)
+				log.debug("getDouble");
+			rtn = " " + obj + " ";
+			break;
+		case Types.TIMESTAMP:
+			if (verbose)
+				log.debug("getTimestamp[{}]", obj);
+			rtn = "'" + obj + "'";
+			break;
+		case Types.BIGINT:
+			if (verbose)
+				log.debug("getLong");
+			rtn = " " + obj + " ";
+			break;
+		case Types.BLOB:
+			if (verbose)
+				log.debug("getBlob");
+			rtn = "'" + obj + "'";
+			break;
+		case Types.CLOB:
+			if (verbose)
+				log.debug("getClob");
+			rtn = "'" + obj + "'";
+			break;
+		case Types.DATE:
+			if (verbose)
+				log.debug("getDate");
+			rtn = "'" + obj + "'";
+			break;
+		case Types.DOUBLE:
+			if (verbose)
+				log.debug("getDouble");
+			rtn = " " + obj + " ";
+			break;
+		case Types.INTEGER:
+			if (verbose)
+				log.debug("getInt/getInt");
+			rtn = " " + obj + " ";
+			break;
+		case Types.NVARCHAR:
+			if (verbose)
+				log.debug("getNString(idx, v)");
+			rtn = "'" + obj + "'";
+			break;
+		default:
+			log.error("undevelop type:{} change to string", type);
+			rtn = "'" + obj + "'";
+			break;
+		}
+//		if (verbose)
+//			System.out.println();
+		return rtn;
 	}
 	private String gettbsdytblValue(ResultSet rs, String obj, boolean verbose) throws Exception {
 		int type;
@@ -882,7 +1144,8 @@ public class GwDao {
 		String frompass = "bisuser";
 
 		boolean verbose = false;
-		String fn = "BISAP.TB_AUDEVSTS";
+//		String fn = "BISAP.TB_AUDEVSTS";
+		String fn = "BISAP.TB_AUDEVCMDHIS";
 		if (args.length > 0) {
 			for (int j = 0; j < args.length; j++) {
 				if (args[j].equalsIgnoreCase("--from")) {
@@ -939,7 +1202,11 @@ public class GwDao {
 			if (jsel2ins == null)
 				jsel2ins = new GwDao(fromurl, fromuser, frompass, verbose);
 //			total = jsel2ins.UPSERT(fn, selField, updValue, keyName, keyValue);
-			total = jsel2ins.UPSERT("BISAP.TB_AUSVRPRM", "TBSDY", "01090910", "SVRID", "1");
+//			total = jsel2ins.UPSERT("BISAP.TB_AUSVRPRM", "TBSDY", "01090910", "SVRID", "1");
+//			String[] sno = jsel2ins.INSSELChoiceKey(fn, "SVRID,AUID,BRWS,CMD,CMDCREATETIME,CURSTUS", "1,1,'9838901','START','2020-10-21 09:46:38.368000','0'", "SNO", "-1", false, true);
+			String[] sno = jsel2ins.INSSELChoiceKey(fn, "SVRID,AUID,BRWS,CMD,CMDCREATETIME,CMDRESULT,CMDRESULTTIME,CURSTUS", "1,1,'9838901','','2020-10-21 09:46:38.368000','START','2020-10-21 09:46:38.368000','0','2'", "SNO", "31", false, true);
+			for (int i = 0; i < sno.length; i++)
+				System.out.println("sno[" + i + "] = ["+sno[i]+"]");
 			jsel2ins.CloseConnect();
 			jsel2ins = null;
 			System.out.println("total " + total + " records transferred");

@@ -7,6 +7,7 @@ package com.systex.sysgateii.gateway.autoPrtSvr.Server;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
+import java.net.InetSocketAddress;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -15,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 //----
 import java.util.Date;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 
 /*
@@ -47,6 +49,7 @@ import com.systex.sysgateii.gateway.listener.EventType;
 import com.systex.sysgateii.gateway.listener.MessageListener;
 import com.systex.sysgateii.gateway.util.Big5FontImg;
 import com.systex.sysgateii.gateway.util.LogUtil;
+import com.systex.sysgateii.gateway.util.ipAddrPars;
 
 public class PrnSvr implements MessageListener<byte[]> {
 	private static Logger log = LoggerFactory.getLogger(PrnSvr.class);
@@ -66,7 +69,18 @@ public class PrnSvr implements MessageListener<byte[]> {
 	public static String svrtbsdytbmkey = "";
 	public static String svrtbsdytbfields = "";
 	//----
+	//20201026 cmdhis and am error log
+	public static String devcmdhistbname = "";
+	public static String devcmdhistbsearkey = "";
+	public static String devcmdhistbfields = "";
+	private String hisfldvalssptrn = "%s,%s,'%s','%s','%s','%s'";
+	private String hisfldvalssptrn2 = "'%s','%s','%s','%s'";
+	private String hisfldvalssptrn3 = "'%s','%s','%s','%s','%s','%s','%s','%s'";
+	public static String devamtbname = "";
+	public static String devamtbsearkey = "";
+	public static String devamtbfields = "";
 
+	//----
 	static PrnSvr server;
 	public static String logPath = "";
 	static FASSvr fasDespacther;
@@ -82,6 +96,9 @@ public class PrnSvr implements MessageListener<byte[]> {
 	Map<String, PrtCli> nodeList = Collections.synchronizedMap(new LinkedHashMap<String, PrtCli>());
 	Thread monitorThread;
 	GwDao jdawcon = null;
+	//20201226
+	GwDao cmdhiscon = null;
+	//----
 	public static String cmdtbname = "";
 	public static String cmdtbsearkey = "";
 	public static String cmdtbfields = "";
@@ -211,6 +228,7 @@ public class PrnSvr implements MessageListener<byte[]> {
 							if (PrnSvr.dburl != null && PrnSvr.dburl.trim().length() > 0) {
 								String selfld = "";
 								String selkey = "";
+								String[] sno = null;
 								if (PrnSvr.cmdtbfields.indexOf(',') > -1) {
 									selfld = PrnSvr.cmdtbfields.substring(PrnSvr.cmdtbfields.indexOf(',') + 1);
 									selkey = PrnSvr.cmdtbfields.substring(0, PrnSvr.cmdtbfields.indexOf(','));
@@ -240,14 +258,41 @@ public class PrnSvr implements MessageListener<byte[]> {
 //													log.debug("cmd object node=[{}] curState=[{}] cmd getCurMode=[{}]",
 //															getMe().nodeList.get(cmdary[0]).getId(), getMe().nodeList.get(cmdary[0]).getCurState(), getMe().nodeList.get(cmdary[0]).getCurMode());
 													//----
-													String curcmd = cmdary[1].toUpperCase();
+													//20201026
+													int idx = 0;
+													String sts = "0";
+													for (String ss: cmdary)
+														log.debug("cmd[{}]=[{}]",idx++, ss);
+													String curcmd = cmdary[1].trim().toUpperCase();
+													//20201026 for cmdhis
+													if (curcmd != null && curcmd.length() > 0) {
+														cmdhiscon = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
+														if (getMe().nodeList != null && getMe().nodeList.size() > 0) {
+															if (getMe().nodeList.containsKey(cmdary[0])) {
+																log.error("!!! cmd object node=[{}] already in nodeList please STOP this node before START !!!", cmdary[0]);
+																if (getMe().nodeList.get(cmdary[0]).getCurState() >= 0)
+																	sts = "2";
+															} else
+																log.debug("!!! cmd object node=[{}] not in nodeList will be created", cmdary[0]);
+														}
+														String fldvals = String.format(hisfldvalssptrn, PrnSvr.svrid, cmdary[2], cmdary[0],cmdary[1],cmdary[3],sts);
+//														sno = cmdhiscon.INSSELChoiceKey(PrnSvr.devcmdhistb, "SVRID,AUID,BRWS,CMD,CMDCREATETIME,CURSTUS", "1,1,'9838901','START','2020-10-21 09:46:38.368000','0'", PrnSvr.evcmdhistbsearkey, "-1", false, true);
+														sno = cmdhiscon.INSSELChoiceKey(PrnSvr.devcmdhistbname, "SVRID,AUID,BRWS,CMD,CMDCREATETIME,CURSTUS", fldvals, PrnSvr.devcmdhistbsearkey, "-1", false, true);
+														if (sno != null) {
+															for (int i = 0; i < sno.length; i++)
+																log.debug("sno[{}]=[{}]",i,sno[i]);
+														} else
+															log.error("sno null");
+													}
+													//----
 													switch (curcmd) {
 													case "START":
-														//20201006
+														//20201006, 20201026 cmdhis
 														createNode(cmdary[0]);
 														//----
 														if (getMe().nodeList.get(cmdary[0]).getCurState() == -1) {
-															getMe().nodeList.get(cmdary[0]).onEvent(getMe().nodeList.get(cmdary[0]).getId(), EventType.ACTIVE);
+															//20201026 for cmdhis
+															getMe().nodeList.get(cmdary[0]).onEvent(getMe().nodeList.get(cmdary[0]).getId(), EventType.ACTIVE, sno[0]);
 															log.debug("cmd object node=[{}] enable session getCurMode=[{}]", getMe().nodeList.get(cmdary[0]).getId(), getMe().nodeList.get(cmdary[0]).getCurMode());
 														} else {
 															SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
@@ -256,11 +301,25 @@ public class PrnSvr implements MessageListener<byte[]> {
 																	"SVRID,BRWS", PrnSvr.svrid + "," + cmdary[0]);
 															log.debug("total {} records update", row);
 															log.debug("cmd object node=[{}] already active!!!! getCurMode=[{}]", getMe().nodeList.get(cmdary[0]).getId(), getMe().nodeList.get(cmdary[0]).getCurMode());
+															//20201026
+//															String fldvals2 = String.format(hisfldvalssptrn2, "", cmdary[1], t, sts);
+															PrtCli conn = getMe().nodeList.get(cmdary[0]);
+															String fldvals3 = String.format(hisfldvalssptrn3, "", cmdary[1], t, conn.getRmtaddr().getAddress().getHostAddress(),
+																	conn.getRmtaddr().getPort(),conn.getLocaladdr().getAddress().getHostAddress(), conn.getLocaladdr().getPort(),sts);
+//															sno = cmdhiscon.INSSELChoiceKey(PrnSvr.devcmdhistbname, "SVRID,AUID,BRWS,CMD,CMDCREATETIME,CMDRESULT,CMDRESULTTIME,CURSTUS", "1,1,'9838901','','2020-10-21 09:46:38.368000','START','2020-10-21 09:46:38.368000','0','2'", "SNO", "31", false, true);
+															sno = cmdhiscon.INSSELChoiceKey(PrnSvr.devcmdhistbname, "CMD,CMDRESULT,CMDRESULTTIME,DEVIP,DEVPORT,SVRIP,SVRPORT,RESULTSTUS", fldvals3, PrnSvr.devcmdhistbsearkey, sno[0], false, true);
+															if (sno != null) {
+																for (int i = 0; i < sno.length; i++)
+																	log.debug("sno[{}]=[{}]",i,sno[i]);
+															} else
+																log.error("sno null");
+															//----
 														}
 														break;
 													case "STOP":
 														if (getMe().nodeList.get(cmdary[0]).getCurState() != -1) {
-															getMe().nodeList.get(cmdary[0]).onEvent(getMe().nodeList.get(cmdary[0]).getId(), EventType.SHUTDOWN);
+															//20201026 for cmdhis
+															getMe().nodeList.get(cmdary[0]).onEvent(getMe().nodeList.get(cmdary[0]).getId(), EventType.SHUTDOWN, sno[0]);
 															log.debug("cmd object node=[{}] stop session getCurMode=[{}]", getMe().nodeList.get(cmdary[0]).getId(), getMe().nodeList.get(cmdary[0]).getCurMode());
 														} else {
 															SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
@@ -269,12 +328,32 @@ public class PrnSvr implements MessageListener<byte[]> {
 																	"SVRID,BRWS", PrnSvr.svrid + "," + cmdary[0]);
 															log.debug("total {} records update", row);
 															log.debug("cmd object node=[{}] already shutdown!!!! getCurMode=[{}]", getMe().nodeList.get(cmdary[0]).getId(), getMe().nodeList.get(cmdary[0]).getCurMode());
+															//20201026
+															String fldvals2 = String.format(hisfldvalssptrn2, "", cmdary[1], t, sts);
+															sno = cmdhiscon.INSSELChoiceKey(PrnSvr.devcmdhistbname, "CMD,CMDRESULT,CMDRESULTTIME,RESULTSTUS", fldvals2, PrnSvr.devcmdhistbsearkey, sno[0], false, true);
+															if (sno != null) {
+																for (int i = 0; i < sno.length; i++)
+																	log.debug("sno[{}]=[{}]",i,sno[i]);
+															} else
+																log.error("sno null");
+															//----
+
 														}
 														break;
 													case "RESTART":
+														//20201026 add cmdhis
+/*														if (getMe().nodeList != null && getMe().nodeList.size() > 0) {
+															if (getMe().nodeList.containsKey(cmdary[0])) {
+																log.debug("cmd object node=[{}] already in nodeList STOP this node then START", cmdary[0]);
+																getMe().nodeList.get(cmdary[0]).onEvent(getMe().nodeList.get(cmdary[0]).getId(), EventType.SHUTDOWN, sno[0]);
+																log.debug("cmd object node=[{}] stop session getCurMode=[{}]", getMe().nodeList.get(cmdary[0]).getId(), getMe().nodeList.get(cmdary[0]).getCurMode());
+															} else
+																log.debug("cmd object node=[{}] not in nodeList will be created", cmdary[0]);
+														}
+*/
 														break;
 													default:
-														log.debug("!!! cmd object node=[{}] cmd [{}] error", cmdary[0], cmdary[1]);
+														log.debug("!!! cmd object node=[{}] cmd [{}] ignore", cmdary[0], cmdary[1]);
 														break;
 													}
 												} else
@@ -284,12 +363,17 @@ public class PrnSvr implements MessageListener<byte[]> {
 										}
 									jdawcon.CloseConnect();
 									jdawcon = null;
+									//20201026
+									if (cmdhiscon != null)
+										cmdhiscon.CloseConnect();
+									cmdhiscon = null;
+									//----
 								} catch (Exception e) {
 									e.printStackTrace();
 									log.info("monitorThread read database error [{}]", e.toString());
 								}
 							}
-							sleep(1);
+							sleep(3);
 						} // while
 					}
 				});// monitorThread
@@ -338,8 +422,10 @@ public class PrnSvr implements MessageListener<byte[]> {
 			} else
 				log.debug("!!! cmd object node=[{}] not in nodeList will be created", nid);
 		}
-		log.debug("start current threadMap size=[{}]", getMe().threadMap.size());
-		log.debug("start current nodeList size=[{}]", getMe().nodeList.size());
+		//20201021 mark
+		log.debug("start current threadMap size=[{}] nodeList size=[{}]", getMe().threadMap.size(), getMe().nodeList.size());
+//		log.debug("start current nodeList size=[{}]", getMe().nodeList.size());
+		//----
 
 		if (dcf != null)
 			lastcfglist = dcf.getLastcfgPrtMapList();
@@ -364,8 +450,10 @@ public class PrnSvr implements MessageListener<byte[]> {
 			}
 		} else
 			log.debug("create node return 0");
-		log.debug("stop current threadMap size=[{}]", getMe().threadMap.size());
-		log.debug("stop current nodeList size=[{}]", getMe().nodeList.size());
+		//20201021 mark
+		log.debug("stop current threadMap size=[{}] size=[{}]", getMe().threadMap.size(), getMe().nodeList.size());
+//		log.debug("stop current nodeList size=[{}]", getMe().nodeList.size());
+		//----
 
 		return ret;
 	}
@@ -420,6 +508,14 @@ public class PrnSvr implements MessageListener<byte[]> {
 		cmdtbname = cfg.getConHashMap().get("system.devcmdtb[@name]");
 		cmdtbsearkey = cfg.getConHashMap().get("system.devcmdtb[@mkey]");
 		cmdtbfields = cfg.getConHashMap().get("system.devcmdtb[@fields]");
+		//----
+		//20201026 cmdhis and am error log
+		devcmdhistbname = cfg.getConHashMap().get("system.devcmdhistb[@name]");
+		devcmdhistbsearkey = cfg.getConHashMap().get("system.devcmdhistb[@mkey]");
+		devcmdhistbfields = cfg.getConHashMap().get("system.devcmdhistb[@fields]");
+		devamtbname = cfg.getConHashMap().get("system.devamtb[@name]");
+		devamtbsearkey = cfg.getConHashMap().get("system.devamtb[@mkey]");
+		devamtbfields = cfg.getConHashMap().get("system.devamtb[@fields]");
 		//----
 		if (dburl != null && dburl.trim().length() > 0) {
 			log.debug("will use db url:[{}] user name:[{}] update status table [{}] main key [{}] fields [{}]", dburl, dbuser, statustbname, statustbmkey, statustbfields);
