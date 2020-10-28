@@ -276,13 +276,23 @@ public class PrnSvr implements MessageListener<byte[]> {
 																log.debug("!!! cmd object node=[{}] not in nodeList will be created", cmdary[0]);
 														}
 														String fldvals = String.format(hisfldvalssptrn, PrnSvr.svrid, cmdary[2], cmdary[0],cmdary[1],cmdary[3],sts);
+														//20201028 check sno if command already insert to cmdhis
 //														sno = cmdhiscon.INSSELChoiceKey(PrnSvr.devcmdhistb, "SVRID,AUID,BRWS,CMD,CMDCREATETIME,CURSTUS", "1,1,'9838901','START','2020-10-21 09:46:38.368000','0'", PrnSvr.evcmdhistbsearkey, "-1", false, true);
-														sno = cmdhiscon.INSSELChoiceKey(PrnSvr.devcmdhistbname, "SVRID,AUID,BRWS,CMD,CMDCREATETIME,CURSTUS", fldvals, PrnSvr.devcmdhistbsearkey, "-1", false, true);
-														if (sno != null) {
-															for (int i = 0; i < sno.length; i++)
-																log.debug("sno[{}]=[{}]",i,sno[i]);
-														} else
-															log.error("sno null");
+														String chksno = cmdhiscon.SELONEFLD(PrnSvr.devcmdhistbname, "SNO", "BRWS,CMD,CMDCREATETIME", "'" + cmdary[0] + "','"+ cmdary[1] + "','"+ cmdary[3]+ "'", true);
+//														log.debug("chksno=[{}]",chksno);
+														if (chksno.trim().length() > 0 && Integer.parseInt(chksno.trim()) > -1) { 
+															log.info("sno[{}] already exist",chksno);
+															sno = new String[1];
+															sno[0] = chksno;
+														} else {
+															sno = cmdhiscon.INSSELChoiceKey(PrnSvr.devcmdhistbname, "SVRID,AUID,BRWS,CMD,CMDCREATETIME,CURSTUS", fldvals, PrnSvr.devcmdhistbsearkey, "-1", false, true);
+															if (sno != null) {
+																for (int i = 0; i < sno.length; i++)
+																	log.debug("sno[{}]=[{}]",i,sno[i]);
+																} else
+																	log.error("sno null");
+														}
+														//----
 													}
 													//----
 													switch (curcmd) {
