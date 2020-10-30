@@ -428,8 +428,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 
 	private void doConnect(int _wait) {
 		try {
-			//20201004
-			if (getCurMode() != EventType.SHUTDOWN) {
+			//20201004, 2001028 add RESTART test check
+			if (getCurMode() != EventType.SHUTDOWN && getCurMode() != EventType.RESTART) {
 				// ----
 				ChannelFuture f = bootstrap.connect(rmtaddr, localaddr);
 				f.addListener(new ChannelFutureListener() {
@@ -3038,8 +3038,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 		//----
 		log.debug("before {} last {} duration {} =======================check prtcliFSM", this.curState, this.lastState, this.durationTime);
 		int before = this.curState;
-		//20200906
-		if (getCurMode() == EventType.SHUTDOWN) {
+		//20200906, 20201028 RESTART
+		if (getCurMode() == EventType.SHUTDOWN || getCurMode() == EventType.RESTART) {
 			if (this.curState <= CAPTUREPASSBOOK) {
 				log.info("CurMode {} curState == [{}] start shutdown now", getCurMode(), this.curState);
 				try {
@@ -3052,26 +3052,40 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 //					String updValue = String.format(updValueptrn, this.brws, this.rmtaddr.getAddress().getHostAddress(),
 //							this.rmtaddr.getPort(), this.localaddr.getAddress().getHostAddress(),
 //							this.localaddr.getPort(), this.typeid, Constants.STSUSEDINACT);
-					String updValue = String.format(updValueptrn, this.rmtaddr.getAddress().getHostAddress(),
-							this.rmtaddr.getPort(), this.localaddr.getAddress().getHostAddress(),
-							this.localaddr.getPort(), this.typeid, Constants.STSUSEDINACT);
-					if (jsel2ins == null)
-						jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
-					int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey,
-							this.brws + "," + PrnSvr.svrid);
-					log.debug("total {} records update status [{}]", row, Constants.STSUSEDINACT);
-					// 20200909 update cmd table
+					//20201028 modify for RESTART
 					SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
 					String t = sdf.format(new java.util.Date());
-					row = jsel2ins.UPDT(PrnSvr.cmdtbname, "CMD, CMDRESULT,CMDRESULTTIME", "'','STOP','" + t + "'",
+					if (getCurMode() == EventType.SHUTDOWN) {
+						String updValue = String.format(updValueptrn, this.rmtaddr.getAddress().getHostAddress(),
+							this.rmtaddr.getPort(), this.localaddr.getAddress().getHostAddress(),
+							this.localaddr.getPort(), this.typeid, Constants.STSUSEDINACT);
+						if (jsel2ins == null)
+							jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
+						int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey,
+							this.brws + "," + PrnSvr.svrid);
+						log.debug("total {} records update status [{}]", row, Constants.STSUSEDINACT);
+					// 20200909 update cmd table
+//	mark for RESTART				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
+//	mark for RESTART				String t = sdf.format(new java.util.Date());
+						row = jsel2ins.UPDT(PrnSvr.cmdtbname, "CMD, CMDRESULT,CMDRESULTTIME", "'','STOP','" + t + "'",
 							"SVRID,BRWS", PrnSvr.svrid + "," + this.brws);
-					log.debug("total {} records update status [{}]", row, this.curMode);
-					jsel2ins.CloseConnect();
-					jsel2ins = null;
+						log.debug("total {} records update status [{}]", row, this.curMode);
+						jsel2ins.CloseConnect();
+						jsel2ins = null;
+					}
 					//20201026
 					cmdhiscon = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
-					String fldvals2 = String.format(hisfldvalssptrn2, "", "STOP", t, this.rmtaddr.getAddress().getHostAddress(),
+					//20201028 modify for RESTART
+					String fldvals2 = "";
+					if (getCurMode() == EventType.SHUTDOWN)
+//					String fldvals2 = String.format(hisfldvalssptrn2, "", "STOP", t, this.rmtaddr.getAddress().getHostAddress(),
+//							this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(),"0");
+						fldvals2 = String.format(hisfldvalssptrn2, "", "STOP", t, this.rmtaddr.getAddress().getHostAddress(),
 							this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(),"0");
+					else
+						fldvals2 = String.format(hisfldvalssptrn2, "RESTART", "STOP", t, this.rmtaddr.getAddress().getHostAddress(),
+								this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(),"0");
+					//----
 //					sno = cmdhiscon.INSSELChoiceKey(PrnSvr.devcmdhistbname, "SVRID,AUID,BRWS,CMD,CMDCREATETIME,CMDRESULT,CMDRESULTTIME,RESULTSTUS", "1,1,'9838901','','2020-10-21 09:46:38.368000','START','2020-10-21 09:46:38.368000','0','2'", "SNO", "31", false, true);
 					String[] rsno = cmdhiscon.INSSELChoiceKey(PrnSvr.devcmdhistbname, "CMD,CMDRESULT,CMDRESULTTIME,DEVIP,DEVPORT,SVRIP,SVRPORT,RESULTSTUS", fldvals2, PrnSvr.devcmdhistbsearkey, sno, false, true);
 					if (rsno != null) {
@@ -4040,6 +4054,11 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 
 		case SHUTDOWN: // 被通知要關閉
 			log.debug(getId() + ">>> SHUTDOWN");
+			this.curMode = evt;
+			break;
+
+		case RESTART: // 被通知重開前先要關閉
+			log.debug(getId() + ">>> RESTART");
 			this.curMode = evt;
 			break;
 

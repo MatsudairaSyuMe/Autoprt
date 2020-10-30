@@ -4,5 +4,6 @@ public enum EventType {
 	ACTIVE,
 	INACTIVE,
 	SHUTDOWN,
+	RESTART, //20201028
 	READ_IDLE     //timeout
 }

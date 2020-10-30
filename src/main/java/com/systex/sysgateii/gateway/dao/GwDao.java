@@ -772,6 +772,34 @@ public class GwDao {
 		}
 		return rtnVal;
 	}
+	
+	//20201028 delete
+	public void DELETETB(String fromTblName, String keyname, String selkeyval)
+			throws Exception {
+		// STEP 4: Execute a query
+		if (fromTblName == null || fromTblName.trim().length() == 0 || keyname == null || keyname.trim().length() == 0)
+			throw new Exception("given table name or field or keyname error =>" + fromTblName);
+		log.debug(String.format("delete table %s... where %s=%s", fromTblName, keyname, selkeyval));
+		java.sql.Statement stmt = selconn.createStatement();
+		String keyset = "";
+		if (keyname.indexOf(',') > -1 && selkeyval.indexOf(',') > -1) {
+			String[] keynameary = keyname.split(",");
+			String[] keyvalueary = selkeyval.split(",");
+			if (keynameary.length != keyvalueary.length)
+				throw new Exception("given fields keyname can't correspond to keyvfield =>keynames [" + keyname + "] selkayvals [" + selkeyval + "]");
+			else {
+				for (int i = 0; i < keynameary.length; i++)
+					keyset = keyset + keynameary[i] + " = " + keyvalueary[i] + (i == (keynameary.length - 1) ? "" : " and ");
+			}
+		} else
+			keyset = keyname + " = " + selkeyval;
+		log.debug("keyset = [{}] ", keyset);
+		stmt.executeUpdate("delete from " + fromTblName + " where " + keyset);
+		//----
+		log.debug("delete [{}] finished", fromTblName);
+		return;
+	}
+	//----
 
 	private String generateActualSql(String sqlQuery, Object... parameters) throws Exception {
 	    String[] parts = sqlQuery.split("\\?");
@@ -1143,9 +1171,10 @@ public class GwDao {
 		String fromuser = "BIS_USER";
 		String frompass = "bisuser";
 
-		boolean verbose = false;
+		boolean verbose = true;
 //		String fn = "BISAP.TB_AUDEVSTS";
-		String fn = "BISAP.TB_AUDEVCMDHIS";
+//		String fn = "BISAP.TB_AUDEVCMDHIS";
+		String fn = "BISAP.TB_AUDEVCMD";
 		if (args.length > 0) {
 			for (int j = 0; j < args.length; j++) {
 				if (args[j].equalsIgnoreCase("--from")) {
@@ -1204,9 +1233,10 @@ public class GwDao {
 //			total = jsel2ins.UPSERT(fn, selField, updValue, keyName, keyValue);
 //			total = jsel2ins.UPSERT("BISAP.TB_AUSVRPRM", "TBSDY", "01090910", "SVRID", "1");
 //			String[] sno = jsel2ins.INSSELChoiceKey(fn, "SVRID,AUID,BRWS,CMD,CMDCREATETIME,CURSTUS", "1,1,'9838901','START','2020-10-21 09:46:38.368000','0'", "SNO", "-1", false, true);
-			String[] sno = jsel2ins.INSSELChoiceKey(fn, "SVRID,AUID,BRWS,CMD,CMDCREATETIME,CMDRESULT,CMDRESULTTIME,CURSTUS", "1,1,'9838901','','2020-10-21 09:46:38.368000','START','2020-10-21 09:46:38.368000','0','2'", "SNO", "31", false, true);
-			for (int i = 0; i < sno.length; i++)
-				System.out.println("sno[" + i + "] = ["+sno[i]+"]");
+//			String[] sno = jsel2ins.INSSELChoiceKey(fn, "SVRID,AUID,BRWS,CMD,CMDCREATETIME,CMDRESULT,CMDRESULTTIME,CURSTUS", "1,1,'9838901','','2020-10-21 09:46:38.368000','START','2020-10-21 09:46:38.368000','0','2'", "SNO", "31", false, true);
+//			for (int i = 0; i < sno.length; i++)
+//				System.out.println("sno[" + i + "] = ["+sno[i]+"]");
+			jsel2ins.DELETETB(fn, "SVRID,BRWS", "1,'9838901'");
 			jsel2ins.CloseConnect();
 			jsel2ins = null;
 			System.out.println("total " + total + " records transferred");
