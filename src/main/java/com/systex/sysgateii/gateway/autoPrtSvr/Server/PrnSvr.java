@@ -272,7 +272,7 @@ public class PrnSvr implements MessageListener<byte[]> {
 													if (DateTimeUtil.MinDurationToCurrentTime(3,cmdary[3])) {
 														log.debug("brws=[{}] keep in cmd table longer then 3 minutes will be cleared",cmdary[0]);
 														if (cmdary[1].trim().length() > 0) {
-															log.debug("brws=[{}] cmd[{}] not execute will be marked fail in cmdhis",cmdary[0], cmd[1]);
+															log.debug("brws=[{}] cmd[{}] not execute will be marked fail in cmdhis",cmdary[0], cmdary[1]);
 															if (cmdhiscon == null)
 																cmdhiscon = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
 															SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");

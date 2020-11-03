@@ -1,6 +1,7 @@
 package com.systex.sysgateii.gateway.util;
 
-import javax.xml.bind.DatatypeConverter;
+//import javax.xml.bind.DatatypeConverter;
+//20201103 modify by MatsudairaSyume the entire javax.xml.bind module is deprecated 
 
 public class DataConvert {
 	final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
@@ -16,8 +17,18 @@ public class DataConvert {
 		return new String(hexChars);
 	}
 
+	public static byte[] hexStringToByteArray(String s) {
+	    int len = s.length();
+	    byte[] data = new byte[len / 2];
+	    for (int i = 0; i < len; i += 2) {
+	        data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
+	                             + Character.digit(s.charAt(i+1), 16));
+	    }
+	    return data;
+	}
 	public static String toHexString(byte[] array) {
-		return DatatypeConverter.printHexBinary(array);
+//		return DatatypeConverter.printHexBinary(array);
+		return bytesToHex(array);
 	}
 
 	public static String toHexStringWithSpace(byte[] array) {
@@ -25,14 +36,16 @@ public class DataConvert {
 		byte[] _a = new byte[1];
 		for (int i = 0; i < array.length; i++) {
 			_a[0] = array[i];
-			_rtnStr += (DatatypeConverter.printHexBinary(_a) + (i == (array.length - 1) ? "" : " "));
+//			_rtnStr += (DatatypeConverter.printHexBinary(_a) + (i == (array.length - 1) ? "" : " "));
+			_rtnStr += (bytesToHex(_a) + (i == (array.length - 1) ? "" : " "));
 		}
 		_a = null;
 		return _rtnStr;
 	}
 
 	public static byte[] toByteArray(String s) {
-		return DatatypeConverter.parseHexBinary(s);
+//		return DatatypeConverter.parseHexBinary(s);
+		return hexStringToByteArray(s);
 	}
 
 	/**
@@ -73,7 +86,7 @@ public class DataConvert {
 	}
 
 	public static void main(String[] args) {
-		toByteArray("0102030405060708090A0B0C0D0F0102030405060708090A0B0C0D0F01020304");
+		System.out.println(toByteArray("0102030405060708090A0B0C0D0F0102030405060708090A0B0C0D0F01020304").length);
 
 		byte[] b = intToByteArray(1);
 		System.out.println(b.length);
