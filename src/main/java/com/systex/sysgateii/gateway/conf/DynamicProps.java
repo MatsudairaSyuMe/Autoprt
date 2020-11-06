@@ -105,6 +105,10 @@ public class DynamicProps {
 										|| entry.getKey().equals("system.statustb[@name]")
 										|| entry.getKey().equals("system.statustb[@mkey]")
 										|| entry.getKey().equals("system.statustb[@fields]")
+										//20201106
+										|| entry.getKey().equals("system.dmtb[@name]")
+										|| entry.getKey().equals("system.dmtb[@mkey]")
+										|| entry.getKey().equals("system.dmtb[@fields]")
 										//20201026
 										|| entry.getKey().equals("system.devcmdhistb[@name]")
 										|| entry.getKey().equals("system.devcmdhistb[@mkey]")
@@ -421,6 +425,10 @@ public class DynamicProps {
 						|| entry.getKey().equals("system.statustb[@name]")
 						|| entry.getKey().equals("system.statustb[@mkey]")
 						|| entry.getKey().equals("system.statustb[@fields]")
+						//20201106
+						|| entry.getKey().equals("system.dmtb[@name]")
+						|| entry.getKey().equals("system.dmtb[@mkey]")
+						|| entry.getKey().equals("system.dmtb[@fields]")
 						//20201026
 						|| entry.getKey().equals("system.devcmdhistb[@name]")
 						|| entry.getKey().equals("system.devcmdhistb[@mkey]")

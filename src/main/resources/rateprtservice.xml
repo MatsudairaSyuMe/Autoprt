@@ -61,7 +61,7 @@
 		<port>0</port>
 <!--		<logpath>/gwlog/autosvr</logpath>-->
 		<logpath>/home/scotthong/tmp</logpath>
-		<db url="jdbc:db2://172.16.71.128:50000/BISDB" user="BIS_USER" pass="bisuser"/>
+		<db url="jdbc:db2://172.16.71.138:50000/BISDB" user="BIS_USER" pass="bisuser"/>
 		<svrprmtb name="BISAP.TB_AUSVRPRM" mkey="SVRID" fields="AUID,BRNO,IP,PORT,DEVTPE,RECVTIMEOUT,LOGPATH"/>
 		<fasprmtb name="BISAP.TB_AUFASPRM" mkey="AUID" fields="CONNPRM"/>
 		<devprmtb name="BISAP.TB_AUDEVPRM" mkey="SVRID" fields="BRWS,IP,PORT,DEVTPE,AUTOTURNPAGE"/>
@@ -75,6 +75,9 @@
 		<!-- 20201026 add for command history processing and am error log -->
 		<devcmdhistb name="BISAP.TB_AUDEVCMDHIS" mkey="SNO" fields="SVRID,AUID,BRWS,CMD,CMDCREATETIME,CMDRESULT,CMDRESULTTIME,DEVIP,DEVPORT,SVRIP,SVRPORT,CURSTUS,RESULTSTUS"/>
 		<devamtb name="BISAP.TB_AUTB_AUAMLOG" mkey="SNO" fields="RECTIME,BRWS,TYPE,ACTNO,ERRDESC"/>
+		<!-- 20201106 -->
+		<dmtb name="BISAP.TB_AUDMPRM" mkey="ID" fields="ID,NAME"/>
+		<!-- 20201106 -->
 		<!-- 20201026 -->
 	</system>
 	<svrsubport>

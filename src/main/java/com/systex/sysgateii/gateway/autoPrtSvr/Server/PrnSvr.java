@@ -106,7 +106,10 @@ public class PrnSvr implements MessageListener<byte[]> {
 	public static String cmdtbname = "";
 	public static String cmdtbsearkey = "";
 	public static String cmdtbfields = "";
-
+	//20201106
+	public static String dmtbname = "";
+	public static String dmtbsearkey = "";
+	public static String dmtbfields = "";
 	//----
 	public static String verbrno = "";
 	public static int setResponseTimeout = 60 * 1000;// 毫秒
@@ -601,6 +604,13 @@ public class PrnSvr implements MessageListener<byte[]> {
 		devamtbsearkey = cfg.getConHashMap().get("system.devamtb[@mkey]");
 		devamtbfields = cfg.getConHashMap().get("system.devamtb[@fields]");
 		//----
+
+		//20201106
+		dmtbname = cfg.getConHashMap().get("system.dmtb[@name]");
+		dmtbsearkey = cfg.getConHashMap().get("system.dmtb[@mkey]");
+		dmtbfields = cfg.getConHashMap().get("system.dmtb[@fields]");
+		//----
+
 		if (dburl != null && dburl.trim().length() > 0) {
 			log.debug("will use db url:[{}] user name:[{}] update status table [{}] main key [{}] fields [{}]", dburl, dbuser, statustbname, statustbmkey, statustbfields);
 			log.debug("check tbsdy from table [{}] main key [{}]=[{}] fields [{}]", svrtbsdytbname, svrtbsdytbmkey, svrid, svrtbsdytbfields);

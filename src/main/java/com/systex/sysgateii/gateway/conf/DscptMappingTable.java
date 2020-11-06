@@ -48,7 +48,7 @@ public class DscptMappingTable {
 			stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE,
 					ResultSet.CLOSE_CURSORS_AT_COMMIT);
 //			rs = ((Statement) stmt).executeQuery("SELECT ID, NAME FROM BISAP.TB_AUDMPRM");
-			rs = ((Statement) stmt).executeQuery("SELECT ID, NAME FROM TB_AUDMPRM");
+			rs = ((Statement) stmt).executeQuery("SELECT ID, NAME FROM " + PrnSvr.dmtbname);
 			while (rs.next()) {
 				id = rs.getString("ID");
 				flddm = rs.getBytes("NAME");
