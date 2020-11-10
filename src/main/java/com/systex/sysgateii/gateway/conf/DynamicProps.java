@@ -322,6 +322,9 @@ public class DynamicProps {
 														} else if (devfldsary[idx].trim().equalsIgnoreCase("3")) {
 															prttype.add("AUTO52"); //error set to "AUTO46
 															log.debug("DEVICE parameter [{}] set prttype [{}]", idx, "AUTO52");
+														} else {													
+															log.debug("DEVICE parameter [{}] not autoprinter type", idx);
+															prttype.add("NOTAUTOPRT"); // //20201110 check for autoprt deivce
 														}
 														break;
 													case 4:
@@ -355,13 +358,15 @@ public class DynamicProps {
 					//----
 					if (prtbrws != null && prtbrws.size() > 0) {
 						for (int i = 0; i < prtbrws.size(); i++) {
-							ConcurrentHashMap<String, Object> cfgPrtMap = new ConcurrentHashMap<String, Object>();
-							cfgPrtMap.put("brws", prtbrws.get(i));
-							cfgPrtMap.put("type", prttype.get(i));
-							cfgPrtMap.put("ip", prtcltip.get(i));
-							cfgPrtMap.put("autoturnpage", prtcltautoturnpage.get(i));
-							cfgPrtMapList.add(cfgPrtMap);
-							log.info("RESET cfgPrtMapList add idx={}", i);
+							if (!prttype.get(i).trim().equalsIgnoreCase("NOTAUTOPRT")) { //20201110 check for autoprt deivce
+								ConcurrentHashMap<String, Object> cfgPrtMap = new ConcurrentHashMap<String, Object>();
+								cfgPrtMap.put("brws", prtbrws.get(i));
+								cfgPrtMap.put("type", prttype.get(i));
+								cfgPrtMap.put("ip", prtcltip.get(i));
+								cfgPrtMap.put("autoturnpage", prtcltautoturnpage.get(i));
+								cfgPrtMapList.add(cfgPrtMap);
+								log.info("RESET cfgPrtMapList add idx={}", i);
+							}
 						}
 					}
 				}
@@ -634,6 +639,9 @@ public class DynamicProps {
 												} else if (devfldsary[idx].trim().equalsIgnoreCase("3")) {
 													prttype.add("AUTO52"); // error set to AUTO46
 													log.debug("DEVICE parameter [{}] set prttype [{}]", idx, "AUTO52");
+												} else {													
+													log.debug("DEVICE parameter [{}] not autoprinter type", idx);
+													prttype.add("NOTAUTOPRT"); // //20201110 check for autoprt deivce
 												}
 												break;
 											case 4:
@@ -668,12 +676,14 @@ public class DynamicProps {
 			if (prtbrws != null && prtbrws.size() > 0) {
 				for (int i = 0; i < prtbrws.size(); i++) {
 					ConcurrentHashMap<String, Object> cfgPrtMap = new ConcurrentHashMap<String, Object>();
-					cfgPrtMap.put("brws", prtbrws.get(i));
-					cfgPrtMap.put("type", prttype.get(i));
-					cfgPrtMap.put("ip", prtcltip.get(i));
-					cfgPrtMap.put("autoturnpage", prtcltautoturnpage.get(i));
-					cfgPrtMapList.add(cfgPrtMap);
-					log.info("cfgPrtMapList add idx={}", i);
+					if (!prttype.get(i).trim().equalsIgnoreCase("NOTAUTOPRT")) { //20201110 check for autoprt deivce
+						cfgPrtMap.put("brws", prtbrws.get(i));
+						cfgPrtMap.put("type", prttype.get(i));
+						cfgPrtMap.put("ip", prtcltip.get(i));
+						cfgPrtMap.put("autoturnpage", prtcltautoturnpage.get(i));
+						cfgPrtMapList.add(cfgPrtMap);
+						log.info("cfgPrtMapList add idx={}", i);
+					}
 				}
 			}
 		}
@@ -876,6 +886,9 @@ public class DynamicProps {
 											} else if (devfldsary[idx].trim().equalsIgnoreCase("3")) {
 												prttype.add("AUTO52"); // error set to AUTO46
 												log.debug("DEVICE parameter [{}] set prttype [{}]", idx, "AUTO52");
+											} else {													
+												log.debug("DEVICE parameter [{}] not autoprinter type", idx);
+												prttype.add("NOTAUTOPRT"); // //20201110 check for autoprt deivce
 											}
 											break;
 										case 4:
@@ -910,13 +923,15 @@ public class DynamicProps {
 		// ----
 		if (prtbrws != null && prtbrws.size() > 0) {
 			for (int i = 0; i < prtbrws.size(); i++) {
-				ConcurrentHashMap<String, Object> cfgPrtMap = new ConcurrentHashMap<String, Object>();
-				cfgPrtMap.put("brws", prtbrws.get(i));
-				cfgPrtMap.put("type", prttype.get(i));
-				cfgPrtMap.put("ip", prtcltip.get(i));
-				cfgPrtMap.put("autoturnpage", prtcltautoturnpage.get(i));
-				lastcfgPrtMapList.add(cfgPrtMap);
-				log.info("lastcfgPrtMapList add idx={}", i);
+				if (!prttype.get(i).trim().equalsIgnoreCase("NOTAUTOPRT")) { //20201110 check for autoprt deivce
+					ConcurrentHashMap<String, Object> cfgPrtMap = new ConcurrentHashMap<String, Object>();
+					cfgPrtMap.put("brws", prtbrws.get(i));
+					cfgPrtMap.put("type", prttype.get(i));
+					cfgPrtMap.put("ip", prtcltip.get(i));
+					cfgPrtMap.put("autoturnpage", prtcltautoturnpage.get(i));
+					lastcfgPrtMapList.add(cfgPrtMap);
+					log.info("lastcfgPrtMapList add idx={}", i);
+				}
 			}
 		}
 		return lastcfgPrtMapList;
