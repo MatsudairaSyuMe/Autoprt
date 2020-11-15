@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
+<bkno>004</bkno>
 <center>y</center>
 <!--<center></center>-->
  <boards>
@@ -69,7 +70,10 @@
 <!--		<statustb name="BISAP.TB_AUDEVSTS" mkey="BRWS" fields="IP,PORT,SYSIP,SYSPORT,ACTPAS,DEVTPE,CURSTUS,VERSION,CREATOR,MODIFIER"/>-->
 		<statustb name="BISAP.TB_AUDEVSTS" mkey="BRWS,SVRID" fields="IP,PORT,SYSIP,SYSPORT,ACTPAS,DEVTPE,CURSTUS,VERSION,CREATOR,MODIFIER"/>
 		<svrstatustb name="BISAP.TB_AUSVRSTS" mkey="SVRID" fields="AUID,BRNO,IP,CURSTUS,PID,CREATOR,MODIFIER,LASTUPDATE"/>
-		<svrtbsdytb name="BISAP.TB_AUSVRPRM" mkey="SVRID" fields="TBSDY"/>
+		<!-- 20201115 -->
+		<!--<svrtbsdytb name="BISAP.TB_AUSVRPRM" mkey="SVRID" fields="TBSDY"/>-->
+		<svrtbsdytb name="BISAP.TB_AUGEN" mkey="BKNO" fields="TBSDY"/>
+		<!-- -->
 		<!--  20201026 devcmdtb fields add AUID and CMDCREATETIME-->
 		<devcmdtb name="BISAP.TB_AUDEVCMD" mkey="SVRID,BRWS" fields="SVRID,BRWS,CMD,AUID,CMDCREATETIME"/>
 		<!-- 20201026 add for command history processing and am error log -->

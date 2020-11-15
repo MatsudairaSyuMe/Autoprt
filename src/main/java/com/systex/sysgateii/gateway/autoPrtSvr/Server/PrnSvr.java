@@ -66,6 +66,9 @@ public class PrnSvr implements MessageListener<byte[]> {
 	public static String statustbfields = "";
 	//20200815
 	public static String svrid = "";
+	//20201115
+	public static String bkno = "";
+	//----
 	public static String svrtbsdytbname = "";
 	public static String svrtbsdytbmkey = "";
 	public static String svrtbsdytbfields = "";
@@ -587,6 +590,9 @@ public class PrnSvr implements MessageListener<byte[]> {
 		statustbfields = cfg.getConHashMap().get("system.statustb[@fields]");
 		//20200815
 		svrid = cfg.getConHashMap().get("system.svrid");
+		bkno = cfg.getConHashMap().get("bkno").trim();
+		//20201115
+		//----
 		svrtbsdytbname = cfg.getConHashMap().get("system.svrtbsdytb[@name]");
 		svrtbsdytbmkey = cfg.getConHashMap().get("system.svrtbsdytb[@mkey]");
 		svrtbsdytbfields = cfg.getConHashMap().get("system.svrtbsdytb[@fields]");
@@ -613,7 +619,9 @@ public class PrnSvr implements MessageListener<byte[]> {
 
 		if (dburl != null && dburl.trim().length() > 0) {
 			log.debug("will use db url:[{}] user name:[{}] update status table [{}] main key [{}] fields [{}]", dburl, dbuser, statustbname, statustbmkey, statustbfields);
-			log.debug("check tbsdy from table [{}] main key [{}]=[{}] fields [{}]", svrtbsdytbname, svrtbsdytbmkey, svrid, svrtbsdytbfields);
+			//20201115
+//			log.debug("check tbsdy from table [{}] main key [{}]=[{}] fields [{}]", svrtbsdytbname, svrtbsdytbmkey, svrid, svrtbsdytbfields);
+			log.debug("check tbsdy from table [{}] main key [{}]=[{}] fields [{}]", svrtbsdytbname, svrtbsdytbmkey, bkno, svrtbsdytbfields);
 		}
 		log.debug("receive timeout is ={} mili-seconds", setResponseTimeout);
 		MDC.put("WSNO", "0000");

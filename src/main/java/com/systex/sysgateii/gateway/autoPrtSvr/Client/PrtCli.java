@@ -2767,7 +2767,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 									String updTBSDY = "'" + new String(totatext, 14, 8) + "'";
 									if (jsel2ins == null)
 										jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
-									int row = jsel2ins.UPSERT(PrnSvr.svrtbsdytbname, PrnSvr.svrtbsdytbfields, updTBSDY, PrnSvr.svrtbsdytbmkey, PrnSvr.svrid);
+									//20201115
+								//	int row = jsel2ins.UPSERT(PrnSvr.svrtbsdytbname, PrnSvr.svrtbsdytbfields, updTBSDY, PrnSvr.svrtbsdytbmkey, PrnSvr.svrid);
+									int row = jsel2ins.UPSERT(PrnSvr.svrtbsdytbname, PrnSvr.svrtbsdytbfields, updTBSDY, PrnSvr.svrtbsdytbmkey, PrnSvr.bkno);
+									//----
 									log.debug("total {} records update [{}]", row, updTBSDY);
 									jsel2ins.CloseConnect();
 									jsel2ins = null;
@@ -3969,7 +3972,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				selfld = PrnSvr.svrtbsdytbfields;
 			if (jsel2ins == null)
 				jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
-			String tbsdy = jsel2ins.SELONEFLD(PrnSvr.svrtbsdytbname, selfld, PrnSvr.svrtbsdytbmkey, PrnSvr.svrid, true).trim();
+			//20201115
+		//	String tbsdy = jsel2ins.SELONEFLD(PrnSvr.svrtbsdytbname, selfld, PrnSvr.svrtbsdytbmkey, PrnSvr.svrid, true).trim();
+			String tbsdy = jsel2ins.SELONEFLD(PrnSvr.svrtbsdytbname, selfld, PrnSvr.svrtbsdytbmkey, PrnSvr.bkno, true).trim();
 			log.debug("current tbsdy [{}]", tbsdy);
 			if (tbsdy != null && tbsdy.length() >= 7)
 				this.fepdd = tbsdy.substring(tbsdy.length() - 2).getBytes();

@@ -85,6 +85,9 @@ public class DynamicProps {
 								if (entry.getKey().equals("system.ip") || entry.getKey().equals("system.port")
 										//20200912 read data from center
 										|| entry.getKey().equals("center")
+										//20201115
+										|| entry.getKey().equals("bkno")
+										//----
 										//----
 										|| entry.getKey().equals("system.logpath")
 										//20200815
@@ -414,6 +417,9 @@ public class DynamicProps {
 				if (entry.getKey().equals("system.ip") || entry.getKey().equals("system.port")
 						//20200912 read data from center
 						|| entry.getKey().equals("center")
+						//----
+						//20201115
+						|| entry.getKey().equals("bkno")
 						//----
 						|| entry.getKey().equals("system.logpath")
 						//20200815
