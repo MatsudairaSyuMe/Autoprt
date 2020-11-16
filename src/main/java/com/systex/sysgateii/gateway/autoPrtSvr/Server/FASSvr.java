@@ -96,8 +96,12 @@ public class FASSvr implements MessageListener<byte[]>, Runnable {
 			if (tmps.endsWith("]"))
 				tmps = tmps.substring(0, tmps.length() - 1);
 			String[] localary = tmps.split(",");
-			ServerProducer producer = new ServerProducer(map.get("system.port"), bindAddr, port, bufferSize,
+			//20201116 change bug set system.svrid
+//			ServerProducer producer = new ServerProducer(map.get("system.svrid").trim(), bindAddr, port, bufferSize,
+//			tsKeepAlive, tsIdleTimeout);
+			ServerProducer producer = new ServerProducer(map.get("system.svrid").trim(), bindAddr, port, bufferSize,
 					tsKeepAlive, tsIdleTimeout);
+			//----
 			List<String> wsnos = new ArrayList<String>();
 			wsnos.add(addLeftZeroForNum(98, 4));
 			for (String cs : localary) {

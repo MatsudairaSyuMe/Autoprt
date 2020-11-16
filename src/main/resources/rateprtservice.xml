@@ -58,7 +58,7 @@
 	</validDevice>
 	<system>
 		<svrid>1</svrid>
-		<ip>*</ip>
+		<ip>127.0.0.1</ip>
 		<port>0</port>
 <!--		<logpath>/gwlog/autosvr</logpath>-->
 		<logpath>/home/scotthong/tmp</logpath>

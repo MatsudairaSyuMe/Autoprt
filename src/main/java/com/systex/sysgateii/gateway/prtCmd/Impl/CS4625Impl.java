@@ -239,8 +239,12 @@ public class CS4625Impl implements Printer {
 		this.p_fun_flag.set(PrnSvr.p_fun_flag.get());
 		MDC.put("WSNO", this.brws.substring(3));
 		MDC.put("PID", pc.pid);
-		amlog = PrnSvr.amlog;
-		atlog = PrnSvr.atlog;
+		//20201115
+//		amlog = PrnSvr.amlog;
+		amlog = pc.getAmLog();
+//		atlog = PrnSvr.atlog;
+		atlog = pc.getAtLog();
+		//----
 	}
 
 	@Override

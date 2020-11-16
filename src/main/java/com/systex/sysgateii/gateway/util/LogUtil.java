@@ -39,7 +39,7 @@ public class LogUtil {
 		RollingFileAppender<ILoggingEvent> a = (RollingFileAppender<ILoggingEvent>) ((AppenderAttachable<ILoggingEvent>) logbackLogger).getAppender(logName);
 		if (a != null)
 		{
-			System.out.println("Log Appender already exist");
+//			System.out.println("Log Appender already exist");
 			return logbackLogger;
 		}		
 

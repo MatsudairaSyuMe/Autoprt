@@ -54,8 +54,10 @@ import com.systex.sysgateii.gateway.util.ipAddrPars;
 
 public class PrnSvr implements MessageListener<byte[]> {
 	private static Logger log = LoggerFactory.getLogger(PrnSvr.class);
-	public static Logger amlog = null;
-	public static Logger atlog = null;
+	//20201115
+//	public static Logger amlog = null;
+//	public static Logger atlog = null;
+	//----
 	public static Big5FontImg big5funt = null;
 	public static AtomicBoolean p_fun_flag = new AtomicBoolean(false);
 	public static String dburl = "";
@@ -126,9 +128,10 @@ public class PrnSvr implements MessageListener<byte[]> {
 //		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
 //		String byDate = sdf.format(new Date());
 
+		//20201115 mark amlog,atlog
 //		amlog = LogUtil.getDailyLogger(PrnSvr.logPath, verbrno + "_AM" + byDate, "info", "[%d{yyyy/MM/dd HH:mm:ss:SSS}]%msg%n");
 //		atlog = LogUtil.getDailyLogger(PrnSvr.logPath, verbrno + "_AT" + byDate, "info", "[TID:%X{PID} %d{yyyy/MM/dd HH:mm:ss:SSS}]:[%X{WSNO}]:[%thread]:[%class{30} %M|%L]:%msg%n");
-		atlog.info("=============[Start]=============");
+//		atlog.info("=============[Start]=============");
 	}
 
 	@Override
@@ -181,13 +184,15 @@ public class PrnSvr implements MessageListener<byte[]> {
 		createServer(cfg);
 		fasDespacther = setfassvr;
 		log.info("[0000]:------Call MaintainLog OK------");
-		atlog.info("------Call MaintainLog OK------");
+		//20201115 mark atlog
+//		atlog.info("------Call MaintainLog OK------");
 		RuntimeMXBean bean = ManagementFactory.getRuntimeMXBean();
 		String jvmName = bean.getName();
 		String pid = jvmName.split("@")[0];
 		MDC.put("WSNO", "0000");
 		log.info("[0000]:------MainThreadId={}------", pid);
-		atlog.info("------MainThreadId={}------", pid);
+		//20201115mark atlog
+//		atlog.info("------MainThreadId={}------", pid);
 		try {
 			Thread thread;
 			PrtCli conn;
@@ -628,8 +633,10 @@ public class PrnSvr implements MessageListener<byte[]> {
 		MDC.put("PID", ManagementFactory.getRuntimeMXBean().getName().split("@")[0]);
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
 		String byDate = sdf.format(new Date());
-		amlog = LogUtil.getDailyLogger(PrnSvr.logPath, verbrno + "AM" + byDate, "info", "[%d{yyyy/MM/dd HH:mm:ss:SSS}]%msg%n");
-		atlog = LogUtil.getDailyLogger(PrnSvr.logPath, verbrno + "AT" + byDate, "info", "[TID:%X{PID} %d{yyyy/MM/dd HH:mm:ss:SSS}]:[%X{WSNO}]:[%thread]:[%class{0} %M|%L]:%msg%n");
+		//20201115
+//		amlog = LogUtil.getDailyLogger(PrnSvr.logPath, verbrno + "AM" + byDate, "info", "[%d{yyyy/MM/dd HH:mm:ss:SSS}]%msg%n");
+//		atlog = LogUtil.getDailyLogger(PrnSvr.logPath, verbrno + "AT" + byDate, "info", "[TID:%X{PID} %d{yyyy/MM/dd HH:mm:ss:SSS}]:[%X{WSNO}]:[%thread]:[%class{0} %M|%L]:%msg%n");
+		//----
 		try {
 			p_fun_flag.set(false);
 			big5funt = new Big5FontImg("FontTable_low.bin", "FontData_All.bin");
