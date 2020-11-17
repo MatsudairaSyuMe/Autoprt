@@ -116,7 +116,9 @@ public class PrnSvr implements MessageListener<byte[]> {
 	public static String dmtbsearkey = "";
 	public static String dmtbfields = "";
 	//----
-	public static String verbrno = "";
+	//20201116 cancel verbno
+	//public static String verbrno = "";
+	//----
 	public static int setResponseTimeout = 60 * 1000;// 毫秒
 	//20201006
 	static DynamicProps dcf = null;
@@ -578,7 +580,9 @@ public class PrnSvr implements MessageListener<byte[]> {
 		dcf = cfg;
 		//----
 		cfgMap = null;
-		verbrno = cfg.getConHashMap().get("svrsubport.verhbrno");
+		//20201116 cancel verbrno
+		//verbrno = cfg.getConHashMap().get("svrsubport.verhbrno");
+		//----
 		list = cfg.getCfgPrtMapList();
 		logPath = cfg.getConHashMap().get("system.logpath");
 		String tout = cfg.getConHashMap().get("svrsubport.recvtimeout");

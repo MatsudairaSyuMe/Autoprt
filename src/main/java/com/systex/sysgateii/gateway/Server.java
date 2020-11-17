@@ -31,7 +31,10 @@ public class Server {
 	private static String svrstatustbname = "";
 	private static String svrsstatustbmkey = "";
 	private static String svrstatustbfields = "";
-	private static String updValueptrn = "'%s','%s','%s','%s','%s','SYSTEM','','%s'";
+	//20201116 cancel verbrno
+//	private static String updValueptrn = "'%s','%s','%s','%s','%s','SYSTEM','','%s'";
+	private static String updValueptrn = "'%s','%s','%s','%s','SYSTEM','','%s'";
+	//----
 	private static String auid = "";
 	private static String svrip = "";
 	//----
@@ -65,8 +68,12 @@ public class Server {
 				svrip = dcf.getSvrip();
 				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
 				String t = sdf.format(new java.util.Date());
-				String updValue = String.format(updValueptrn,auid,PrnSvr.verbrno, svrip,
+				//20201116 cancel verbrno
+//				String updValue = String.format(updValueptrn,auid,PrnSvr.verbrno, svrip,
+//						Constants.STSUSEDACT, ManagementFactory.getRuntimeMXBean().getName().split("@")[0],t);
+				String updValue = String.format(updValueptrn,auid, svrip,
 						Constants.STSUSEDACT, ManagementFactory.getRuntimeMXBean().getName().split("@")[0],t);
+				//----
 				int row = jsel2ins.UPSERT(svrstatustbname, svrstatustbfields, updValue, svrsstatustbmkey, PrnSvr.svrid);
 				log.debug("total {} records update", row);
 				jsel2ins.CloseConnect();
@@ -101,8 +108,12 @@ public class Server {
 					// AUID,BRNO,IP,CURSTUS,PID,CREATOR,MODIFIER,LASTUPDATE
 					SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
 					String t = sdf.format(new java.util.Date());
-					String updValue = String.format(updValueptrn, auid, PrnSvr.verbrno, svrip, Constants.STSUSEDINACT,
+					//20201116 cancel verbrno
+//					String updValue = String.format(updValueptrn, auid, PrnSvr.verbrno, svrip, Constants.STSUSEDINACT,
+//							ManagementFactory.getRuntimeMXBean().getName().split("@")[0],t);
+					String updValue = String.format(updValueptrn, auid, svrip, Constants.STSUSEDINACT,
 							ManagementFactory.getRuntimeMXBean().getName().split("@")[0],t);
+					//----
 					int row = jsel2ins.UPSERT(svrstatustbname, svrstatustbfields, updValue, svrsstatustbmkey,
 							PrnSvr.svrid);
 					log.debug("total {} records update  status [{}]", row, Constants.STSUSEDINACT);

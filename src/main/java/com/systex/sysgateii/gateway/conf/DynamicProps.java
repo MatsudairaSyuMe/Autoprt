@@ -98,7 +98,9 @@ public class DynamicProps {
 										|| entry.getKey().equals("svrsubport.localip")
 										|| entry.getKey().equals("svrsubport.localport")
 										|| entry.getKey().equals("svrsubport.recvtimeout")
-										|| entry.getKey().equals("svrsubport.verhbrno")
+										//20201116 cancel verhbrno
+										//|| entry.getKey().equals("svrsubport.verhbrno")
+										//----
 										|| entry.getKey().equals("svrsubport.verhwsno")
 										|| entry.getKey().equals("boards.board.brno")
 										//20200513 add for data base connect
@@ -245,6 +247,8 @@ public class DynamicProps {
 														log.debug("SERVICE parameter [{}] set auid [{}]", idx, svrfldsary[idx]);
 														break;
 													//----
+														//20201116 cancel verhbrno
+														/*
 													case 1:
 														origStr = conHashMap.get("svrsubport.verhbrno").trim();
 														conHashMap.put("svrsubport.verhbrno", svrfldsary[idx].trim());
@@ -265,6 +269,26 @@ public class DynamicProps {
 														log.debug("SERVICE parameter [{}] svrsubport.recvtimeout [{}]", idx, svrfldsary[idx]);
 														break;
 													case 6:
+														origStr = conHashMap.get("system.logpath").trim();
+														conHashMap.put("system.logpath", svrfldsary[idx].trim());
+														log.debug("SERVICE parameter [{}] set system.logpath [{}]", idx, svrfldsary[idx]);
+														break;
+														*/
+													case 1:
+														log.debug("SERVICE parameter [{}] prepare to set service ip for device [{}]", idx, svrfldsary[idx]);
+														break;
+													case 2:
+														log.debug("SERVICE parameter [{}] prepare to set service port for device [{}]", idx, svrfldsary[idx]);
+														break;
+													case 3:
+														log.debug("SERVICE parameter [{}] [{}]", idx, svrfldsary[idx]);
+														break;
+													case 4:
+														origStr = conHashMap.get("svrsubport.recvtimeout").trim();
+														conHashMap.put("svrsubport.recvtimeout", svrfldsary[idx].trim());
+														log.debug("SERVICE parameter [{}] svrsubport.recvtimeout [{}]", idx, svrfldsary[idx]);
+														break;
+													case 5:
 														origStr = conHashMap.get("system.logpath").trim();
 														conHashMap.put("system.logpath", svrfldsary[idx].trim());
 														log.debug("SERVICE parameter [{}] set system.logpath [{}]", idx, svrfldsary[idx]);
@@ -314,7 +338,9 @@ public class DynamicProps {
 														break;
 													case 2:
 														//localhost:4002=localhost:3301
-														prtcltipStr =  devfldsary[1].trim() + ":"+ devfldsary[idx].trim() + "=" + svrfldsary[2].trim() + ":" + svrfldsary[3].trim();
+														//20201116 cancel vhbrno
+//														prtcltipStr =  devfldsary[1].trim() + ":"+ devfldsary[idx].trim() + "=" + svrfldsary[2].trim() + ":" + svrfldsary[3].trim();
+														prtcltipStr =  devfldsary[1].trim() + ":"+ devfldsary[idx].trim() + "=" + svrfldsary[1].trim() + ":" + svrfldsary[2].trim();
 														prtcltip.add(prtcltipStr);
 														log.debug("DEVICE parameter [{}] set port [{}] for prtcltip [{}]", idx, devfldsary[idx], prtcltipStr);
 														break;
@@ -428,7 +454,10 @@ public class DynamicProps {
 						|| entry.getKey().equals("svrsubport.svrip") || entry.getKey().equals("svrsubport.svrport")
 						|| entry.getKey().equals("svrsubport.localip") || entry.getKey().equals("svrsubport.localport")
 						|| entry.getKey().equals("svrsubport.recvtimeout")
-						|| entry.getKey().equals("svrsubport.verhbrno") || entry.getKey().equals("svrsubport.verhwsno")
+						//20201116 canceel verhbrno
+//						|| entry.getKey().equals("svrsubport.verhbrno") || entry.getKey().equals("svrsubport.verhwsno")
+						|| entry.getKey().equals("svrsubport.verhwsno")
+						//----
 						//20200513 add for data base connect
 						|| entry.getKey().equals("system.db[@url]")
 						|| entry.getKey().equals("system.db[@user]")
@@ -565,6 +594,8 @@ public class DynamicProps {
 												log.debug("SERVICE parameter [{}] set auid [{}]", idx, svrfldsary[idx]);
 												break;
 												//----
+												//20201116 cancel verhbrno
+												/*
 											case 1:
 												origStr = conHashMap.get("svrsubport.verhbrno").trim();
 												conHashMap.put("svrsubport.verhbrno", svrfldsary[idx].trim());
@@ -588,6 +619,29 @@ public class DynamicProps {
 												log.debug("SERVICE parameter [{}] svrsubport.recvtimeout [{}]", idx, svrfldsary[idx]);
 												break;
 											case 6:
+												origStr = conHashMap.get("system.logpath").trim();
+												conHashMap.put("system.logpath", svrfldsary[idx].trim());
+												log.debug("SERVICE parameter [{}] set system.logpath [{}]", idx, svrfldsary[idx]);
+												break;
+												*/
+											case 1:
+												//20200926
+												setSvrip(svrfldsary[idx]);
+												//----
+												log.debug("SERVICE parameter [{}] prepare to set service ip for device [{}]", idx, svrfldsary[idx]);
+												break;
+											case 2:
+												log.debug("SERVICE parameter [{}] prepare to set service port for device [{}]", idx, svrfldsary[idx]);
+												break;
+											case 3:
+												log.debug("SERVICE parameter [{}] [{}]", idx, svrfldsary[idx]);
+												break;
+											case 4:
+												origStr = conHashMap.get("svrsubport.recvtimeout").trim();
+												conHashMap.put("svrsubport.recvtimeout", svrfldsary[idx].trim());
+												log.debug("SERVICE parameter [{}] svrsubport.recvtimeout [{}]", idx, svrfldsary[idx]);
+												break;
+											case 5:
 												origStr = conHashMap.get("system.logpath").trim();
 												conHashMap.put("system.logpath", svrfldsary[idx].trim());
 												log.debug("SERVICE parameter [{}] set system.logpath [{}]", idx, svrfldsary[idx]);
@@ -634,7 +688,10 @@ public class DynamicProps {
 												break;
 											case 2:
 												//localhost:4002=localhost:3301
-												prtcltipStr =  devfldsary[1].trim() + ":"+ devfldsary[idx].trim() + "=" + svrfldsary[2].trim() + ":" + svrfldsary[3].trim();
+												//20201116 cancel vhbrno
+//												prtcltipStr =  devfldsary[1].trim() + ":"+ devfldsary[idx].trim() + "=" + svrfldsary[2].trim() + ":" + svrfldsary[3].trim();
+												prtcltipStr =  devfldsary[1].trim() + ":"+ devfldsary[idx].trim() + "=" + svrfldsary[1].trim() + ":" + svrfldsary[2].trim();
+												//----
 												prtcltip.add(prtcltipStr);
 												log.debug("DEVICE parameter [{}] set port [{}] for prtcltip [{}]", idx, devfldsary[idx], prtcltipStr);
 												break;
@@ -805,6 +862,8 @@ public class DynamicProps {
 										log.debug("SERVICE parameter [{}] set auid [{}]", idx, svrfldsary[idx]);
 										break;
 									// ----
+										//20201116 canceel verhbrno
+										/*
 									case 1:
 										conHashMap.put("svrsubport.verhbrno", svrfldsary[idx].trim());
 										log.debug("SERVICE parameter [{}] set svrsubport.verhbrno [{}]", idx,
@@ -830,6 +889,31 @@ public class DynamicProps {
 												svrfldsary[idx]);
 										break;
 									case 6:
+										conHashMap.put("system.logpath", svrfldsary[idx].trim());
+										log.debug("SERVICE parameter [{}] set system.logpath [{}]", idx,
+												svrfldsary[idx]);
+										break;
+										*/
+									case 1:
+										// 20200926
+										setSvrip(svrfldsary[idx]);
+										// ----
+										log.debug("SERVICE parameter [{}] prepare to set service ip for device [{}]",
+												idx, svrfldsary[idx]);
+										break;
+									case 2:
+										log.debug("SERVICE parameter [{}] prepare to set service port for device [{}]",
+												idx, svrfldsary[idx]);
+										break;
+									case 3:
+										log.debug("SERVICE parameter [{}] [{}]", idx, svrfldsary[idx]);
+										break;
+									case 4:
+										conHashMap.put("svrsubport.recvtimeout", svrfldsary[idx].trim());
+										log.debug("SERVICE parameter [{}] svrsubport.recvtimeout [{}]", idx,
+												svrfldsary[idx]);
+										break;
+									case 5:
 										conHashMap.put("system.logpath", svrfldsary[idx].trim());
 										log.debug("SERVICE parameter [{}] set system.logpath [{}]", idx,
 												svrfldsary[idx]);
@@ -879,8 +963,12 @@ public class DynamicProps {
 											break;
 										case 2:
 											// localhost:4002=localhost:3301
+											//20201116
+//											prtcltipStr = devfldsary[1].trim() + ":" + devfldsary[idx].trim() + "="
+//													+ svrfldsary[2].trim() + ":" + svrfldsary[3].trim();
 											prtcltipStr = devfldsary[1].trim() + ":" + devfldsary[idx].trim() + "="
-													+ svrfldsary[2].trim() + ":" + svrfldsary[3].trim();
+													+ svrfldsary[1].trim() + ":" + svrfldsary[2].trim();
+											//----
 											prtcltip.add(prtcltipStr);
 											log.debug("DEVICE parameter [{}] set port [{}] for prtcltip [{}]", idx,
 													devfldsary[idx], prtcltipStr);
