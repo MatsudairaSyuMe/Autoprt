@@ -727,7 +727,9 @@ public class GwDao {
 					insvalary = com.systex.sysgateii.gateway.util.dataUtil.concatArray(selkeyvalary, valary);
 				else
 					insvalary = valary;
-				cnvInsertStr = generateActualSql(SQL_INSERT, insvalary);
+				//20201116
+				cnvInsertStr = generateActualSql(SQL_INSERT, (Object[])insvalary);
+				//----
 				log.debug("record not exist using select insert:{} toString=[{}]", SQL_INSERT, cnvInsertStr);
 				} catch(Exception e) {
 					e.printStackTrace();
