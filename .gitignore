@@ -11,5 +11,7 @@ SEQNO
 .project
 .settings
 .attach_pid*
-# Ignore Ant compile build fiile
+# Ignore test templete resource
+src/main/resources/rateprtservice.xml
+# Ignore Ant compile build file
 build.xml
