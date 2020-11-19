@@ -11,6 +11,7 @@ package com.systex.sysgateii.gateway.conf;
 
 import java.io.File;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.configuration2.ConfigurationMap;
@@ -26,7 +27,9 @@ import org.apache.commons.configuration2.tree.DefaultExpressionEngineSymbols;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.systex.sysgateii.gateway.autoPrtSvr.Server.PrnSvr;
+//20201116 add using given svrid
+import com.systex.sysgateii.gateway.Server;
+//----
 import com.systex.sysgateii.gateway.dao.GwDao;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -78,7 +81,9 @@ public class DynamicProps {
 							// 指定表達示引擎
 							config.setExpressionEngine(engine);
 							Map<Object, Object> cfg = new ConfigurationMap(config);
-							cfg.entrySet();
+							//20201116
+							//cfg.entrySet();
+							//----
 							for (@SuppressWarnings("rawtypes")
 							Map.Entry entry : cfg.entrySet()) {
 								log.info("modified Event ConfProc info! {}, {}", entry.getKey(), entry.getValue());
@@ -156,7 +161,13 @@ public class DynamicProps {
 										log.info("configure will read other data from center repository");
 									}
 									//----
-									conHashMap.put(entry.getKey().toString(), entry.getValue().toString());
+									//20201116
+									if (Server.getSvrId() > 0 && entry.getKey().equals("system.svrid")) {
+										conHashMap.put(entry.getKey().toString(), Integer.toString(Server.getSvrId()));
+										log.info("!!!! Change to use given svrid [{}]=[{}]", entry.getKey(), Integer.toString(Server.getSvrId()));
+									} else
+									//----
+										conHashMap.put(entry.getKey().toString(), entry.getValue().toString());
 									log.info("ConfProc put to config map info! {}, {}", entry.getKey(),
 											entry.getValue());
 								} else {
@@ -215,6 +226,12 @@ public class DynamicProps {
 						String devprmtb = conHashMap.get("system.devprmtb[@name]").trim();
 						String devprmkey = conHashMap.get("system.devprmtb[@mkey]").trim();
 						String devprmfields = conHashMap.get("system.devprmtb[@fields]").trim();
+						//20201116 change to given svrid
+						prtbrws.clear();
+						prttype.clear();
+						prtcltip.clear();
+						prtcltautoturnpage.clear();
+						//----
 						if (fromurl.length() <= 0 ||fromuser.length() <= 0 || frompass.length()<= 0
 								|| svrprmtb.length() <= 0 || svrprmkey.length() <= 0 || svrprmfields.length() <= 0
 								|| fasprmtb.length() <= 0 || fasprmkey.length() <= 0 || fasprmfields.length() <= 0
@@ -233,7 +250,8 @@ public class DynamicProps {
 								String[] svrfldsary = null; // store values of AUID,BRNO,IP,PORT,DEVTPE,RECVTIMEOUT,LOGPATH
 								String fasfld = ""; // store values of CONNPRM
 								String[] devfldsary = null; // store values of BRWS,IP,PORT,DEVTPE,AUTOTURNPAGE
-								if(svrflds != null && svrflds.length > 0)
+								//20201116 change to use given svrid
+								if(svrflds != null && svrflds.length > 0) {
 									for (String s: svrflds) {
 										s = s.trim();
 										log.debug("current svrfld [{}]", s);
@@ -300,26 +318,32 @@ public class DynamicProps {
 										} else
 											log.error("!!!!SERVICE parameters in service table [{}] error !!!", svrprmtb);
 									}
-								if (svrfldsary.length > 5 ) {
-									log.debug("current fasprmtb=[{}] fasprmtbkey=[{}] fasprmtbsearkey=[{}]", fasprmtb, fasprmkey, svrfldsary[0]);
-									String[] fasflds = jsel2ins.SELMFLD(fasprmtb, fasprmfields, fasprmkey, svrfldsary[0], false);
-									if(fasflds != null && fasflds.length > 0)
-										for (String s: fasflds) {
+								if (svrfldsary.length > 5) {
+									log.debug("current fasprmtb=[{}] fasprmtbkey=[{}] fasprmtbsearkey=[{}]", fasprmtb,
+											fasprmkey, svrfldsary[0]);
+									String[] fasflds = jsel2ins.SELMFLD(fasprmtb, fasprmfields, fasprmkey,
+											svrfldsary[0], false);
+									if (fasflds != null && fasflds.length > 0)
+										for (String s : fasflds) {
 											s = s.trim();
-										fasfld = s;
-										origStr = conHashMap.get("svrsubport.svrip").trim();
-										conHashMap.put("svrsubport.svrip", fasfld);
-										log.debug("current fasfld set svrsubport.svrip [{}]", fasfld);
-									}
-									log.debug("current devprmtb=[{}] devprmtbkey=[{}] devprmtbsearkey=[{}]", devprmtb, devprmkey, SvrId);
-									String[] devflds = jsel2ins.SELMFLD(devprmtb, devprmfields, devprmkey, SvrId, false);
+											fasfld = s;
+											origStr = conHashMap.get("svrsubport.svrip").trim();
+											conHashMap.put("svrsubport.svrip", fasfld);
+											log.debug("current fasfld set svrsubport.svrip [{}]", fasfld);
+										}
+									log.debug("current devprmtb=[{}] devprmtbkey=[{}] devprmtbsearkey=[{}]", devprmtb,
+											devprmkey, SvrId);
+									String[] devflds = jsel2ins.SELMFLD(devprmtb, devprmfields, devprmkey, SvrId,
+											false);
 									String prtcltipStr = "";
+									/*20201116 change to use given svrid
 									prtbrws.clear();
 									prttype.clear();
 									prtcltip.clear();
 									prtcltautoturnpage.clear();
-									if(devflds != null && devflds.length > 0)
-										for (String s: devflds) {
+									*/
+									if (devflds != null && devflds.length > 0)
+										for (String s : devflds) {
 											s = s.trim();
 											log.debug("current devflds [{}]", s);
 											if (s.length() > 0 && s.indexOf(',') > -1) {
@@ -328,41 +352,55 @@ public class DynamicProps {
 													switch (idx) {
 													case 0:
 														prtbrws.add(devfldsary[idx].trim());
-														log.debug("DEVICE parameter [{}] set prtbrws [{}]", idx, devfldsary[idx].trim());
+														log.debug("DEVICE parameter [{}] set prtbrws [{}]", idx,
+																devfldsary[idx].trim());
 														break;
 													case 1:
-														//20200926
+														// 20200926
 														setSvrip(svrfldsary[idx]);
-														//----
-														log.debug("DEVICE parameter [{}] set ip for prtcltip [{}]", idx, devfldsary[idx].trim());
+														// ----
+														log.debug("DEVICE parameter [{}] set ip for prtcltip [{}]", idx,
+																devfldsary[idx].trim());
 														break;
 													case 2:
-														//localhost:4002=localhost:3301
-														//20201116 cancel vhbrno
+														// localhost:4002=localhost:3301
+														// 20201116 cancel vhbrno
 //														prtcltipStr =  devfldsary[1].trim() + ":"+ devfldsary[idx].trim() + "=" + svrfldsary[2].trim() + ":" + svrfldsary[3].trim();
-														prtcltipStr =  devfldsary[1].trim() + ":"+ devfldsary[idx].trim() + "=" + svrfldsary[1].trim() + ":" + svrfldsary[2].trim();
+														prtcltipStr = devfldsary[1].trim() + ":"
+																+ devfldsary[idx].trim() + "=" + svrfldsary[1].trim()
+																+ ":" + svrfldsary[2].trim();
 														prtcltip.add(prtcltipStr);
-														log.debug("DEVICE parameter [{}] set port [{}] for prtcltip [{}]", idx, devfldsary[idx], prtcltipStr);
+														log.debug(
+																"DEVICE parameter [{}] set port [{}] for prtcltip [{}]",
+																idx, devfldsary[idx], prtcltipStr);
 														break;
 													case 3:
 														if (devfldsary[idx].trim().equalsIgnoreCase("2")) {
 															prttype.add("AUTO46");
-															log.debug("DEVICE parameter [{}] set prttype [{}]", idx, "AUTO46");
+															log.debug("DEVICE parameter [{}] set prttype [{}]", idx,
+																	"AUTO46");
 														} else if (devfldsary[idx].trim().equalsIgnoreCase("3")) {
-															prttype.add("AUTO52"); //error set to "AUTO46
-															log.debug("DEVICE parameter [{}] set prttype [{}]", idx, "AUTO52");
-														} else {													
-															log.debug("DEVICE parameter [{}] not autoprinter type", idx);
-															prttype.add("NOTAUTOPRT"); // //20201110 check for autoprt deivce
+															prttype.add("AUTO52"); // error set to "AUTO46
+															log.debug("DEVICE parameter [{}] set prttype [{}]", idx,
+																	"AUTO52");
+														} else {
+															log.debug("DEVICE parameter [{}] not autoprinter type",
+																	idx);
+															prttype.add("NOTAUTOPRT"); // //20201110 check for autoprt
+																						// deivce
 														}
 														break;
 													case 4:
 														if (devfldsary[idx].trim().equalsIgnoreCase("N")) {
 															prtcltautoturnpage.add("false");
-															log.debug("DEVICE parameter [{}] set prtcltautoturnpage [{}]", idx, "false");
+															log.debug(
+																	"DEVICE parameter [{}] set prtcltautoturnpage [{}]",
+																	idx, "false");
 														} else {
 															prtcltautoturnpage.add("true");
-															log.debug("DEVICE parameter [{}] set prtcltautoturnpage [{}]", idx, "true");
+															log.debug(
+																	"DEVICE parameter [{}] set prtcltautoturnpage [{}]",
+																	idx, "true");
 														}
 														break;
 													default:
@@ -375,6 +413,10 @@ public class DynamicProps {
 										}
 								} else
 									log.error("!!!!field parameters in fas parameter table [{}] error !!!", fasprmtb);
+								} else { //20201116 add check given svrid
+									log.error("!!!!svrid  not exist in table [{}] error !!!", SvrId);									
+								}
+								//----
 								jsel2ins.CloseConnect();
 								jsel2ins = null;
 							} catch (Exception e) {
@@ -427,6 +469,7 @@ public class DynamicProps {
 		System.out.println(config.getString("boards.board.start[@description]"));
 	}
 
+	@SuppressWarnings("rawtypes")
 	public void ChkCfg(XMLConfiguration config) throws ConfigurationException {
 
 		DefaultExpressionEngine engine = new DefaultExpressionEngine(DefaultExpressionEngineSymbols.DEFAULT_SYMBOLS);
@@ -434,7 +477,8 @@ public class DynamicProps {
 		config.setExpressionEngine(engine);
 		synchronized (this) {
 			Map<Object, Object> cfg = new ConfigurationMap(config);
-			cfg.entrySet();
+//			cfg.entrySet();
+			//20201116 
 			for (@SuppressWarnings("rawtypes")
 			Map.Entry entry : cfg.entrySet()) {
 				//20200420 add logpath
@@ -511,7 +555,13 @@ public class DynamicProps {
 						log.info("configure will read other data from center repository");
 					}
 					//----
-					conHashMap.put(entry.getKey().toString(), entry.getValue().toString());
+					//20201116
+					if (Server.getSvrId() > 0 && entry.getKey().equals("system.svrid")) {
+						conHashMap.put(entry.getKey().toString(), Integer.toString(Server.getSvrId()));
+						log.info("!!!! Change to use given svrid [{}]=[{}]", entry.getKey(), Integer.toString(Server.getSvrId()));
+					} else
+					//----
+						conHashMap.put(entry.getKey().toString(), entry.getValue().toString());
 					log.info("ConfProc put to config map info! {}, {}", entry.getKey(), entry.getValue());
 				} else {
 					String schk = entry.getKey().toString().trim();
@@ -562,6 +612,12 @@ public class DynamicProps {
 				String devprmtb = conHashMap.get("system.devprmtb[@name]").trim();
 				String devprmkey = conHashMap.get("system.devprmtb[@mkey]").trim();
 				String devprmfields = conHashMap.get("system.devprmtb[@fields]").trim();
+				//20201116 change to given svrid
+				prtbrws.clear();
+				prttype.clear();
+				prtcltip.clear();
+				prtcltautoturnpage.clear();
+				//----
 				if (fromurl.length() <= 0 ||fromuser.length() <= 0 || frompass.length()<= 0
 						|| svrprmtb.length() <= 0 || svrprmkey.length() <= 0 || svrprmfields.length() <= 0
 						|| fasprmtb.length() <= 0 || fasprmkey.length() <= 0 || fasprmfields.length() <= 0
@@ -580,7 +636,7 @@ public class DynamicProps {
 						String[] svrfldsary = null; // store values of AUID,BRNO,IP,PORT,DEVTPE,RECVTIMEOUT,LOGPATH
 						String fasfld = ""; // store values of CONNPRM
 						String[] devfldsary = null; // store values of BRWS,IP,PORT,DEVTPE,AUTOTURNPAGE
-						if(svrflds != null && svrflds.length > 0)
+						if(svrflds != null && svrflds.length > 0) {
 							for (String s: svrflds) {
 								s = s.trim();
 								log.debug("current svrfld [{}]", s);
@@ -653,79 +709,97 @@ public class DynamicProps {
 								} else
 									log.error("!!!!SERVICE parameters in service table [{}] error !!!", svrprmtb);
 							}
-						if (svrfldsary.length > 5 ) {
-							log.debug("current fasprmtb=[{}] fasprmtbkey=[{}] fasprmtbsearkey=[{}]", fasprmtb, fasprmkey, svrfldsary[0]);
-							String[] fasflds = jsel2ins.SELMFLD(fasprmtb, fasprmfields, fasprmkey, svrfldsary[0], false);
-							if(fasflds != null && fasflds.length > 0)
-								for (String s: fasflds) {
-									s = s.trim();
-								fasfld = s;
-								origStr = conHashMap.get("svrsubport.svrip").trim();
-								conHashMap.put("svrsubport.svrip", fasfld);
-								log.debug("current fasfld set svrsubport.svrip [{}]", fasfld);
-							}
-							log.debug("current devprmtb=[{}] devprmtbkey=[{}] devprmtbsearkey=[{}]", devprmtb, devprmkey, SvrId);
-							String[] devflds = jsel2ins.SELMFLD(devprmtb, devprmfields, devprmkey, SvrId, false);
-							String prtcltipStr = "";
-							prtbrws.clear();
-							prttype.clear();
-							prtcltip.clear();
-							prtcltautoturnpage.clear();
-							if(devflds != null && devflds.length > 0)
-								for (String s: devflds) {
-									s = s.trim();
-									log.debug("current devflds [{}]", s);
-									if (s.length() > 0 && s.indexOf(',') > -1) {
-										devfldsary = s.split(",");
-										for (int idx = 0; idx < devfldsary.length; idx++) {
-											switch (idx) {
-											case 0:
-												prtbrws.add(devfldsary[idx].trim());
-												log.debug("DEVICE parameter [{}] set prtbrws [{}]", idx, devfldsary[idx].trim());
-												break;
-											case 1:
-												log.debug("DEVICE parameter [{}] set ip for prtcltip [{}]", idx, devfldsary[idx].trim());
-												break;
-											case 2:
-												//localhost:4002=localhost:3301
-												//20201116 cancel vhbrno
+							if (svrfldsary.length > 5) {
+								log.debug("current fasprmtb=[{}] fasprmtbkey=[{}] fasprmtbsearkey=[{}]", fasprmtb,
+										fasprmkey, svrfldsary[0]);
+								String[] fasflds = jsel2ins.SELMFLD(fasprmtb, fasprmfields, fasprmkey, svrfldsary[0],
+										false);
+								if (fasflds != null && fasflds.length > 0)
+									for (String s : fasflds) {
+										s = s.trim();
+										fasfld = s;
+										origStr = conHashMap.get("svrsubport.svrip").trim();
+										conHashMap.put("svrsubport.svrip", fasfld);
+										log.debug("current fasfld set svrsubport.svrip [{}]", fasfld);
+									}
+								log.debug("current devprmtb=[{}] devprmtbkey=[{}] devprmtbsearkey=[{}]", devprmtb,
+										devprmkey, SvrId);
+								String[] devflds = jsel2ins.SELMFLD(devprmtb, devprmfields, devprmkey, SvrId, false);
+								String prtcltipStr = "";
+								/* 20201116 change to use given svrid
+								prtbrws.clear();
+								prttype.clear();
+								prtcltip.clear();
+								prtcltautoturnpage.clear();
+								*/
+								if (devflds != null && devflds.length > 0)
+									for (String s : devflds) {
+										s = s.trim();
+										log.debug("current devflds [{}]", s);
+										if (s.length() > 0 && s.indexOf(',') > -1) {
+											devfldsary = s.split(",");
+											for (int idx = 0; idx < devfldsary.length; idx++) {
+												switch (idx) {
+												case 0:
+													prtbrws.add(devfldsary[idx].trim());
+													log.debug("DEVICE parameter [{}] set prtbrws [{}]", idx,
+															devfldsary[idx].trim());
+													break;
+												case 1:
+													log.debug("DEVICE parameter [{}] set ip for prtcltip [{}]", idx,
+															devfldsary[idx].trim());
+													break;
+												case 2:
+													// localhost:4002=localhost:3301
+													// 20201116 cancel vhbrno
 //												prtcltipStr =  devfldsary[1].trim() + ":"+ devfldsary[idx].trim() + "=" + svrfldsary[2].trim() + ":" + svrfldsary[3].trim();
-												prtcltipStr =  devfldsary[1].trim() + ":"+ devfldsary[idx].trim() + "=" + svrfldsary[1].trim() + ":" + svrfldsary[2].trim();
-												//----
-												prtcltip.add(prtcltipStr);
-												log.debug("DEVICE parameter [{}] set port [{}] for prtcltip [{}]", idx, devfldsary[idx], prtcltipStr);
-												break;
-											case 3:
-												if (devfldsary[idx].trim().equalsIgnoreCase("2")) {
-													prttype.add("AUTO46");
-													log.debug("DEVICE parameter [{}] set prttype [{}]", idx, "AUTO46");
-												} else if (devfldsary[idx].trim().equalsIgnoreCase("3")) {
-													prttype.add("AUTO52"); // error set to AUTO46
-													log.debug("DEVICE parameter [{}] set prttype [{}]", idx, "AUTO52");
-												} else {													
-													log.debug("DEVICE parameter [{}] not autoprinter type", idx);
-													prttype.add("NOTAUTOPRT"); // //20201110 check for autoprt deivce
+													prtcltipStr = devfldsary[1].trim() + ":" + devfldsary[idx].trim()
+															+ "=" + svrfldsary[1].trim() + ":" + svrfldsary[2].trim();
+													// ----
+													prtcltip.add(prtcltipStr);
+													log.debug("DEVICE parameter [{}] set port [{}] for prtcltip [{}]",
+															idx, devfldsary[idx], prtcltipStr);
+													break;
+												case 3:
+													if (devfldsary[idx].trim().equalsIgnoreCase("2")) {
+														prttype.add("AUTO46");
+														log.debug("DEVICE parameter [{}] set prttype [{}]", idx,
+																"AUTO46");
+													} else if (devfldsary[idx].trim().equalsIgnoreCase("3")) {
+														prttype.add("AUTO52"); // error set to AUTO46
+														log.debug("DEVICE parameter [{}] set prttype [{}]", idx,
+																"AUTO52");
+													} else {
+														log.debug("DEVICE parameter [{}] not autoprinter type", idx);
+														prttype.add("NOTAUTOPRT"); // //20201110 check for autoprt
+																					// deivce
+													}
+													break;
+												case 4:
+													if (devfldsary[idx].trim().equalsIgnoreCase("N")) {
+														prtcltautoturnpage.add("false");
+														log.debug("DEVICE parameter [{}] set prtcltautoturnpage [{}]",
+																idx, "false");
+													} else {
+														prtcltautoturnpage.add("true");
+														log.debug("DEVICE parameter [{}] set prtcltautoturnpage [{}]",
+																idx, "true");
+													}
+													break;
+												default:
+													break;
 												}
-												break;
-											case 4:
-												if (devfldsary[idx].trim().equalsIgnoreCase("N")) {
-													prtcltautoturnpage.add("false");
-													log.debug("DEVICE parameter [{}] set prtcltautoturnpage [{}]", idx, "false");
-												} else {
-													prtcltautoturnpage.add("true");
-													log.debug("DEVICE parameter [{}] set prtcltautoturnpage [{}]", idx, "true");
-												}
-												break;
-											default:
-												break;
 											}
-										}
 
-									} else
-										log.error("!!!!DEVICE parameters in [{}] error !!!", devprmtb);
-								}
-						} else
-							log.error("!!!!field parameters in fas parameter table [{}] error !!!", fasprmtb);
+										} else
+											log.error("!!!!DEVICE parameters in [{}] error !!!", devprmtb);
+									}
+							} else
+								log.error("!!!!field parameters in fas parameter table [{}] error !!!", fasprmtb);
+						} else { //20201116 add check given svrid
+							log.error("!!!!svrid  not exist in table [{}] error !!!", SvrId);							
+						}
+						//----
 						jsel2ins.CloseConnect();
 						jsel2ins = null;
 					} catch (Exception e) {

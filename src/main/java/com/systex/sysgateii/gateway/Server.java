@@ -3,6 +3,7 @@ package com.systex.sysgateii.gateway;
 import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.text.SimpleDateFormat;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 
@@ -38,43 +39,106 @@ public class Server {
 	private static String auid = "";
 	private static String svrip = "";
 	//----
+	//20201116 using given svrid
+	private static int svrId = 0;
+	private static String svrIdStr = "";
+	private static String dburl = "";
+	private static String dbuser = "";
+	private static String dbpass = "";
+
+	//----
 
 	public static void main(String[] args) {
 		System.setProperty(ContextInitializer.CONFIG_FILE_PROPERTY, "." + File.separator + "logback.xml");
 		log = LoggerFactory.getLogger(Server.class);
 		try {
-			log.info("sysgateii server start...");
+			//20201116 check if using given svrid
+			if (args.length > 0) {
+				for (int j = 0; j < args.length; j++) {
+					if (args[j].equalsIgnoreCase("--svrid") && ((j + 1) < args.length)) {
+						if (args[j + 1].trim().length() > 0) {
+							String s = args[j + 1].trim();
+							if (Integer.parseInt(s) > 0) {
+								setSvrId(Integer.parseInt(s));
+							}
+						}
+					}
+				}
+			}
+			if (getSvrId() > 0)
+				log.info("sysgateii server given id [{}] start...", getSvrId());
+			else
+				log.info("sysgateii server start...");
+			//----
 			DynamicProps dcf = new DynamicProps("rateprtservice.xml");
+			//20201116 change to use given svrid
+			auid = dcf.getAuid();
+			svrip = dcf.getSvrip();
+			dburl = dcf.getConHashMap().get("system.db[@url]");
+			dbuser = dcf.getConHashMap().get("system.db[@user]");
+			dbpass = dcf.getConHashMap().get("system.db[@pass]");
 
-			FASSvr.createServer(dcf.getConHashMap());
-			FASSvr.startServer();
+			if (auid.trim().length() == 0 || auid.trim().length() == 0) {
+				auid = "0";
+				setIsShouldShutDown(true);
+			}
+			//----
+
+			//20201116 add using given svrid
+			svrIdStr = "";
+			if (getSvrId() > 0)
+				svrIdStr = Integer.toString(getSvrId());
+			else
+				svrIdStr = dcf.getConHashMap().get("system.svrid");
+			if (!isShouldShutDown.get()) {
+				addDaemonShutdownHook();
+				FASSvr.createServer(dcf.getConHashMap());
+				FASSvr.startServer();
 
 			//20200901
 //			PrnSvr.createServer(dcf);
 //			PrnSvr.startServer(FASSvr.getFASSvr());
-			PrnSvr.createServer(dcf, FASSvr.getFASSvr());
-			PrnSvr.startServer();
+				PrnSvr.createServer(dcf, FASSvr.getFASSvr());
+				PrnSvr.startServer();
+			}
+			//----
 			//----
 			//20200926
 			if (dcf.isReadCfgFromCenter()) {
 				svrstatustbname = dcf.getConHashMap().get("system.svrstatustb[@name]");
 				svrsstatustbmkey = dcf.getConHashMap().get("system.svrstatustb[@mkey]");
 				svrstatustbfields = dcf.getConHashMap().get("system.svrstatustb[@fields]");
-				log.info("sysgateii server start complete! auid=[{}]",dcf.getAuid());
+				//20201116 change to use given svrid
+//				log.info("sysgateii server start complete! auid=[{}]",dcf.getAuid());
+				//----
 				if (jsel2ins == null)
-					jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
+					//20201116
+					//jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
+					jsel2ins = new GwDao(dburl, dbuser, dbpass, false);
+				//----
 				//AUID,BRNO,IP,CURSTUS,PID,CREATOR,MODIFIER,LASTUPDATE
-				auid = dcf.getAuid();
-				svrip = dcf.getSvrip();
+//				auid = dcf.getAuid();
+//				svrip = dcf.getSvrip();
+				//20201116 change to use given svrid
+				log.info("sysgateii server start complete! auid=[{}] svrip=[{}]", auid, svrip);
+				if (auid.trim().length() == 0 || auid.trim().length() == 0) {
+					auid = "0";
+					setIsShouldShutDown(true);
+				}
+				//----
 				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
 				String t = sdf.format(new java.util.Date());
 				//20201116 cancel verbrno
 //				String updValue = String.format(updValueptrn,auid,PrnSvr.verbrno, svrip,
 //						Constants.STSUSEDACT, ManagementFactory.getRuntimeMXBean().getName().split("@")[0],t);
+				//20201116 change to use given svrid
 				String updValue = String.format(updValueptrn,auid, svrip,
-						Constants.STSUSEDACT, ManagementFactory.getRuntimeMXBean().getName().split("@")[0],t);
+						isShouldShutDown.get()?Constants.STSUSEDINACT:Constants.STSUSEDACT, ManagementFactory.getRuntimeMXBean().getName().split("@")[0],t);
 				//----
-				int row = jsel2ins.UPSERT(svrstatustbname, svrstatustbfields, updValue, svrsstatustbmkey, PrnSvr.svrid);
+				//20201116 use given svrid
+				//int row = jsel2ins.UPSERT(svrstatustbname, svrstatustbfields, updValue, svrsstatustbmkey, PrnSvr.svrid);
+				int row = jsel2ins.UPSERT(svrstatustbname, svrstatustbfields, updValue, svrsstatustbmkey, svrIdStr);
+				//
 				log.debug("total {} records update", row);
 				jsel2ins.CloseConnect();
 				jsel2ins = null;
@@ -85,7 +149,10 @@ public class Server {
 			while (!isShouldShutDown.get()) {
 				TimeUnit.SECONDS.sleep(TEST_TIME_SECONDS);
 			}
-			log.info("RateServer server stop!");
+			log.info("AutoServer server stop!");
+			//20201116
+			System.exit(0);
+			//----
 		} catch (Exception e) {
 			e.printStackTrace();
 			log.error(e.getMessage());
@@ -100,11 +167,15 @@ public class Server {
 //				ClientController.stopController();
 				PrnSvr.stopServer();
 //            	WebServer.stopServer();
+				log.debug("ShutdownHook run!!!");
 				setIsShouldShutDown(true);
 				//20200926
 				try {
 					if (jsel2ins == null)
-						jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
+						//20201116
+						//jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
+						jsel2ins = new GwDao(dburl, dbuser, dbpass, false);
+					//----
 					// AUID,BRNO,IP,CURSTUS,PID,CREATOR,MODIFIER,LASTUPDATE
 					SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
 					String t = sdf.format(new java.util.Date());
@@ -114,8 +185,12 @@ public class Server {
 					String updValue = String.format(updValueptrn, auid, svrip, Constants.STSUSEDINACT,
 							ManagementFactory.getRuntimeMXBean().getName().split("@")[0],t);
 					//----
+					//20201116 use given svrid
+//					int row = jsel2ins.UPSERT(svrstatustbname, svrstatustbfields, updValue, svrsstatustbmkey,
+//							PrnSvr.svrid);
 					int row = jsel2ins.UPSERT(svrstatustbname, svrstatustbfields, updValue, svrsstatustbmkey,
-							PrnSvr.svrid);
+							svrIdStr);
+					//----
 					log.debug("total {} records update  status [{}]", row, Constants.STSUSEDINACT);
 					jsel2ins.CloseConnect();
 					jsel2ins = null;
@@ -144,4 +219,19 @@ public class Server {
 		Server.isShouldShutDown.set(shutStatus);
 	}
 
+	//20201116 used given svrid
+	/**
+	 * @return the svrId
+	 */
+	public static int getSvrId() {
+		return svrId;
+	}
+
+	/**
+	 * @param svrId the svrId to set
+	 */
+	public static void setSvrId(int svrId) {
+		Server.svrId = svrId;
+	}
+	//----
 }
