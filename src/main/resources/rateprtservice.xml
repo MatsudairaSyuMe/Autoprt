@@ -58,11 +58,11 @@
 	</validDevice>
 	<system>
 		<svrid>1</svrid>
-		<ip>*</ip>
+		<ip>127.0.0.1</ip>
 		<port>0</port>
 <!--		<logpath>/gwlog/autosvr</logpath>-->
 		<logpath>/home/scotthong/tmp</logpath>
-		<db url="jdbc:db2://172.16.71.138:50000/BISDB" user="BIS_USER" pass="bisuser"/>
+		<db url="jdbc:db2://172.16.71.141:50000/BISDB" user="BIS_USER" pass="bisuser"/>
 		<!-- 20201116 -->
 		<!--svrprmtb name="BISAP.TB_AUSVRPRM" mkey="SVRID" fields="AUID,BRNO,IP,PORT,DEVTPE,RECVTIMEOUT,LOGPATH"/-->
 		<svrprmtb name="BISAP.TB_AUSVRPRM" mkey="SVRID" fields="AUID,IP,PORT,DEVTPE,RECVTIMEOUT,LOGPATH"/>
@@ -79,14 +79,18 @@
 		<svrtbsdytb name="BISAP.TB_AUGEN" mkey="BKNO" fields="TBSDY"/>
 		<!-- -->
 		<!--  20201026 devcmdtb fields add AUID and CMDCREATETIME-->
-		<devcmdtb name="BISAP.TB_AUDEVCMD" mkey="SVRID,BRWS" fields="SVRID,BRWS,CMD,AUID,CMDCREATETIME"/>
+		<devcmdtb name="BISAP.TB_AUDEVCMD" mkey="SVRID,BRWS" fields="SVRID,BRWS,CMD,AUID,CMDCREATETIME,EMPNO"/>
 		<!-- 20201026 add for command history processing and am error log -->
-		<devcmdhistb name="BISAP.TB_AUDEVCMDHIS" mkey="SNO" fields="SVRID,AUID,BRWS,CMD,CMDCREATETIME,CMDRESULT,CMDRESULTTIME,DEVIP,DEVPORT,SVRIP,SVRPORT,CURSTUS,RESULTSTUS"/>
+		<devcmdhistb name="BISAP.TB_AUDEVCMDHIS" mkey="SNO" fields="SVRID,AUID,BRWS,CMD,CMDCREATETIME,CMDRESULT,CMDRESULTTIME,DEVIP,DEVPORT,SVRIP,SVRPORT,CURSTUS,RESULTSTUS,EMPNO"/>
 		<devamtb name="BISAP.TB_AUTB_AUAMLOG" mkey="SNO" fields="RECTIME,BRWS,TYPE,ACTNO,ERRDESC"/>
 		<!-- 20201106 -->
 		<dmtb name="BISAP.TB_AUDMPRM" mkey="ID" fields="ID,NAME"/>
 		<!-- 20201106 -->
 		<!-- 20201026 -->
+		<!-- 20201119 service start/stop command table and command history -->
+		<svrcmdtb name="BISAP.TB_AUSVRCMD" mkey="IP" fields="IP,SVRID,CMD,CMDCREATETIME,EMPNO"/>
+		<svrcmdhistb name="BISAP.TB_AUSVRCMDHIS" mkey="SNO" fields="SVRID,IP,CMD,CMDCREATETIME,CMDRESULT,CMDRESULTTIME,PID,EMPNO"/>
+		<!-- -->
 	</system>
 	<svrsubport>
 <!-- 	<svrip>10.24.1.230:15000=10.24.1.230:15102,10.24.1.230:15000=10.24.1.230:15103</svrip>-->

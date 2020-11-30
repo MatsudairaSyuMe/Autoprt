@@ -1182,6 +1182,9 @@ public class CS5240Impl implements Printer {
 			data = Rcv_Data();
 			if (data == null && iCnt > 40) {
 				amlog.info("[{}][{}][{}]:94補摺機狀態錯誤！(MSR-2)", brws, "        ", "            ");
+				//20201119
+				pc.InsertAMStatus(brws, "", "", "94補摺機狀態錯誤！(MSR-2)");
+				//----
 				this.curState = ResetPrinterInit_START;
 				ResetPrinterInit();
 				pc.close();
@@ -1190,6 +1193,9 @@ public class CS5240Impl implements Printer {
 					if (data[2] == (byte)(0x7f & 0xff)) {
 						iCnt = 0;
 						amlog.info("[{}][{}][{}]:94補摺機狀態錯誤！(MSR)", brws, "        ", "            ");
+						//20201119
+						pc.InsertAMStatus(brws, "", "", "94補摺機狀態錯誤！(MSR)");
+						//----
 //						this.curState = ResetPrinterInit_START;
 						this.curState = MS_Read_FINISH;
 //						ResetPrinterInit();
@@ -1211,6 +1217,9 @@ public class CS5240Impl implements Printer {
 					} else {
 						iCnt = 0;
 						amlog.info("[{}][{}][{}]:94補摺機狀態錯誤！(MSR-1格式錯誤)", brws, "        ", "            ");
+						//20201119
+						pc.InsertAMStatus(brws, "", "", "94補摺機狀態錯誤！(MSR-1格式錯誤)");
+						//----
 						//20200929
 						/*
 						this.curState = ResetPrinterInit_START;
@@ -1227,6 +1236,9 @@ public class CS5240Impl implements Printer {
 				} else {
 					iCnt = 0;
 					amlog.info("[{}][{}][{}]:94補摺機狀態錯誤！(MSR-1)", brws, "        ", "            ");
+					//20201119
+					pc.InsertAMStatus(brws, "", "", "94補摺機狀態錯誤！(MSR-1)");
+					//----
 					this.curState = ResetPrinterInit_START;
 					ResetPrinterInit();
 					pc.close();
@@ -1354,9 +1366,15 @@ public class CS5240Impl implements Printer {
 						break;
 					case (byte) 'q':
 						amlog.info("[{}][{}][{}]:94寫磁條錯檢查磁頭", brws, "        ", "            ");
+						//20201119
+						pc.InsertAMStatus(brws, "", "", "94寫磁條錯檢查磁頭");
+						//----
 						break;
 					case (byte) 'r':
 						amlog.info("[{}][{}][{}]:94空白磁條,請重建磁條", brws, "        ", "            ");
+						//20201119
+						pc.InsertAMStatus(brws, "", "", "94空白磁條,請重建磁條");
+						//----
 						break;
 					case (byte) 'X':
 						amlog.info("[{}][{}][{}]:94傳票稍短,超出可列印範圍", brws, "        ", "            ");
@@ -1785,6 +1803,9 @@ public class CS5240Impl implements Printer {
 					break;
 				} else if (data[2] == (byte) 's') {
 					amlog.info("[{}][{}][{}]:94補摺機狀態錯誤！(MSW)", brws, pasname, account);
+					//20201119
+					pc.InsertAMStatus(brws, pasname, account, "94補摺機狀態錯誤！(MSW)");
+					//----
 					this.curState = ResetPrinterInit_START;
 					ResetPrinterInit();
 					pc.close();
@@ -1801,6 +1822,9 @@ public class CS5240Impl implements Printer {
 //						Sleep(50);
 //						data = Rcv_Data(5);
 						amlog.info("[{}][{}][{}]:95硬體錯誤代碼3(MSW)[{}]", brws, pasname, account, new String(data));
+						//20201119
+						pc.InsertAMStatus(brws, pasname, account, "95硬體錯誤代碼3(MSW)"+new String(data));
+						//----
 						Send_hData(S5240_PERRCODE_REQ);
 						if (Send_hData(S5240_PSTAT) == 0)
 							return false;
@@ -1812,6 +1836,9 @@ public class CS5240Impl implements Printer {
 						Sleep(50);
 						data = Rcv_Data(5);
 						amlog.info("[{}][{}][{}]:94補摺機狀態錯誤！(MSW) ERROR:[{}]", brws, pasname, account, data);
+						//20201119
+						pc.InsertAMStatus(brws, pasname, account, "94補摺機狀態錯誤！(MSW) ERROR:"+new String(data));
+						//----
 						// 20060706 , if write eorror , retry 3 times
 						/*
 						 * iRetryCnt++; if ( iRetryCnt < 1 ) { unsigned char S5240_PCLEAR[2]={0x7f,0};
@@ -1823,6 +1850,9 @@ public class CS5240Impl implements Printer {
 						return false;
 					case (byte) '8':
 						amlog.info("[{}][{}][{}]:94補摺機指令錯誤！(MSW)", brws, pasname, account);
+						//20201119
+						pc.InsertAMStatus(brws, pasname, account, "94補摺機指令錯誤！(MSW)");
+						//----
 						this.curState = ResetPrinterInit_START;
 						ResetPrinterInit();
 						return false;
@@ -1839,6 +1869,9 @@ public class CS5240Impl implements Printer {
 					}
 				} else if (iCnt > 40) {
 					amlog.info("[{}][{}][{}]:94補摺機狀態錯誤！(MSR-2)", brws, pasname, account);
+					//20201119
+					pc.InsertAMStatus(brws, pasname, account, "94補摺機狀態錯誤！(MSR-2)");
+					//----
 					this.curState = ResetPrinterInit_START;
 					ResetPrinterInit();
 					pc.close();

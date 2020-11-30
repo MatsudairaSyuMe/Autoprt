@@ -207,7 +207,7 @@ public class GwDao {
 		}
 		int type = -1;
 		int row = 0;
-
+		//verbose=true;
 		if (rs != null) {
 			ResultSetMetaData rsmd = rs.getMetaData();
 			int columnCount = 0;
@@ -513,7 +513,8 @@ public class GwDao {
 					+ keyset);
 
 			int type = -1;
-			log.debug("ketset=[{}]", keyset);
+			if (verbose)
+				log.debug("ketset=[{}]", keyset);
 
 			if (tbsdytblrs != null) {
 				ResultSetMetaData rsmd = tbsdytblrs.getMetaData();
@@ -553,7 +554,8 @@ public class GwDao {
 			e.printStackTrace();
 			log.error("error : {}", e.toString());
 		}
-		log.debug("return SELMFLD length=[{}]", rtnVal.length);
+		if (verbose)
+			log.debug("return SELMFLD length=[{}]", rtnVal.length);
 		return rtnVal;
 	}
 	//20201019
@@ -838,12 +840,13 @@ public class GwDao {
 	    }
 	}
 	//----
-	private PreparedStatement setValueps(PreparedStatement ps, String[] updvalary, boolean updinsert) throws Exception {
-		// updinsert true for update, false for insert
+	private PreparedStatement setValueps(PreparedStatement ps, String[] updvalary, boolean fromOne) throws Exception {
+		//20201119
+		//fromOne true start from index 1 otherwise, false from index 0
 		int type;
 		String obj = "";
 		int j = 1;
-		if (!updinsert)
+		if (!fromOne)
 			j = 0;
 		int i = 1;
 //		verbose = true;

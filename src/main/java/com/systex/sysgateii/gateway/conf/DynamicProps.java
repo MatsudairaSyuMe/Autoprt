@@ -127,6 +127,14 @@ public class DynamicProps {
 										|| entry.getKey().equals("system.devamtb[@mkey]")
 										|| entry.getKey().equals("system.devamtb[@fields]")
 										//----
+										//20201119
+										|| entry.getKey().equals("system.svrcmdtb[@name]")
+										|| entry.getKey().equals("system.svrcmdtb[@mkey]")
+										|| entry.getKey().equals("system.svrcmdtb[@fields]")
+										|| entry.getKey().equals("system.svrcmdhistb[@name]")
+										|| entry.getKey().equals("system.svrcmdhistb[@mkey]")
+										|| entry.getKey().equals("system.svrcmdhistb[@fields]")
+										//----
 										//20200926
 										|| entry.getKey().equals("system.svrstatustb[@name]")
 										|| entry.getKey().equals("system.svrstatustb[@mkey]")
@@ -520,6 +528,14 @@ public class DynamicProps {
 						|| entry.getKey().equals("system.devamtb[@name]")
 						|| entry.getKey().equals("system.devamtb[@mkey]")
 						|| entry.getKey().equals("system.devamtb[@fields]")
+						//----
+						//20201119
+						|| entry.getKey().equals("system.svrcmdtb[@name]")
+						|| entry.getKey().equals("system.svrcmdtb[@mkey]")
+						|| entry.getKey().equals("system.svrcmdtb[@fields]")
+						|| entry.getKey().equals("system.svrcmdhistb[@name]")
+						|| entry.getKey().equals("system.svrcmdhistb[@mkey]")
+						|| entry.getKey().equals("system.svrcmdhistb[@fields]")
 						//----
 						//20200926
 						|| entry.getKey().equals("system.svrstatustb[@name]")

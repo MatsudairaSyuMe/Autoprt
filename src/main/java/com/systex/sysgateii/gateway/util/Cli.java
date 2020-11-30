@@ -22,14 +22,22 @@ public class Cli {
 		DynamicProps dcf = null;
 		try {
 			if (args.length > 1) {
+				//20201119 svrid will receive command
+				String sidC = "";
+				//----
 				String sidS = "";
 				String brwsS = "";
 				String setcmdS = "";
 				String url = "";
 				String user = "";
 				String usinsg = "";
-				String updcmdPtrn = "%d, '%s','%s','%s','%s'";
+				String updcmdPtrn = "%d, '%s','%s','%s','%s','%s'";
+				String updsvrcmdPtrn = "'%s','%s','%s','%s','%s','%s'";
+
 				boolean listcr = false;
+
+				String userName = System.getProperty("user.name").trim();
+				userName = userName.length() > 6 ? userName.substring(0, 6): userName;
 
 				for (int i = 0; i < args.length; i++) {
 					if (args[i].equalsIgnoreCase("-s") && ((i + 1) < args.length)) {
@@ -100,10 +108,13 @@ public class Cli {
 //							case 0: //show status of all services
 //								System.out.println("show status of all services");
 //								break;
-//							case 1: //show status of service sid
-//								System.out.println("show status of service sid");
-//								sidS = sary[0];
-//								break;
+							//20201127
+							case 1: //set command to service sid
+								sidC = sary[0];
+								if (args[i + 2].trim().length() > 0)
+									setcmdS = args[i + 2];
+								System.out.println("set command to service sid");
+								break;
 							case 2: //set command to device BRWS by service sid
 							        //or set command to of all devices on service sid 
 								if (sary[0].length() > 0)
@@ -134,7 +145,7 @@ public class Cli {
 						System.exit(-1);
 					}
 				}
-				System.out.println("listcr=" + listcr);
+				System.out.println("listcr=" + listcr + " user name=" + userName);
 				if (listcr) {
 					dcf = new DynamicProps("rateprtservice.xml");
 					url = dcf.getConHashMap().get("system.db[@url]");
@@ -187,38 +198,69 @@ public class Cli {
 					jsel2ins.CloseConnect();
 					jsel2ins = null;
 				} else {
-					if (setcmdS.length() > 0) {
+					if (setcmdS.length() > 0) {//20201119 set command for brws
 						dcf = new DynamicProps("rateprtservice.xml");
 						url = dcf.getConHashMap().get("system.db[@url]");
 						user = dcf.getConHashMap().get("system.db[@user]");
 						usinsg = dcf.getConHashMap().get("system.db[@pass]");
-						String cmdtbname = dcf.getConHashMap().get("system.devcmdtb[@name]");
-						String cmdtbmkey = dcf.getConHashMap().get("system.devcmdtb[@mkey]");
-						String cmdtbfields = "AUID,CMD,CMDCREATETIME,CMDRESULT,CMDRESULTTIME";
-						GwDao jselonefield = null;
-						String svrprmtbname = dcf.getConHashMap().get("system.svrprmtb[@name]");
-						String svrprmtbmkey = dcf.getConHashMap().get("system.svrprmtb[@mkey]");
-						String svrprmtbfields = "AUID";
-						String auidS = "";
+						if (sidC.length() <= 0) {
+							String cmdtbname = dcf.getConHashMap().get("system.devcmdtb[@name]");
+							String cmdtbmkey = dcf.getConHashMap().get("system.devcmdtb[@mkey]");
+							String cmdtbfields = "AUID,CMD,CMDCREATETIME,CMDRESULT,CMDRESULTTIME,EMPNO";
+							GwDao jselonefield = null;
+							String svrprmtbname = dcf.getConHashMap().get("system.svrprmtb[@name]");
+							String svrprmtbmkey = dcf.getConHashMap().get("system.svrprmtb[@mkey]");
+							String svrprmtbfields = "AUID";
+							String auidS = "";
 
-						if (jsel2ins == null) {
-							jsel2ins = new GwDao(url, user, usinsg, false);
-							jselonefield = new GwDao(url, user, usinsg, false);
-							auidS = jselonefield.SELONEFLD(svrprmtbname, svrprmtbfields, svrprmtbmkey, sidS, true)
-									.trim();
-							System.out.println("current AUID=" + auidS);
+							if (jsel2ins == null) {
+								jsel2ins = new GwDao(url, user, usinsg, false);
+								jselonefield = new GwDao(url, user, usinsg, false);
+								auidS = jselonefield.SELONEFLD(svrprmtbname, svrprmtbfields, svrprmtbmkey, sidS, true)
+										.trim();
+								System.out.println("current AUID=" + auidS);
+							}
+							SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
+							String t = sdf.format(new java.util.Date());
+							String updValue = String.format(updcmdPtrn, Integer.parseInt(auidS), setcmdS, t, "",
+									sdf.format(0l), userName);
+							System.out.println("update " + updValue + " ");
+							int row = jsel2ins.UPSERT(cmdtbname, cmdtbfields, updValue, cmdtbmkey, sidS + ",'" + brwsS + "'");
+							System.out.println("total " + row + " records update");
+							jsel2ins.CloseConnect();
+							jsel2ins = null;
+							jselonefield.CloseConnect();
+							jselonefield = null;
+						} else {//20201119 set command for svrid
+							String cmdtbname = dcf.getConHashMap().get("system.svrcmdtb[@name]");
+							String cmdtbmkey = "SVRID";
+							String cmdtbfields = "IP, CMD,CMDCREATETIME,CMDRESULT,CMDRESULTTIME,EMPNO";
+							GwDao jselonefield = null;
+							String svrprmtbname = dcf.getConHashMap().get("system.svrprmtb[@name]");
+							String svrprmtbmkey = dcf.getConHashMap().get("system.svrprmtb[@mkey]");
+							String svrprmtbfields = "IP";
+							String ipS = "";
+
+							if (jsel2ins == null) {
+								jsel2ins = new GwDao(url, user, usinsg, false);
+								jselonefield = new GwDao(url, user, usinsg, false);
+								ipS = jselonefield.SELONEFLD(svrprmtbname, svrprmtbfields, svrprmtbmkey, sidC, true)
+										.trim();
+								System.out.println("current IP=" + ipS);
+							}
+							SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
+							String t = sdf.format(new java.util.Date());
+							String updValue = String.format(updsvrcmdPtrn, ipS, setcmdS, t, "",
+									sdf.format(0l), userName);
+							System.out.println("update " + updValue + " ");
+							int row = jsel2ins.UPSERT(cmdtbname, cmdtbfields, updValue, cmdtbmkey,
+									sidC);
+							System.out.println("total " + row + " records update");
+							jsel2ins.CloseConnect();
+							jsel2ins = null;
+							jselonefield.CloseConnect();
+							jselonefield = null;
 						}
-						SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
-						String t = sdf.format(new java.util.Date());
-						String updValue = String.format(updcmdPtrn, Integer.parseInt(auidS), setcmdS, t, "",
-								sdf.format(0l));
-						System.out.println("update " + updValue + " ");
-						int row = jsel2ins.UPSERT(cmdtbname, cmdtbfields, updValue, cmdtbmkey, sidS + "," + brwsS);
-						System.out.println("total " + row + " records update");
-						jsel2ins.CloseConnect();
-						jsel2ins = null;
-						jselonefield.CloseConnect();
-						jselonefield = null;
 					} else if (brwsS.length() > -1 || sidS.length() > -1) {
 						dcf = new DynamicProps("rateprtservice.xml");
 						url = dcf.getConHashMap().get("system.db[@url]");
@@ -282,9 +324,9 @@ public class Cli {
 						}
 						jsel2ins.CloseConnect();
 						jsel2ins = null;
-					}
+					} else
+						System.err.println(String.format("error situation sidS=%s brwsS=%s setcmdS=%s", sidS, brwsS, setcmdS));
 				}
-
 			} else {
 				System.out.println("Cli -h show help message");
 				System.out.println("Cli -s {sid}:                                 list status of service sid");
@@ -292,9 +334,7 @@ public class Cli {
 				System.out.println("Cli -s {sid}:*                                list status of all devices by service sid");
 				System.out.println("Cli -s {sid}:{BRWS}                           list status of device BRWS by service sid");
 				System.out.println("Cli -s :{BRWS} or {BRWS}                      list status of device BRWS");
-//				System.out.println("Cli -c {sid}:                                 list status of service sid");
-//				System.out.println("Cli -c :                                      list status of all services");
-//				System.out.println("Cli -c {sid}:* {START|STOP|RESTART}           set command to of all devices on service sid");
+				System.out.println("Cli -c {sid}: {START|STOP|RESTART}            set command to service sid");
 				System.out.println("Cli -c {sid}:{BRWS} {START|STOP|RESTART}      set command to device BRWS by service sid");
 //				System.out.println("Cli -c :{BRWS} or {BRWS} {START|STOP|RESTART} set command to device BRWS");
 				System.out.println("Cli -cr {sid}:{BRWS}                          list command status of device BRWS by service sid");

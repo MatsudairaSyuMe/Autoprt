@@ -290,6 +290,11 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 	private String hisfldvalssptrn2 = "'%s','%s','%s','%s','%s','%s','%s','%s'";
 	private GwDao cmdhiscon = null;
 	//----
+	//20201119
+	GwDao amtbcon = null;
+	private String amstatusptrn = "'%s','%s','%s','%s','%s'";
+
+	//----
 
 	public List<ActorStatusListener> getActorStatusListeners() {
 		return actorStatusListeners;
@@ -3335,6 +3340,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000001000");
 					SetSignal(!firstOpenConn, firstOpenConn, "0000000000", "0000001000");
 					amlog.info("[{}][{}][{}]:11磁條讀取失敗！", brws, "        ", "            ");
+					//20201119
+					InsertAMStatus(brws, "", "", "11磁條讀取失敗！");
+					//----
 					log.debug("{} {} {} AutoPrnCls : read MSR ERROR", brws);
 				} else {
 					this.curState = CHKACTNO;
@@ -4107,5 +4115,27 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 		return this.localaddr;
 	}
 
+	//20201119 insert AM error status data
+	public void InsertAMStatus(String brws, String passname, String act, String desc) {
+		try {
+			if (amtbcon == null)
+				amtbcon = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
+			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
+			String t = sdf.format(new java.util.Date());
+			String fldam = String.format(amstatusptrn, t, brws, act, passname, desc);
+			String[] rsno = amtbcon.INSSELChoiceKey(PrnSvr.devamtbname, PrnSvr.devamtbfields, fldam, PrnSvr.devamtbsearkey, "-1", false, false);
+			if (rsno != null) {
+				for (int i = 0; i < rsno.length; i++)
+					log.debug("update =======> rsno[{}]=[{}]",i,rsno[i]);
+			} else
+				log.error("rsno null");
+			amtbcon.CloseConnect();
+			amtbcon = null;
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			log.debug("insert am error status table error e:[{}]", e.toString());
+		}
+	}
 	//----
 }

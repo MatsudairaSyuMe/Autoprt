@@ -79,11 +79,14 @@ public class PrnSvr implements MessageListener<byte[]> {
 	public static String devcmdhistbname = "";
 	public static String devcmdhistbsearkey = "";
 	public static String devcmdhistbfields = "";
-	private String hisfldvalssptrn = "%s,%s,'%s','%s','%s','%s'";
-	private String hisfldvalssptrn2 = "'%s','%s','%s','%s'";
-	private String hisfldvalssptrn3 = "'%s','%s','%s','%s','%s','%s','%s','%s'";
+	//20201119 add EMPNO
+	private String hisfldvalssptrn = "%s,%s,'%s','%s','%s','%s','%s'";
+	private String hisfldvalssptrn2 = "'%s','%s','%s','%s','%s'";
+	private String hisfldvalssptrn3 = "'%s','%s','%s','%s','%s','%s','%s','%s','%s'";
+	//----
 	//20201028
-	private String hisfldvalssptrn4 = "%s,%s,'%s','%s','%s','%s','%s'";
+	//20201119 add EMPNO
+	private String hisfldvalssptrn4 = "%s,%s,'%s','%s','%s','%s','%s','%s'";
 	//----
 	public static String devamtbname = "";
 	public static String devamtbsearkey = "";
@@ -288,10 +291,17 @@ public class PrnSvr implements MessageListener<byte[]> {
 															log.debug("brws=[{}] cmd[{}] not execute will be marked fail in cmdhis",cmdary[0], cmdary[1]);
 															if (cmdhiscon == null)
 																cmdhiscon = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
+															//20201119
+															String[] chksno = cmdhiscon.SELMFLD(PrnSvr.devcmdhistbname, "SNO", "BRWS,CMD,CMDCREATETIME", "'" + cmdary[0] + "','"+ cmdary[1] + "','"+ cmdary[3]+ "'", false);
 															SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
 															String t = sdf.format(new java.util.Date());
-															String failfldvals = String.format(hisfldvalssptrn4, PrnSvr.svrid, cmdary[2], cmdary[0],cmdary[1],cmdary[3],"FAIL",t);
-															sno = cmdhiscon.INSSELChoiceKey(PrnSvr.devcmdhistbname, "SVRID,AUID,BRWS,CMD,CMDCREATETIME,CMDRESULT,CMDRESULTTIME", failfldvals, PrnSvr.devcmdhistbsearkey, "-1", false, false);
+															//20201119
+															String failfldvals = String.format(hisfldvalssptrn4, PrnSvr.svrid, cmdary[2], cmdary[0],cmdary[1],cmdary[3],"FAIL",t,cmdary[4]);
+															if (chksno == null || chksno.length == 0) {
+																chksno = new String[1];
+																chksno[0] = "-1";
+															}
+															sno = cmdhiscon.INSSELChoiceKey(PrnSvr.devcmdhistbname, "SVRID,AUID,BRWS,CMD,CMDCREATETIME,CMDRESULT,CMDRESULTTIME,EMPNO", failfldvals, PrnSvr.devcmdhistbsearkey, chksno[0], false, false);
 															cmdhiscon.CloseConnect();
 															cmdhiscon = null;
 															sno = null;
@@ -317,7 +327,7 @@ public class PrnSvr implements MessageListener<byte[]> {
 																createNode = true;
 															}
 														}
-														String fldvals = String.format(hisfldvalssptrn, PrnSvr.svrid, cmdary[2], cmdary[0],cmdary[1],cmdary[3],sts);
+														String fldvals = String.format(hisfldvalssptrn, PrnSvr.svrid, cmdary[2], cmdary[0],cmdary[1],cmdary[3],sts,cmdary[4]);
 														//20201028 check sno if command already insert to cmdhis
 //														sno = cmdhiscon.INSSELChoiceKey(PrnSvr.devcmdhistb, "SVRID,AUID,BRWS,CMD,CMDCREATETIME,CURSTUS", "1,1,'9838901','START','2020-10-21 09:46:38.368000','0'", PrnSvr.evcmdhistbsearkey, "-1", false, true);
 														String[] chksno = cmdhiscon.SELMFLD(PrnSvr.devcmdhistbname, "SNO", "BRWS,CMD,CMDCREATETIME", "'" + cmdary[0] + "','"+ cmdary[1] + "','"+ cmdary[3]+ "'", false);
@@ -351,7 +361,8 @@ public class PrnSvr implements MessageListener<byte[]> {
 															}
 														}
 														if (sno == null) {// first time receive command insert new record to cmdhis
-															sno = cmdhiscon.INSSELChoiceKey(PrnSvr.devcmdhistbname, "SVRID,AUID,BRWS,CMD,CMDCREATETIME,CURSTUS", fldvals, PrnSvr.devcmdhistbsearkey, "-1", false, false);
+															//20201119 add EMPNO
+															sno = cmdhiscon.INSSELChoiceKey(PrnSvr.devcmdhistbname, "SVRID,AUID,BRWS,CMD,CMDCREATETIME,CURSTUS,EMPNO", fldvals, PrnSvr.devcmdhistbsearkey, "-1", false, false);
 															if (sno != null) {
 																for (int i = 0; i < sno.length; i++)
 																	log.debug("sno[{}]=[{}]",i,sno[i]);
@@ -381,10 +392,12 @@ public class PrnSvr implements MessageListener<byte[]> {
 															//20201026
 //															String fldvals2 = String.format(hisfldvalssptrn2, "", cmdary[1], t, sts);
 															PrtCli conn = getMe().nodeList.get(cmdary[0]);
+															//20201119 add EMPNO
 															String fldvals3 = String.format(hisfldvalssptrn3, "", cmdary[1], t, conn.getRmtaddr().getAddress().getHostAddress(),
-																	conn.getRmtaddr().getPort(),conn.getLocaladdr().getAddress().getHostAddress(), conn.getLocaladdr().getPort(),sts);
+																	conn.getRmtaddr().getPort(),conn.getLocaladdr().getAddress().getHostAddress(), conn.getLocaladdr().getPort(),sts,cmdary[4]);
 //															sno = cmdhiscon.INSSELChoiceKey(PrnSvr.devcmdhistbname, "SVRID,AUID,BRWS,CMD,CMDCREATETIME,CMDRESULT,CMDRESULTTIME,CURSTUS", "1,1,'9838901','','2020-10-21 09:46:38.368000','START','2020-10-21 09:46:38.368000','0','2'", "SNO", "31", false, true);
-															sno = cmdhiscon.INSSELChoiceKey(PrnSvr.devcmdhistbname, "CMD,CMDRESULT,CMDRESULTTIME,DEVIP,DEVPORT,SVRIP,SVRPORT,RESULTSTUS", fldvals3, PrnSvr.devcmdhistbsearkey, sno[0], false, true);
+															sno = cmdhiscon.INSSELChoiceKey(PrnSvr.devcmdhistbname, "CMD,CMDRESULT,CMDRESULTTIME,DEVIP,DEVPORT,SVRIP,SVRPORT,RESULTSTUS,EMPNO", fldvals3, PrnSvr.devcmdhistbsearkey, sno[0], false, true);
+															//----
 															if (sno != null) {
 																for (int i = 0; i < sno.length; i++)
 																	log.debug("sno[{}]=[{}]",i,sno[i]);
@@ -406,8 +419,10 @@ public class PrnSvr implements MessageListener<byte[]> {
 															log.debug("total {} records update", row);
 															log.debug("cmd object node=[{}] already shutdown!!!! getCurMode=[{}]", getMe().nodeList.get(cmdary[0]).getId(), getMe().nodeList.get(cmdary[0]).getCurMode());
 															//20201026
-															String fldvals2 = String.format(hisfldvalssptrn2, "", cmdary[1], t, sts);
-															sno = cmdhiscon.INSSELChoiceKey(PrnSvr.devcmdhistbname, "CMD,CMDRESULT,CMDRESULTTIME,RESULTSTUS", fldvals2, PrnSvr.devcmdhistbsearkey, sno[0], false, true);
+															//20201119 add EMPNO
+															String fldvals2 = String.format(hisfldvalssptrn2, "", cmdary[1], t, sts,cmdary[4]);
+															sno = cmdhiscon.INSSELChoiceKey(PrnSvr.devcmdhistbname, "CMD,CMDRESULT,CMDRESULTTIME,RESULTSTUS,EMPNO", fldvals2, PrnSvr.devcmdhistbsearkey, sno[0], false, true);
+															//----
 															if (sno != null) {
 																for (int i = 0; i < sno.length; i++)
 																	log.debug("sno[{}]=[{}]",i,sno[i]);
@@ -438,9 +453,11 @@ public class PrnSvr implements MessageListener<byte[]> {
 																log.debug("total {} records update", row);
 																log.debug("cmd object node=[{}] already active!!!! getCurMode=[{}]", getMe().nodeList.get(cmdary[0]).getId(), getMe().nodeList.get(cmdary[0]).getCurMode());
 																PrtCli conn = getMe().nodeList.get(cmdary[0]);
+																//20201119 add EMPNO
 																String fldvals3 = String.format(hisfldvalssptrn3, "", cmdary[1], t, conn.getRmtaddr().getAddress().getHostAddress(),
-																		conn.getRmtaddr().getPort(),conn.getLocaladdr().getAddress().getHostAddress(), conn.getLocaladdr().getPort(),sts);
-																sno = cmdhiscon.INSSELChoiceKey(PrnSvr.devcmdhistbname, "CMD,CMDRESULT,CMDRESULTTIME,DEVIP,DEVPORT,SVRIP,SVRPORT,RESULTSTUS", fldvals3, PrnSvr.devcmdhistbsearkey, sno[0], false, true);
+																		conn.getRmtaddr().getPort(),conn.getLocaladdr().getAddress().getHostAddress(), conn.getLocaladdr().getPort(),sts,cmdary[4]);
+																sno = cmdhiscon.INSSELChoiceKey(PrnSvr.devcmdhistbname, "CMD,CMDRESULT,CMDRESULTTIME,DEVIP,DEVPORT,SVRIP,SVRPORT,RESULTSTUS,EMPNO", fldvals3, PrnSvr.devcmdhistbsearkey, sno[0], false, true);
+																//----
 																if (sno != null) {
 																	for (int i = 0; i < sno.length; i++)
 																		log.debug("sno[{}]=[{}]",i,sno[i]);

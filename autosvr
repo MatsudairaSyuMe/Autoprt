@@ -11,6 +11,8 @@
 GATEWAY_NAME="autosvr"
 MAINCLASS="com.systex.sysgateii.gateway.Server"
 GATEWAY_PIDFILE="AUTOSVRPIDfile"
+# PID file alias
+ALIAS=""
 if [ -z "$GATEWAY_KILL_MAXSECONDS" ]; then
    GATEWAY_KILL_MAXSECONDS=10
 fi
@@ -187,11 +189,11 @@ invokeJar(){
      #echo "start ---->" "$JAVACMD" "$WHOLEARG"
      #exec "$JAVACMD" "$WHOLEARG"
      #nohup  "$JAVACMD" "$WHOLEARG" </dev/null >ratesvr.log 2>&1 &
-     echo $! >$GATEWAY_PIDFILE
+     echo $! >"${GATEWAY_PIDFILE}${ALIAS}"
      echo $GATEWAY_NAME start
      RET="$?"
-   elif [ -f $GATEWAY_PIDFILE ];then
-     PID=`cat $GATEWAY_PIDFILE`
+   elif [ -f "${GATEWAY_PIDFILE}${ALIAS}" ];then
+     PID=`cat "${GATEWAY_PIDFILE}${ALIAS}"`
      echo try to stop previous Gateway $GATEWAY_NAME process $PID if exist
      RET=`ps -p $PID|grep java`
      if [ -n "$RET" ];then
@@ -206,12 +208,12 @@ invokeJar(){
 }
 
 checkRunning(){
-    if [ -f "$GATEWAY_PIDFILE" ]; then
-       if  [ -z "`cat $GATEWAY_PIDFILE`" ];then
+    if [ -f "${GATEWAY_PIDFILE}${ALIAS}" ]; then
+       if  [ -z `cat "${GATEWAY_PIDFILE}${ALIAS}"` ];then
          echo "ERROR: $GATEWAY_NAME Pidfile '$GATEWAY_PIDFILE' exists but contains no pid"
          return 2
        fi
-       PID=`cat $GATEWAY_PIDFILE`
+       PID=`cat "${GATEWAY_PIDFILE}${ALIAS}"`
        RET=`ps -p $PID|grep java`
        if [ -n "$RET" ];then
          return 0;
@@ -225,7 +227,7 @@ checkRunning(){
 
 invoke_status(){
     if ( checkRunning );then
-         PID=`cat $GATEWAY_PIDFILE`
+         PID=`cat "${GATEWAY_PIDFILE}${ALIAS}"`
          echo "$GATEWAY_NAME $MAINCLASS is running (pid '$PID')"
          exit 0
     fi
@@ -235,11 +237,11 @@ invoke_status(){
 
 invoke_start(){
     if ( checkRunning );then
-      PID=`cat $GATEWAY_PIDFILE`
+      PID=`cat "${GATEWAY_PIDFILE}${ALIAS}"`
       echo "INFO: $GATEWAY_NAME $MAINCLASS Process with pid '$PID' is already running"
       exit 0
     fi
-    invokeJar $GATEWAY_PIDFILE
+    invokeJar "${GATEWAY_PIDFILE}${ALIAS}"
     exit "$?"
 }
 
@@ -248,7 +250,8 @@ invoke_stop(){
     if ( checkRunning );then
        invokeJar "stop"
        RET="$?"
-       PID=`cat $GATEWAY_PIDFILE`
+#       PID=`cat $GATEWAY_PIDFILE`
+       PID=`cat "${GATEWAY_PIDFILE}${ALIAS}"`
        echo "INFO: Waiting at least $GATEWAY_KILL_MAXSECONDS seconds for regular process termination of pid '$PID' : "
        FOUND="0"
        i=1
@@ -276,25 +279,25 @@ invoke_stop(){
          RET="1"
        fi
     elif [ -f "$" ];then
-       echo "ERROR: No or outdated process id in '$GATEWAY_PIDFILE'"
+       echo "ERROR: No or outdated process id in '${GATEWAY_PIDFILE}${ALIAS}'"
        echo
-       echo "INFO: Removing $GATEWAY_PIDFILE"
+       echo "INFO: Removing ${GATEWAY_PIDFILE}${ALIAS}"
     else
-       echo "$GATEWAY_PIDFILE not running"
+       echo "${GATEWAY_PIDFILE}${ALIAS} not running"
        exit 0
     fi
-    rm -f $GATEWAY_PIDFILE >/dev/null 2>&1
-    rm -f $DB_PIDFILE >/dev/null 2>&1
+    rm -f "${GATEWAY_PIDFILE}${ALIAS}" >/dev/null 2>&1
+    rm -f ${DB_PIDFILE} >/dev/null 2>&1
     exit $RET
 }
 
 show_help() {
   echo "Usage: $0 " >&2
   cat << EOF
-   start [--svrid {#}] - start instance
-   restart             - stop running instance (if there is one), start new instance
-   status              - status check if process is running
-   stop                - stop running instance
+   start   [--svrid {#}|--conduct] - start instance
+   restart [--svrid {#}]           - stop running instance (if there is one), start new instance
+   status                          - status check if process is running
+   stop    [--svrid {#}|--conduct] - stop running instance
 EOF
   exit 1
 }
@@ -309,31 +312,43 @@ if [ "$#" -lt 4 ]; then
 elif [ "$4" != "start" ] && [ "$4" != "restart" ] && [ "$4" != "status" ] && [ "$4" != "stop" ]; then
   show_help
 else
+  if [ "$#" -gt  4 ]; then
+    ALIAS=""
+    case "$5" in
+      --conduct)
+        ALIAS=".conduct"
+	;;
+      --svrid)
+        ALIAS="$6"".svrid"
+	;;
+    esac
+  fi
   case "$4" in
     status)
-      invoke_status
+      invoke_status "$5" "$6"
         ;;
       restart)
         if ( checkRunning );then
-          "$0" stop
+          "$0" stop "$5" "$6"
         fi
-        "$0" status
+        "$0" status "$5" "$6"
         "$0" start "$5" "$6"
-        "$0" status
+        "$0" status "$5" "$6"
         ;;
       start)
         if ( checkRunning );then
-          PID=`cat $GATEWAY_PIDFILE`
+          PID=`cat "${GATEWAY_PIDFILE}${ALIAS}"`
           echo "INFO: $GATEWAY_NAME $MAINCLASS Process with pid '$PID' is already running"
           exit 0
         fi
         #exec "$JAVACMD" "$@"
+        echo "create ${GATEWAY_PIDFILE}${ALIAS}"
         nohup  "$JAVACMD" "$@" >/dev/null 2>&1 &
-        echo $! >$GATEWAY_PIDFILE
-        echo $GATEWAY_NAME start
+        echo $! >"${GATEWAY_PIDFILE}${ALIAS}"
+        echo "$GATEWAY_NAME${ALIAS}" start
         ;;
       stop)
-        invoke_stop
+        invoke_stop "$5" "$6"
         ;;
       *)
         show_help

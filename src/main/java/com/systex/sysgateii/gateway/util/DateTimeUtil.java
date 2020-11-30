@@ -14,7 +14,7 @@ public class DateTimeUtil {
 		boolean larger = false;
 		if (previousDateTime == null || previousDateTime.trim().length() == 0 || duration <= 0)
 			return larger;
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.[SSS][SS][S]");
 		LocalDateTime fromtime = LocalDateTime.parse(previousDateTime, formatter);
 		LocalDateTime time = LocalDateTime.now();
 		Duration durationobj = Duration.between(fromtime, time);

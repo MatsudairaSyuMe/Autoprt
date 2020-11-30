@@ -3,7 +3,6 @@ package com.systex.sysgateii.gateway;
 import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.text.SimpleDateFormat;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 
@@ -15,6 +14,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.systex.sysgateii.gateway.Monster.Conductor;
 import com.systex.sysgateii.gateway.autoPrtSvr.Server.FASSvr;
 import com.systex.sysgateii.gateway.autoPrtSvr.Server.PrnSvr;
 import com.systex.sysgateii.gateway.comm.Constants;
@@ -47,6 +48,9 @@ public class Server {
 	private static String dbpass = "";
 
 	//----
+	//20201119 conduct mode
+	private static AtomicBoolean isConductor = new AtomicBoolean(false);
+	//----
 
 	public static void main(String[] args) {
 		System.setProperty(ContextInitializer.CONFIG_FILE_PROPERTY, "." + File.separator + "logback.xml");
@@ -62,6 +66,10 @@ public class Server {
 								setSvrId(Integer.parseInt(s));
 							}
 						}
+					} //20201119 conductor mode
+					else if (args[j].equalsIgnoreCase("--conduct")) {
+						setIsConductor(true);
+						log.info("sysgateii server conductor mode");
 					}
 				}
 			}
@@ -80,7 +88,10 @@ public class Server {
 
 			if (auid.trim().length() == 0 || auid.trim().length() == 0) {
 				auid = "0";
-				setIsShouldShutDown(true);
+				//20201119
+				if (!isConductor.get())
+					 //if not Conduct mode and not set auid then stop process
+					setIsShouldShutDown(true);
 			}
 			//----
 
@@ -92,19 +103,30 @@ public class Server {
 				svrIdStr = dcf.getConHashMap().get("system.svrid");
 			if (!isShouldShutDown.get()) {
 				addDaemonShutdownHook();
-				FASSvr.createServer(dcf.getConHashMap());
-				FASSvr.startServer();
+				//20201119 add conductor mode control
+				if (!isConductor.get()) {
+					//worker mode start the working module
+					FASSvr.createServer(dcf.getConHashMap());
+					FASSvr.startServer();
 
-			//20200901
+					// 20200901
 //			PrnSvr.createServer(dcf);
 //			PrnSvr.startServer(FASSvr.getFASSvr());
-				PrnSvr.createServer(dcf, FASSvr.getFASSvr());
-				PrnSvr.startServer();
+					PrnSvr.createServer(dcf, FASSvr.getFASSvr());
+					PrnSvr.startServer();
+				} else {
+					//conductor mode start the monitor module
+					Conductor.createServer(dcf.getConHashMap(), svrip);
+					Conductor.startServer();
+					log.info("sysgateii server after start conductor svrip=[{}]", svrip);
+				}
+				//----
 			}
 			//----
 			//----
+			//20201119 add conductor mode function
 			//20200926
-			if (dcf.isReadCfgFromCenter()) {
+			if (dcf.isReadCfgFromCenter() && !isConductor.get()) {
 				svrstatustbname = dcf.getConHashMap().get("system.svrstatustb[@name]");
 				svrsstatustbmkey = dcf.getConHashMap().get("system.svrstatustb[@mkey]");
 				svrstatustbfields = dcf.getConHashMap().get("system.svrstatustb[@fields]");
@@ -163,40 +185,47 @@ public class Server {
 	public static void addDaemonShutdownHook() {
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			public void run() {
-//				NodeController.stopController();
-//				ClientController.stopController();
-				PrnSvr.stopServer();
-//            	WebServer.stopServer();
 				log.debug("ShutdownHook run!!!");
+				// 20201119 add conduction functoon
 				setIsShouldShutDown(true);
-				//20200926
-				try {
-					if (jsel2ins == null)
-						//20201116
-						//jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
-						jsel2ins = new GwDao(dburl, dbuser, dbpass, false);
-					//----
-					// AUID,BRNO,IP,CURSTUS,PID,CREATOR,MODIFIER,LASTUPDATE
-					SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
-					String t = sdf.format(new java.util.Date());
-					//20201116 cancel verbrno
+				if (!isConductor.get()) {
+					PrnSvr.stopServer();
+//            	WebServer.stopServer();
+					// 20200926
+					try {
+						if (jsel2ins == null)
+							// 20201116
+							// jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
+							jsel2ins = new GwDao(dburl, dbuser, dbpass, false);
+						// ----
+						// AUID,BRNO,IP,CURSTUS,PID,CREATOR,MODIFIER,LASTUPDATE
+						SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
+						String t = sdf.format(new java.util.Date());
+						// 20201116 cancel verbrno
 //					String updValue = String.format(updValueptrn, auid, PrnSvr.verbrno, svrip, Constants.STSUSEDINACT,
 //							ManagementFactory.getRuntimeMXBean().getName().split("@")[0],t);
-					String updValue = String.format(updValueptrn, auid, svrip, Constants.STSUSEDINACT,
-							ManagementFactory.getRuntimeMXBean().getName().split("@")[0],t);
-					//----
-					//20201116 use given svrid
+						String updValue = String.format(updValueptrn, auid, svrip, Constants.STSUSEDINACT,
+								ManagementFactory.getRuntimeMXBean().getName().split("@")[0], t);
+						// ----
+						// 20201116 use given svrid
 //					int row = jsel2ins.UPSERT(svrstatustbname, svrstatustbfields, updValue, svrsstatustbmkey,
 //							PrnSvr.svrid);
-					int row = jsel2ins.UPSERT(svrstatustbname, svrstatustbfields, updValue, svrsstatustbmkey,
-							svrIdStr);
-					//----
-					log.debug("total {} records update  status [{}]", row, Constants.STSUSEDINACT);
-					jsel2ins.CloseConnect();
-					jsel2ins = null;
-				} catch (Exception e) {
-					e.printStackTrace();
-					log.error(e.getMessage());
+						int row = jsel2ins.UPSERT(svrstatustbname, svrstatustbfields, updValue, svrsstatustbmkey,
+								svrIdStr);
+						// ----
+						log.debug("total {} records update  status [{}]", row, Constants.STSUSEDINACT);
+						jsel2ins.CloseConnect();
+						jsel2ins = null;
+
+					} catch (Exception e) {
+						e.printStackTrace();
+						log.error(e.getMessage());
+					}
+					// ----
+				}
+				//20201119
+				else {
+					Conductor.stopServer();
 				}
 				//----
 			}
@@ -234,4 +263,19 @@ public class Server {
 		Server.svrId = svrId;
 	}
 	//----
+
+	//20201119 Conductor mode function
+	/**
+	 * @return the isConductor
+	 */
+	public static AtomicBoolean getIsConductor() {
+		return isConductor;
+	}
+
+	/**
+	 * @param isConductor the isConductor to set
+	 */
+	public static void setIsConductor(boolean isConductor) {
+		Server.isConductor.set(isConductor);
+	}
 }
