@@ -376,6 +376,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 			}
 			if (PrnSvr.dburl != null && PrnSvr.dburl.trim().length() > 0) {
 				jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
+				//20201119 add for make reset the status table
+				jsel2ins.DELETETB(PrnSvr.statustbname, "BRWS",this.brws);
+				log.info("reset {} on {}", this.brws, PrnSvr.statustbname);
+				//----
 			}
 		} catch (Exception e) {
 			log.error("Address format error!!! {}", e.getMessage());

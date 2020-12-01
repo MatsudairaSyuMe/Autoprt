@@ -164,7 +164,7 @@ public class Conductor implements Runnable {
 											chksno = new String[1];
 											chksno[0] = "-1";
 										}
-										sno = cmdhiscon.INSSELChoiceKey(svrcmdhistbname, "SVRID,IP,CMD,CMDCREATETIME,CMDRESULT,CMDRESULTTIME,EMPNO", failfldvals, svrcmdhistbsearkey, chksno[0], false, false);
+										sno = cmdhiscon.INSSELChoiceKey(svrcmdhistbname, svrcmdhistbfields, failfldvals, svrcmdhistbsearkey, chksno[0], false, false);
 										cmdhiscon.CloseConnect();
 										cmdhiscon = null;
 										sno = null;
@@ -247,7 +247,7 @@ public class Conductor implements Runnable {
 										log.debug("total {} records update", row);
 										log.debug("cmd object node=[{}] already active!!!!", cmdary[0]);
 										String fldvals3 = String.format(hisfldvalssptrn4, cmdary[0], getSvrip(), "", cmdary[2], cmdary[1], t, cmdary[3]);
-										sno = cmdhiscon.INSSELChoiceKey(svrcmdhistbname, "SVRID,IP,CMD,CMDCREATETIME,CMDRESULT,CMDRESULTTIME,EMPNO", fldvals3, svrcmdhistbsearkey, sno[0], false, true);
+										sno = cmdhiscon.INSSELChoiceKey(svrcmdhistbname, svrcmdhistbfields, fldvals3, svrcmdhistbsearkey, sno[0], false, true);
 										if (sno != null) {
 											for (int i = 0; i < sno.length; i++)
 												log.debug("sno[{}]=[{}]",i,sno[i]);
@@ -273,7 +273,7 @@ public class Conductor implements Runnable {
 										Conductor.svridnodeMap.remove(cmdary[0]);
 										log.debug("cmd object node=[{}] already shutdown!!!!", cmdary[0]);
 										String fldvals3 = String.format(hisfldvalssptrn4, cmdary[0], getSvrip(), "", cmdary[2], cmdary[1], t, cmdary[3]);
-										sno = cmdhiscon.INSSELChoiceKey(svrcmdhistbname, "SVRID,IP,CMD,CMDCREATETIME,CMDRESULT,CMDRESULTTIME, EMPNO", fldvals3, svrcmdhistbsearkey, sno[0], false, true);
+										sno = cmdhiscon.INSSELChoiceKey(svrcmdhistbname, svrcmdhistbfields, fldvals3, svrcmdhistbsearkey, sno[0], false, true);
 										if (sno != null) {
 											for (int i = 0; i < sno.length; i++)
 												log.debug("sno[{}]=[{}]",i,sno[i]);
@@ -305,7 +305,7 @@ public class Conductor implements Runnable {
 									log.debug("total {} records update", row);
 									log.debug("cmd object node=[{}] already restart!!!!", cmdary[0]);
 									String fldvals3 = String.format(hisfldvalssptrn4, cmdary[0], getSvrip(), "", cmdary[2], cmdary[1], t, cmdary[3]);
-									sno = cmdhiscon.INSSELChoiceKey(svrcmdhistbname, "SVRID,IP,CMD,CMDCREATETIME,CMDRESULT,CMDRESULTTIME, EMPNO", fldvals3, svrcmdhistbsearkey, sno[0], false, true);
+									sno = cmdhiscon.INSSELChoiceKey(svrcmdhistbname, svrcmdhistbfields, fldvals3, svrcmdhistbsearkey, sno[0], false, true);
 									if (sno != null) {
 										for (int i = 0; i < sno.length; i++)
 											log.debug("sno[{}]=[{}]",i,sno[i]);
