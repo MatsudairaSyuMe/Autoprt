@@ -82,7 +82,7 @@
 		<devcmdtb name="BISAP.TB_AUDEVCMD" mkey="SVRID,BRWS" fields="SVRID,BRWS,CMD,AUID,CMDCREATETIME,EMPNO"/>
 		<!-- 20201026 add for command history processing and am error log -->
 		<devcmdhistb name="BISAP.TB_AUDEVCMDHIS" mkey="SNO" fields="SVRID,AUID,BRWS,CMD,CMDCREATETIME,CMDRESULT,CMDRESULTTIME,DEVIP,DEVPORT,SVRIP,SVRPORT,CURSTUS,RESULTSTUS,EMPNO"/>
-		<devamtb name="BISAP.TB_AUTB_AUAMLOG" mkey="SNO" fields="RECTIME,BRWS,TYPE,ACTNO,ERRDESC"/>
+		<devamtb name="BISAP.TB_AUAMLOG" mkey="SNO" fields="RECTIME,BRWS,TYPE,ACTNO,ERRDESC"/>
 		<!-- 20201106 -->
 		<dmtb name="BISAP.TB_AUDMPRM" mkey="ID" fields="ID,NAME"/>
 		<!-- 20201106 -->
