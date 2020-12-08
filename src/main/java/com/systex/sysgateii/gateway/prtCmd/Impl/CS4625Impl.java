@@ -71,7 +71,7 @@ public class CS4625Impl implements Printer {
 
 	private byte[] S4625_PEJT = { ESQ, (byte) 0x4f };
 	private byte[] S4625_PENQ = { ESQ, (byte) 'j' };
-	private byte[] S4625_PERRCODE_REQ = { ESQ, 'k' };
+	private byte[] S4625_PERRCODE_REQ = { ESQ, (byte) 'k' };
 	// private byte[] S4625_PACK = {ACK,(byte)0};
 	private byte[] S4625_PENLARGE_OD = { (byte) 0x0D };
 	private byte[] S4625_PENLARGE_OA = { (byte) 0x0a};

@@ -70,7 +70,7 @@ public class CS5240Impl implements Printer {
 
 	private byte[] S5240_PEJT = { ESQ, (byte) 0x4f };
 	private byte[] S5240_PENQ = { ESQ, (byte) 'j' };
-	private byte[] S5240_PERRCODE_REQ = { ESQ, 'k' };
+	private byte[] S5240_PERRCODE_REQ = { ESQ, (byte) 'k' };
 	// private byte[] S5240_PACK = {ACK,(byte)0};
 	private byte[] S5240_PENLARGE_OD = { (byte) 0x0D };
 	private byte[] S5240_PENLARGE_OA = { (byte) 0x0a};
@@ -361,7 +361,7 @@ public class CS5240Impl implements Printer {
 		if (getIsShouldShutDown().get())
 			return "DIS".getBytes();
 		do {
-//			log.debug("pc.clientMessageBuf={}", pc.clientMessageBuf.readableBytes());
+			log.debug("pc.clientMessageBuf={}", pc.clientMessageBuf.readableBytes());
 			if (pc.clientMessageBuf != null && pc.clientMessageBuf.readableBytes() > 2) {
 				int size = pc.clientMessageBuf.readableBytes();
 				byte[] buf = new byte[size];
@@ -376,8 +376,13 @@ public class CS5240Impl implements Printer {
 							return rtn;
 						}
 				} else if (buf[0]== (byte)0x1b) {
-					rtn = new byte[3];
-					log.debug("Rcv_Data get 3 bytes");
+					//20201208 add
+					if ((size > 3 ) && (buf[1] == (byte)'r') && (buf[2] != (byte)'A' && buf[2] != (byte)'P')) {
+						rtn = new byte[size];
+					} else
+						//20201208 modify
+						rtn = new byte[3];
+					log.debug("Rcv_Data get {} bytes", rtn.length);
 					pc.clientMessageBuf.readBytes(rtn, 0, rtn.length);
 					atlog.info("[{}]-[{}]",rtn.length,new String(rtn, 0, rtn.length));
 					return rtn;
@@ -419,7 +424,10 @@ public class CS5240Impl implements Printer {
 		} else if (this.curChkState == CheckStatusRecvData) {
 //			Sleep(100);
 			this.iCnt++;
+			/*20201208 mark
 			data = Rcv_Data(3);
+			*/
+			data = Rcv_Data();
 			//20200330 change iCnt from 3 to 20
 			if (data == null && iCnt > 20) {
 				amlog.info("[{}][{}][{}]:95補摺機無回應！", brws, "        ", "            ");
@@ -440,7 +448,7 @@ public class CS5240Impl implements Printer {
 		if (getIsShouldShutDown().get())
 			return "DIS".getBytes();
 		do {
-//			log.debug("pc.clientMessage={}", pc.clientMessage);
+			log.debug("pc.clientMessage={} rcv_len={}", pc.clientMessageBuf.readableBytes(),rcv_len);
 			if (pc.clientMessageBuf != null && pc.clientMessageBuf.isReadable()) {
 				if (rcv_len <= pc.clientMessageBuf.readableBytes()) {
 					rtn = new byte[rcv_len];
@@ -1197,11 +1205,19 @@ public class CS5240Impl implements Printer {
 						pc.InsertAMStatus(brws, "", "", "94補摺機狀態錯誤！(MSR)");
 						//----
 //						this.curState = ResetPrinterInit_START;
+						//20201208 add
+						this.curState = MS_Read_2;
+						this.curChkState = CheckStatusRecvData;
+						this.iCnt = 0;
+						//----
+						/*mark 20201208
 						this.curState = MS_Read_FINISH;
 //						ResetPrinterInit();
 						byte[] nr = new byte[1];
 						nr[0] = (byte)'X';
 						this.curmsdata = nr;
+						*/
+						//----
 //						pc.close();
 //						return null;
 						return this.curmsdata;
@@ -1254,6 +1270,7 @@ public class CS5240Impl implements Printer {
 				this.curState = MS_Read_2;
 				this.curChkState = CheckStatus_START;
 			}
+		
 			data = CheckStatus();
 			log.debug("MS_Read 2 ===<><>{} chkChkState {}", this.curState, this.curChkState);
 			if (!CheckError(data)) {
@@ -2070,17 +2087,27 @@ public class CS5240Impl implements Printer {
 				return false;
 			}
 		//----
+		/*20201208 mark
 			this.curState = CheckStatus_START;
+			*/
+		
 			data = CheckStatus();
 			Send_hData(S5240_PERRCODE_REQ);
+
+			//20201208 add
+			this.curChkState = CheckStatusRecvData;
+			this.iCnt = 0;
+			//----
 			Sleep(50);
 			data = Rcv_Data(5);
-			// 20091002 , show error code
-			amlog.info("[{}][{}][{}]:95硬體錯誤代碼4[{}]", brws, "        ", "            ", String.format(outptrn1, data));		
 
+			// 20091002 , show error code
+			amlog.info("[{}][{}][{}]:95硬體錯誤代碼4[{}]", brws, "        ", "            ", new String(data, 1, data.length - 1));		
+/*20201208 mark
 			ResetPrinter();
 			this.curState = ResetPrinterInit_START;
 			ResetPrinterInit();
+			*/
 			return false;
 		case (byte) 0x21:
 		case (byte) 0x22:
@@ -2102,7 +2129,15 @@ public class CS5240Impl implements Printer {
 			//20200728
 			if (this.curState == Eject) 
 				this.curChkState = CheckStatus_START;
-			return false;
+
+			//20201208 add
+			byte[] nr = new byte[1];
+			nr[0] = (byte)'X';
+			this.curmsdata = nr;
+			amlog.info("[{}][{}][{}]:95硬體錯誤代碼5[{}]", brws, "        ", "            ", new String(data, 1, data.length - 1));
+			String s = "95硬體錯誤代碼" + new String(data, 1, data.length - 1);
+			pc.InsertAMStatus(brws, "", "", s);
+			return true;
 		//----
 		default:
 			atlog.info("Error Reset[{}]", String.format(outptrn3, data[2]));
