@@ -361,7 +361,7 @@ public class CS5240Impl implements Printer {
 		if (getIsShouldShutDown().get())
 			return "DIS".getBytes();
 		do {
-			log.debug("pc.clientMessageBuf={}", pc.clientMessageBuf.readableBytes());
+//			log.debug("pc.clientMessageBuf={}", pc.clientMessageBuf.readableBytes());
 			if (pc.clientMessageBuf != null && pc.clientMessageBuf.readableBytes() > 2) {
 				int size = pc.clientMessageBuf.readableBytes();
 				byte[] buf = new byte[size];
@@ -448,7 +448,7 @@ public class CS5240Impl implements Printer {
 		if (getIsShouldShutDown().get())
 			return "DIS".getBytes();
 		do {
-			log.debug("pc.clientMessage={} rcv_len={}", pc.clientMessageBuf.readableBytes(),rcv_len);
+//			log.debug("pc.clientMessage={} rcv_len={}", pc.clientMessageBuf.readableBytes(),rcv_len);
 			if (pc.clientMessageBuf != null && pc.clientMessageBuf.isReadable()) {
 				if (rcv_len <= pc.clientMessageBuf.readableBytes()) {
 					rtn = new byte[rcv_len];
@@ -2043,14 +2043,20 @@ public class CS5240Impl implements Printer {
 			return true;
 		case (byte) '1': // 20060619 paper jam
 			Send_hData(S5240_PERRCODE_REQ);
+			//20201208 add
+			this.curChkState = CheckStatusRecvData;
+			this.iCnt = 0;
+			//----
+
 			Sleep(50);
 			data = Rcv_Data(5);
 			// 20091002 , show error code
-			amlog.info("[{}][{}][{}]:95硬體錯誤代碼1[{}]", brws, "        ", "            ", String.format(outptrn1, data));		
-
+			amlog.info("[{}][{}][{}]:95硬體錯誤代碼1[{}]", brws, "        ", "            ",  new String(data, 1, data.length - 1));		
+			/*20201208 mark
 			ResetPrinter();
 			this.curState = ResetPrinterInit_START;
 			ResetPrinterInit();
+			*/
 			return false;
 		case (byte) 'a': // 20060801 hardware error ,ESCra , this may need resetInit()
 		case (byte) 'b':
@@ -2127,17 +2133,21 @@ public class CS5240Impl implements Printer {
 			return false;
 		case (byte) '6': // read error response
 			//20200728
-			if (this.curState == Eject) 
+			if (this.curState == Eject) {
 				this.curChkState = CheckStatus_START;
+				return false;
+			} else {
 
-			//20201208 add
-			byte[] nr = new byte[1];
-			nr[0] = (byte)'X';
-			this.curmsdata = nr;
-			amlog.info("[{}][{}][{}]:95硬體錯誤代碼5[{}]", brws, "        ", "            ", new String(data, 1, data.length - 1));
-			String s = "95硬體錯誤代碼" + new String(data, 1, data.length - 1);
-			pc.InsertAMStatus(brws, "", "", s);
-			return true;
+				// 20201208 add
+				byte[] nr = new byte[1];
+				nr[0] = (byte) 'X';
+				this.curmsdata = nr;
+				amlog.info("[{}][{}][{}]:95硬體錯誤代碼5[{}]", brws, "        ", "            ",
+						new String(data, 1, data.length - 1));
+				String s = "95硬體錯誤代碼" + new String(data, 1, data.length - 1);
+				pc.InsertAMStatus(brws, "", "", s);
+				return true;
+			}
 		//----
 		default:
 			atlog.info("Error Reset[{}]", String.format(outptrn3, data[2]));

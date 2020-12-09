@@ -379,8 +379,13 @@ public class CS4625Impl implements Printer {
 							return rtn;
 						}
 				} else if (buf[0]== (byte)0x1b) {
-					rtn = new byte[3];
-					log.debug("Rcv_Data get 3 bytes");
+					//20201208 add
+					if ((size > 3 ) && (buf[1] == (byte)'r') && (buf[2] != (byte)'A' && buf[2] != (byte)'P')) {
+						rtn = new byte[size];
+					} else
+						//20201208 modify
+						rtn = new byte[3];
+					log.debug("Rcv_Data get {} bytes", rtn.length);
 					pc.clientMessageBuf.readBytes(rtn, 0, rtn.length);
 					atlog.info("[{}]-[{}]",rtn.length,new String(rtn, 0, rtn.length)); //20201002
 					return rtn;
@@ -422,7 +427,10 @@ public class CS4625Impl implements Printer {
 		} else if (this.curChkState == CheckStatusRecvData) {
 //			Sleep(100);
 			this.iCnt++;
+			/*20201208 mark
 			data = Rcv_Data(3);
+			*/
+			data = Rcv_Data();
 			//20200330 change from 3 to 20
 			if (data == null && iCnt > 20) {
 				amlog.info("[{}][{}][{}]:95補摺機無回應！", brws, "        ", "            ");
@@ -1203,11 +1211,18 @@ public class CS4625Impl implements Printer {
 						pc.InsertAMStatus(brws, "", "", "94補摺機狀態錯誤！(MSR-1格式錯誤)");
 						//----
 //						this.curState = ResetPrinterInit_START;
+						//20201208 add
+						this.curState = MS_Read_2;
+						this.curChkState = CheckStatusRecvData;
+						this.iCnt = 0;
+						//----
+						/*mark 20201208
 						this.curState = MS_Read_FINISH;
 //						ResetPrinterInit();
 						byte[] nr = new byte[1];
 						nr[0] = (byte)'X';
 						this.curmsdata = nr;
+						*/
 //						pc.close();
 //						return null;
 						return this.curmsdata;
@@ -2078,17 +2093,26 @@ public class CS4625Impl implements Printer {
 				return false;
 			}
 		//----
+		/*20201208 mark
 			this.curState = CheckStatus_START;
+			*/
 			data = CheckStatus();
 			Send_hData(S4625_PERRCODE_REQ);
+			
+			//20201208 add
+			this.curChkState = CheckStatusRecvData;
+			this.iCnt = 0;
+			//----
+
 			Sleep(50);
 			data = Rcv_Data(5);
 			// 20091002 , show error code
-			amlog.info("[{}][{}][{}]:95硬體錯誤代碼4[{}]", brws, "        ", "            ", String.format(outptrn1, data));		
-
+			amlog.info("[{}][{}][{}]:95硬體錯誤代碼4[{}]", brws, "        ", "            ", new String(data, 1, data.length - 1));		
+			/*20201208 mark
 			ResetPrinter();
 			this.curState = ResetPrinterInit_START;
 			ResetPrinterInit();
+			*/
 			return false;
 		case (byte) 0x21:
 		case (byte) 0x22:
@@ -2106,9 +2130,20 @@ public class CS4625Impl implements Printer {
 			return false;
 		case (byte) '6': // read error response
 			//20200728
-			if (this.curState == Eject) 
+			if (this.curState == Eject) {
 				this.curChkState = CheckStatus_START;
-			return false;
+				return false;
+			} else {
+				//20201208 add
+				byte[] nr = new byte[1];
+				nr[0] = (byte)'X';
+				this.curmsdata = nr;
+				amlog.info("[{}][{}][{}]:95硬體錯誤代碼5[{}]", brws, "        ", "            ", new String(data, 1, data.length - 1));
+				String s = "95硬體錯誤代碼" + new String(data, 1, data.length - 1);
+				pc.InsertAMStatus(brws, "", "", s);
+				return true;
+			//----
+			}
 		//----
 		default:
 			atlog.info("Error Reset[{}]", String.format(outptrn3, data[2]));
