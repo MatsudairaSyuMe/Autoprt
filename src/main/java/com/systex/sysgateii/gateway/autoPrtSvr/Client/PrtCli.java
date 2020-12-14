@@ -328,11 +328,14 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 		responseTimeout = PrnSvr.setResponseTimeout;
 		//20201115
 //		amlog = PrnSvr.amlog;
-		amlog = LogUtil.getDailyLogger(PrnSvr.logPath, this.clientId + "AM" + this.brws.substring(3) + byDate, "info", "[%d{yyyy/MM/dd HH:mm:ss:SSS}]%msg%n");
+		//20201214
+		this.amlog = LogUtil.getDailyLogger(PrnSvr.logPath, this.clientId + "AM" + this.brws.substring(3) + byDate, "info", "[%d{yyyy/MM/dd HH:mm:ss:SSS}]%msg%n");
 		//----
-		aslog = LogUtil.getDailyLogger(PrnSvr.logPath, this.clientId + "AS" + this.brws.substring(3) + byDate, "info", "TIME     [0000]:%d{yyyy.MM.dd HH:mm:ss:SSS} %msg%n");
+		//20201214
+		this.aslog = LogUtil.getDailyLogger(PrnSvr.logPath, this.clientId + "AS" + this.brws.substring(3) + byDate, "info", "TIME     [0000]:%d{yyyy.MM.dd HH:mm:ss:SSS} %msg%n");
 //		atlog = PrnSvr.atlog;
-		atlog = LogUtil.getDailyLogger(PrnSvr.logPath, this.clientId + "AT" + this.brws.substring(3) + byDate, "info", "[TID:%X{PID} %d{yyyy/MM/dd HH:mm:ss:SSS}]:[%X{WSNO}]:[%thread]:[%class{0} %M|%L]:%msg%n");
+		//20201214
+		this.atlog = LogUtil.getDailyLogger(PrnSvr.logPath, this.clientId + "AT" + this.brws.substring(3) + byDate, "info", "[TID:%X{PID} %d{yyyy/MM/dd HH:mm:ss:SSS}]:[%X{WSNO}]:[%thread]:[%class{0} %M|%L]:%msg%n");
 		atlog.info("=============[Start]=============");
 		atlog.info("------MainThreadId={}------", pid);
 		atlog.info("------Call MaintainLog OK------");

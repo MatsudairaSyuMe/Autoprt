@@ -25,8 +25,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class CS5240Impl implements Printer {
 	private static Logger log = LoggerFactory.getLogger(CS5240Impl.class);
-	public static  Logger amlog = null;
-	public static  Logger atlog = null;
+	//20201214
+//	public static  Logger amlog = null;
+//	public static  Logger atlog = null;
+	private  Logger amlog = null;
+	private  Logger atlog = null;
+	//----
 	private byte ESQ = (byte) 0x1b;
 	private byte ENQ = (byte) 0x05;
 	private byte ACK = (byte) 0x06;
