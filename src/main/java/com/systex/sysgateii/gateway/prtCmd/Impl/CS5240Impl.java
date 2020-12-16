@@ -2151,7 +2151,7 @@ public class CS5240Impl implements Printer {
 				String s = "95硬體錯誤代碼" + new String(data, 1, data.length - 1);
 				pc.InsertAMStatus(brws, "", "", s);
 				//20201216
-				Send_hData(S5240_CANCEL);  //special for S5020
+				ResetPrinter();
 				this.curState = ResetPrinterInit_START;
 				ResetPrinterInit();
 				if (this.curState == ResetPrinterInit &&  this.curChkState == CheckStatusRecvData) {
