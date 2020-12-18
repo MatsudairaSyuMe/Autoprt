@@ -2035,8 +2035,11 @@ public class CS5240Impl implements Printer {
 			//20200401
 			if (this.curState == Eject || this.curState == SetSignal_4) {
 				this.curChkState = CheckStatus_START;
-				//20200827
-//				amlog.info("[{}][{}][{}]:95硬體錯誤代碼3[{}]", brws, "        ", "            ", new String(data));
+				//20201216
+				String s = "95硬體錯誤代碼" + new String(data, 1, data.length - 1);
+				pc.InsertAMStatus(brws, "", "", s);
+				amlog.info("[{}][{}][{}]:95硬體錯誤代碼3[{}]", brws, "        ", "            ", new String(data, 1, data.length - 1));
+				Send_hData(S5240_CANCEL);  //special for S5020
 				//----
 				return false;
 			}
@@ -2151,17 +2154,10 @@ public class CS5240Impl implements Printer {
 				String s = "95硬體錯誤代碼" + new String(data, 1, data.length - 1);
 				pc.InsertAMStatus(brws, "", "", s);
 				//20201216
-				ResetPrinter();
-				this.curState = ResetPrinterInit_START;
-				ResetPrinterInit();
-				if (this.curState == ResetPrinterInit &&  this.curChkState == CheckStatusRecvData) {
-					data = CheckStatus();
-					if (data != null && data.length > 0)
-						this.curmsdata = data;
-					this.curState = ResetPrinterInit_FINISH;
-					amlog.info("[{}][{}][{}]:00補摺機重置完成！", brws, "        ", "            ");	
-				} else
-					return false;
+				Send_hData(S5240_CANCEL);  //special for S5020
+				amlog.info("[{}][{}][{}]:00補摺機重置中...", brws, "        ", "            ");		
+				Send_hData(S5240_PINIT);
+				amlog.info("[{}][{}][{}]:00補摺機重置完成！", brws, "        ", "            ");	
 				//----
 				return true;
 			}
