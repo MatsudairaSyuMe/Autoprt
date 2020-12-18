@@ -387,14 +387,18 @@ public class PrnSvr implements MessageListener<byte[]> {
 															String t = sdf.format(new java.util.Date());
 															int row = jdawcon.UPDT(PrnSvr.cmdtbname, "CMD, CMDRESULT,CMDRESULTTIME", "'','START','" + t + "'",
 																	"SVRID,BRWS", PrnSvr.svrid + "," + cmdary[0]);
+															//----
 															log.debug("total {} records update", row);
 															log.debug("cmd object node=[{}] already active!!!! getCurMode=[{}]", getMe().nodeList.get(cmdary[0]).getId(), getMe().nodeList.get(cmdary[0]).getCurMode());
 															//20201026
 //															String fldvals2 = String.format(hisfldvalssptrn2, "", cmdary[1], t, sts);
 															PrtCli conn = getMe().nodeList.get(cmdary[0]);
 															//20201119 add EMPNO
-															String fldvals3 = String.format(hisfldvalssptrn3, "", cmdary[1], t, conn.getRmtaddr().getAddress().getHostAddress(),
+															//20201218 add original cmd to devcmdhis
+															String fldvals3 = String.format(hisfldvalssptrn3, cmdary[1], cmdary[1], t, conn.getRmtaddr().getAddress().getHostAddress(),
 																	conn.getRmtaddr().getPort(),conn.getLocaladdr().getAddress().getHostAddress(), conn.getLocaladdr().getPort(),sts,cmdary[4]);
+															//----
+															//---
 //															sno = cmdhiscon.INSSELChoiceKey(PrnSvr.devcmdhistbname, "SVRID,AUID,BRWS,CMD,CMDCREATETIME,CMDRESULT,CMDRESULTTIME,CURSTUS", "1,1,'9838901','','2020-10-21 09:46:38.368000','START','2020-10-21 09:46:38.368000','0','2'", "SNO", "31", false, true);
 															sno = cmdhiscon.INSSELChoiceKey(PrnSvr.devcmdhistbname, "CMD,CMDRESULT,CMDRESULTTIME,DEVIP,DEVPORT,SVRIP,SVRPORT,RESULTSTUS,EMPNO", fldvals3, PrnSvr.devcmdhistbsearkey, sno[0], false, true);
 															//----
@@ -420,7 +424,9 @@ public class PrnSvr implements MessageListener<byte[]> {
 															log.debug("cmd object node=[{}] already shutdown!!!! getCurMode=[{}]", getMe().nodeList.get(cmdary[0]).getId(), getMe().nodeList.get(cmdary[0]).getCurMode());
 															//20201026
 															//20201119 add EMPNO
-															String fldvals2 = String.format(hisfldvalssptrn2, "", cmdary[1], t, sts,cmdary[4]);
+															//20201218 add original cmd to devcmdhis
+															String fldvals2 = String.format(hisfldvalssptrn2, cmdary[1], cmdary[1], t, sts,cmdary[4]);
+															//----
 															sno = cmdhiscon.INSSELChoiceKey(PrnSvr.devcmdhistbname, "CMD,CMDRESULT,CMDRESULTTIME,RESULTSTUS,EMPNO", fldvals2, PrnSvr.devcmdhistbsearkey, sno[0], false, true);
 															//----
 															if (sno != null) {
@@ -454,8 +460,10 @@ public class PrnSvr implements MessageListener<byte[]> {
 																log.debug("cmd object node=[{}] already active!!!! getCurMode=[{}]", getMe().nodeList.get(cmdary[0]).getId(), getMe().nodeList.get(cmdary[0]).getCurMode());
 																PrtCli conn = getMe().nodeList.get(cmdary[0]);
 																//20201119 add EMPNO
-																String fldvals3 = String.format(hisfldvalssptrn3, "", cmdary[1], t, conn.getRmtaddr().getAddress().getHostAddress(),
+																//20201218 add original cmd to devcmdhis
+																String fldvals3 = String.format(hisfldvalssptrn3, cmdary[1], cmdary[1], t, conn.getRmtaddr().getAddress().getHostAddress(),
 																		conn.getRmtaddr().getPort(),conn.getLocaladdr().getAddress().getHostAddress(), conn.getLocaladdr().getPort(),sts,cmdary[4]);
+																//----
 																sno = cmdhiscon.INSSELChoiceKey(PrnSvr.devcmdhistbname, "CMD,CMDRESULT,CMDRESULTTIME,DEVIP,DEVPORT,SVRIP,SVRPORT,RESULTSTUS,EMPNO", fldvals3, PrnSvr.devcmdhistbsearkey, sno[0], false, true);
 																//----
 																if (sno != null) {

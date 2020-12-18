@@ -1375,6 +1375,16 @@ public class CS5240Impl implements Printer {
 					PurgeBuffer();
 					log.debug("{} {} {} get '4' paper in chasis curState={}  curChkState={} ", brws, wsno, "",this.curState,  this.curChkState);
 					this.iCnt = 0;
+					//20201216
+					if (data.length >= 5 && data[3] == (byte)'2' && data[4] == (byte)'1') {
+						String s = "95硬體錯誤代碼" + new String(data, 1, data.length - 1);
+						pc.InsertAMStatus(brws, "", "", s);
+						amlog.info("[{}][{}][{}]:95硬體錯誤代碼3[{}]", brws, "        ", "            ",
+								new String(data, 1, data.length - 1));
+						Send_hData(S5240_CANCEL); // special for S5020
+					}
+					//----
+
 				} else {
 					switch (data[2]) {
 					case (byte) '1': // 20060619 paper jam

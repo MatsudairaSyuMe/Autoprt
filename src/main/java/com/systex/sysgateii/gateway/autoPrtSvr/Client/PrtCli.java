@@ -3104,7 +3104,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					if (getCurMode() == EventType.SHUTDOWN)
 //					String fldvals2 = String.format(hisfldvalssptrn2, "", "STOP", t, this.rmtaddr.getAddress().getHostAddress(),
 //							this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(),"0");
-						fldvals2 = String.format(hisfldvalssptrn2, "", "STOP", t, this.rmtaddr.getAddress().getHostAddress(),
+						//20201218 add original cmd to devcmdhis
+						fldvals2 = String.format(hisfldvalssptrn2, "STOP", "STOP", t, this.rmtaddr.getAddress().getHostAddress(),
 							this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(),"0");
 					else
 						fldvals2 = String.format(hisfldvalssptrn2, "RESTART", "STOP", t, this.rmtaddr.getAddress().getHostAddress(),
@@ -4053,7 +4054,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				//----
 				//20201026
 				cmdhiscon = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
-				String fldvals2 = String.format(hisfldvalssptrn2, "", "START", t, this.rmtaddr.getAddress().getHostAddress(),
+				//20201218 add original cmd to devcmdhis
+				String fldvals2 = String.format(hisfldvalssptrn2, "START", "START", t, this.rmtaddr.getAddress().getHostAddress(),
 						this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(),"2");
 //				sno = cmdhiscon.INSSELChoiceKey(PrnSvr.devcmdhistbname, "SVRID,AUID,BRWS,CMD,CMDCREATETIME,CMDRESULT,CMDRESULTTIME,CURSTUS", "1,1,'9838901','','2020-10-21 09:46:38.368000','START','2020-10-21 09:46:38.368000','0','2'", "SNO", "31", false, true);
 				String[] rsno = cmdhiscon.INSSELChoiceKey(PrnSvr.devcmdhistbname, "CMD,CMDRESULT,CMDRESULTTIME,DEVIP,DEVPORT,SVRIP,SVRPORT,RESULTSTUS", fldvals2, PrnSvr.devcmdhistbsearkey, sno, false, true);

@@ -194,7 +194,7 @@ public class Conductor implements Runnable {
 									if (chksno != null && chksno.length > 0 && Integer.parseInt(chksno[0].trim()) > -1) {
 										for (String sss: chksno)
 											log.debug("sno[{}] already exist",sss);
-										if (curcmd.equals("RESTART")) { // current command is RESTART check svrcmdhis if already done STOP
+										if (curcmd.equals("RESTART")) { // current command is RESTART check cmdsvrhis if already done STOP
 											for (int i = 0; i < chksno.length; i++) {
 												String chkcmdresult = cmdhiscon.SELONEFLD(svrcmdhistbname, "CMDRESULT", "SNO", chksno[0], false);
 												log.debug("table sno=[{}] svrcmdhis cmd is RESTART and cmdresult=[{}]", chksno[i], chkcmdresult);
@@ -246,7 +246,9 @@ public class Conductor implements Runnable {
 												"SVRID, IP", cmdary[0] + ",'" + getSvrip() + "'");
 										log.debug("total {} records update", row);
 										log.debug("cmd object node=[{}] already active!!!!", cmdary[0]);
-										String fldvals3 = String.format(hisfldvalssptrn4, cmdary[0], getSvrip(), "", cmdary[2], cmdary[1], t, cmdary[3]);
+										//20201218 keep original cmd to svrcmdhis
+										String fldvals3 = String.format(hisfldvalssptrn4, cmdary[0], getSvrip(), cmdary[1], cmdary[2], cmdary[1], t, cmdary[3]);
+										//----
 										sno = cmdhiscon.INSSELChoiceKey(svrcmdhistbname, svrcmdhistbfields, fldvals3, svrcmdhistbsearkey, sno[0], false, true);
 										if (sno != null) {
 											for (int i = 0; i < sno.length; i++)
@@ -272,7 +274,9 @@ public class Conductor implements Runnable {
 										log.debug("total {} records update", row);
 										Conductor.svridnodeMap.remove(cmdary[0]);
 										log.debug("cmd object node=[{}] already shutdown!!!!", cmdary[0]);
-										String fldvals3 = String.format(hisfldvalssptrn4, cmdary[0], getSvrip(), "", cmdary[2], cmdary[1], t, cmdary[3]);
+										//20201218 keep original cmd to svrcmdhis
+										String fldvals3 = String.format(hisfldvalssptrn4, cmdary[0], getSvrip(), cmdary[1], cmdary[2], cmdary[1], t, cmdary[3]);
+										//----
 										sno = cmdhiscon.INSSELChoiceKey(svrcmdhistbname, svrcmdhistbfields, fldvals3, svrcmdhistbsearkey, sno[0], false, true);
 										if (sno != null) {
 											for (int i = 0; i < sno.length; i++)
@@ -304,7 +308,9 @@ public class Conductor implements Runnable {
 											"SVRID, IP", cmdary[0] + ",'" + getSvrip() + "'");
 									log.debug("total {} records update", row);
 									log.debug("cmd object node=[{}] already restart!!!!", cmdary[0]);
-									String fldvals3 = String.format(hisfldvalssptrn4, cmdary[0], getSvrip(), "", cmdary[2], cmdary[1], t, cmdary[3]);
+									//20201218 keep original cmd to svrcmdhis
+									String fldvals3 = String.format(hisfldvalssptrn4, cmdary[0], getSvrip(), cmdary[1], cmdary[2], cmdary[1], t, cmdary[3]);
+									//----
 									sno = cmdhiscon.INSSELChoiceKey(svrcmdhistbname, svrcmdhistbfields, fldvals3, svrcmdhistbsearkey, sno[0], false, true);
 									if (sno != null) {
 										for (int i = 0; i < sno.length; i++)
