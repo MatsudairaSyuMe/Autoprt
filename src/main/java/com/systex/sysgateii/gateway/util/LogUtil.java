@@ -36,13 +36,13 @@ import ch.qos.logback.core.util.FileSize;
 public class LogUtil {
 	public static Logger getDailyLogger(String pathname, String logName, String level, String ptrn) {
 		Logger logbackLogger = (Logger) LoggerFactory.getLogger(logName);
-		RollingFileAppender<ILoggingEvent> a = (RollingFileAppender<ILoggingEvent>) ((AppenderAttachable<ILoggingEvent>) logbackLogger).getAppender(logName);
-		if (a != null)
+//		RollingFileAppender<ILoggingEvent> a = (RollingFileAppender<ILoggingEvent>) ((AppenderAttachable<ILoggingEvent>) logbackLogger).getAppender(logName);
+/*		if (a != null)
 		{
 //			System.out.println("Log Appender already exist");
 			return logbackLogger;
 		}		
-
+*/
 		LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
 
 //		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
@@ -57,6 +57,9 @@ public class LogUtil {
 		else
 			fpn = "." + File.separator + logName + ".log";
 		rfAppender.setFile(fpn);
+		//20201221
+		rfAppender.setAppend(true);
+		//----
 
 //mark20200430		TimeBasedRollingPolicy<ILoggingEvent> rollingPolicy = new TimeBasedRollingPolicy<>();
 		FixedWindowRollingPolicy rollingPolicy = new FixedWindowRollingPolicy();
@@ -73,6 +76,11 @@ public class LogUtil {
 		rollingPolicy.setFileNamePattern(fpn );
 //mark20200430		rollingPolicy.setMaxHistory(5);
 //mark20200430		rollingPolicy.setCleanHistoryOnStart(true);
+		//20201221
+		if (rollingPolicy.isStarted())
+			rollingPolicy.stop();
+		//----
+
 		rollingPolicy.start();
 
 		SizeBasedTriggeringPolicy<ILoggingEvent> triggeringPolicy = new SizeBasedTriggeringPolicy<ILoggingEvent>();
@@ -80,6 +88,11 @@ public class LogUtil {
 		triggeringPolicy.setContext(loggerContext);
 		triggeringPolicy.setMaxFileSize(FileSize.valueOf("30MB"));
 //mark20200430		triggeringPolicy.setTimeBasedRollingPolicy(rollingPolicy);
+		//20201221
+		if (triggeringPolicy.isStarted())
+			triggeringPolicy.stop();
+		//----
+
 		triggeringPolicy.start();
 
 		//---
@@ -92,11 +105,19 @@ public class LogUtil {
 		encoder.setContext(loggerContext);
 //		encoder.setPattern("%-4relative [%thread] %-5level %logger{35} - %msg%n");
 		encoder.setPattern(ptrn);
+		//20201221
+		if (encoder.isStarted())
+			encoder.stop();
+		//----
 		encoder.start();
 
 		rfAppender.setEncoder(encoder);
 		rfAppender.setRollingPolicy(rollingPolicy);
 		rfAppender.setTriggeringPolicy(triggeringPolicy);
+		//20201221
+		if (rfAppender.isStarted())
+			rfAppender.stop();
+		//----
 
 		rfAppender.start();
 
@@ -120,6 +141,109 @@ public class LogUtil {
 			logbackLogger.setLevel(Level.ALL);												
 		}
 
+		return logbackLogger;
+	}
+	public static Logger getDailyLogger1(String pathname, String logName, String level, String ptrn) {
+		Logger logbackLogger = (Logger) LoggerFactory.getLogger(logName);
+		LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
+		RollingFileAppender<ILoggingEvent> rfAppender = new RollingFileAppender<ILoggingEvent>();
+		rfAppender.setContext(loggerContext);
+//		rfAppender.setFile(logName + byDate + ".log");
+		String fpn = "";
+		if (pathname != null && pathname.trim().length() > 0)
+			fpn = pathname + File.separator + logName + ".log";
+		else
+			fpn = "." + File.separator + logName + ".log";
+		rfAppender.setContext(loggerContext);
+		rfAppender.setFile(fpn);
+		rfAppender.setAppend(true);
+		rfAppender.setPrudent(false);
+
+		logbackLogger = loggerContext.getLogger(logName);
+		logbackLogger.addAppender(rfAppender);
+		if (rfAppender.isStarted())
+			rfAppender.stop();
+		rfAppender.start();
+
+		if (level.equalsIgnoreCase("debug"))
+		{
+			logbackLogger.setLevel(Level.DEBUG);			
+		}
+		else if (level.equalsIgnoreCase("info"))
+		{
+			logbackLogger.setLevel(Level.INFO);						
+		}
+		else if (level.equalsIgnoreCase("error"))
+		{
+			logbackLogger.setLevel(Level.ERROR);						
+		}
+		else
+		{
+			logbackLogger.setLevel(Level.ALL);												
+		}
+
+		return logbackLogger;
+	}
+	public static Logger getDailyLogger2(String pathname, String logName, String level, String ptrn) {
+		Logger logbackLogger = (Logger) LoggerFactory.getLogger(logName);
+		LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
+		String fpn = "";
+		if (pathname != null && pathname.trim().length() > 0)
+			fpn = pathname + File.separator + logName + ".log";
+		else
+			fpn = "." + File.separator + logName + ".log";
+
+		RollingFileAppender<ILoggingEvent> rfAppender = new RollingFileAppender<ILoggingEvent>();
+		rfAppender.setContext(loggerContext);
+		rfAppender.setFile(fpn);
+		rfAppender.setAppend(true);
+		rfAppender.setPrudent(false);
+
+		PatternLayoutEncoder encoder = new PatternLayoutEncoder();
+		encoder.setContext(loggerContext);
+		encoder.setPattern(ptrn);
+		
+		TimeBasedRollingPolicy<ILoggingEvent> rollingPolicy = new TimeBasedRollingPolicy<>();
+		if (pathname != null && pathname.trim().length() > 0)
+			fpn = pathname + File.separator + "archive" + File.separator + logName + "-%d{yyyy-MM-dd-HH-mm}.%i.log.zip";
+		else
+			fpn = "." + File.separator + "archive" + File.separator + logName + "-%d{yyyy-MM-dd-HH-mm}.%i.log.zip";
+		rollingPolicy.setMaxHistory(3);
+		rollingPolicy.setFileNamePattern(fpn);
+		rollingPolicy.setCleanHistoryOnStart(false);
+		rollingPolicy.setContext(loggerContext);
+		rollingPolicy.setParent(rfAppender);
+		// Also impose a max size per file policy.
+		SizeAndTimeBasedFNATP<ILoggingEvent> fnatp = new SizeAndTimeBasedFNATP<ILoggingEvent>();
+		fnatp.setContext(loggerContext);
+		fnatp.setTimeBasedRollingPolicy(rollingPolicy);
+		fnatp.setMaxFileSize(FileSize.valueOf("30MB"));
+		
+		rollingPolicy.setTimeBasedFileNamingAndTriggeringPolicy(fnatp);
+		rfAppender.setRollingPolicy(rollingPolicy);
+		rfAppender.setTriggeringPolicy(rollingPolicy);
+		// attach the rolling file appender to the logger of your choice
+		rollingPolicy.start();
+		rfAppender.start();
+
+		logbackLogger = loggerContext.getLogger(logName);
+		logbackLogger.addAppender(rfAppender);
+		if (level.equalsIgnoreCase("debug"))
+		{
+			logbackLogger.setLevel(Level.DEBUG);			
+		}
+		else if (level.equalsIgnoreCase("info"))
+		{
+			logbackLogger.setLevel(Level.INFO);						
+		}
+		else if (level.equalsIgnoreCase("error"))
+		{
+			logbackLogger.setLevel(Level.ERROR);						
+		}
+		else
+		{
+			logbackLogger.setLevel(Level.ALL);												
+		}
 		return logbackLogger;
 	}
 }

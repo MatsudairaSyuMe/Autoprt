@@ -17,8 +17,10 @@ import io.netty.buffer.Unpooled;
 
 public class CS2812Impl implements Printer {
 	private static Logger log = LoggerFactory.getLogger(CS2812Impl.class);
-	public static Logger amlog = null;
-	public static Logger atlog = null;
+//	public static Logger amlog = null;
+//	public static Logger atlog = null;
+	private Logger amlog = null;
+	private Logger atlog = null;
 	private byte  ESQ		= (byte)0x1b;
 	private byte  ENQ		= (byte)0x05;
 	private byte  ACK		= (byte)0x06;
@@ -220,9 +222,9 @@ public class CS2812Impl implements Printer {
 		MDC.put("PID", pc.pid);
 		//20201115
 //		amlog = PrnSvr.amlog;
-		amlog = pc.getAmLog();
+		this.amlog = pc.getAmLog();
 //		atlog = PrnSvr.atlog;
-		atlog = pc.getAtLog();
+		this.atlog = pc.getAtLog();
 		//----
 	}
 

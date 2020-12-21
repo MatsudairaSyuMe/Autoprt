@@ -439,6 +439,10 @@ public class PrnSvr implements MessageListener<byte[]> {
 														}
 														break;
 													case "RESTART":
+														//20201221 1st time RESTART mode node already STOP
+														if (!restartAlreadyStop && createNode)
+															restartAlreadyStop = true;
+														//----
 														//20201028 add cmdhis
 														if (!restartAlreadyStop && !createNode && getMe().nodeList.get(cmdary[0]).getCurState() != -1) {
 															getMe().nodeList.get(cmdary[0]).onEvent(getMe().nodeList.get(cmdary[0]).getId(), EventType.RESTART, sno[0]);

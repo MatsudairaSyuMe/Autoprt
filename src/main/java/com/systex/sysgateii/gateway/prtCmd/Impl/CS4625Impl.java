@@ -247,9 +247,9 @@ public class CS4625Impl implements Printer {
 		MDC.put("PID", pc.pid);
 		//20201115
 //		amlog = PrnSvr.amlog;
-		amlog = pc.getAmLog();
+		this.amlog = pc.getAmLog();
 //		atlog = PrnSvr.atlog;
-		atlog = pc.getAtLog();
+		this.atlog = pc.getAtLog();
 		//----
 	}
 
