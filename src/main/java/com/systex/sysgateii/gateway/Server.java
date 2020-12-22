@@ -35,7 +35,8 @@ public class Server {
 	private static String svrstatustbfields = "";
 	//20201116 cancel verbrno
 //	private static String updValueptrn = "'%s','%s','%s','%s','%s','SYSTEM','','%s'";
-	private static String updValueptrn = "'%s','%s','%s','%s','SYSTEM','','%s'";
+	//20201222 add 'SYSTEM' to TB_AUSVRSTS.MODIFIER
+	private static String updValueptrn = "'%s','%s','%s','%s','SYSTEM','SYSTEM','%s'";
 	//----
 	private static String auid = "";
 	private static String svrip = "";

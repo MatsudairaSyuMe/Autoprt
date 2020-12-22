@@ -270,7 +270,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 	//                                        printer type,status
 //change to use new UPSERT
 	//	private String updValueptrn = "'%s',%s,'%s','%s','%s','0','%s','%s','1','SYSTEM',''";
-	private String updValueptrn = "'%s','%s','%s','%s','0','%s','%s','1','SYSTEM',''";
+	//20201222 add 'SYSTEM' to TB_AUDEVSTS.MODIFIER
+	private String updValueptrn = "'%s','%s','%s','%s','0','%s','%s','1','SYSTEM','SYSTEM'";
 	//分行設備分類0: 匯率顯示版 1:利率顯示版 2: AUTO46 自動補褶機 3: AUTO52 自動補褶機
 	private String typeid = "2"; //default for AUTP46
 	private GwDao jsel2ins = null;

@@ -34,7 +34,7 @@ import ch.qos.logback.core.util.FileSize;
 
 
 public class LogUtil {
-	public static Logger getDailyLogger(String pathname, String logName, String level, String ptrn) {
+	public static Logger getDailyLoggerorig(String pathname, String logName, String level, String ptrn) {
 		Logger logbackLogger = (Logger) LoggerFactory.getLogger(logName);
 //		RollingFileAppender<ILoggingEvent> a = (RollingFileAppender<ILoggingEvent>) ((AppenderAttachable<ILoggingEvent>) logbackLogger).getAppender(logName);
 /*		if (a != null)
@@ -148,7 +148,6 @@ public class LogUtil {
 		LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
 		RollingFileAppender<ILoggingEvent> rfAppender = new RollingFileAppender<ILoggingEvent>();
 		rfAppender.setContext(loggerContext);
-//		rfAppender.setFile(logName + byDate + ".log");
 		String fpn = "";
 		if (pathname != null && pathname.trim().length() > 0)
 			fpn = pathname + File.separator + logName + ".log";
@@ -158,6 +157,41 @@ public class LogUtil {
 		rfAppender.setFile(fpn);
 		rfAppender.setAppend(true);
 		rfAppender.setPrudent(false);
+
+		TimeBasedRollingPolicy<ILoggingEvent> rollingPolicy = new TimeBasedRollingPolicy<>();
+		rollingPolicy.setContext(loggerContext);
+		rollingPolicy.setParent(rfAppender);
+		if (pathname != null && pathname.trim().length() > 0)
+			fpn = pathname + File.separator + "archive" + File.separator + logName + "-%d{yyyy-MM-dd-HH-mm}.%i.log.zip";
+		else
+			fpn = "." + File.separator + "archive" + File.separator + logName + "-%d{yyyy-MM-dd-HH-mm}.%i.log.zip";
+		rollingPolicy.setFileNamePattern(fpn);
+		rollingPolicy.setMaxHistory(5);
+		rollingPolicy.setCleanHistoryOnStart(true);
+
+		SizeAndTimeBasedFNATP<ILoggingEvent> triggeringPolicy = new SizeAndTimeBasedFNATP<ILoggingEvent>();
+		triggeringPolicy.setContext(loggerContext);
+		triggeringPolicy.setMaxFileSize(FileSize.valueOf("30MB"));
+		triggeringPolicy.setTimeBasedRollingPolicy(rollingPolicy);
+
+		rollingPolicy.setTimeBasedFileNamingAndTriggeringPolicy(triggeringPolicy);
+		if (rollingPolicy.isStarted())
+			rollingPolicy.stop();
+		rollingPolicy.start();
+		if (triggeringPolicy.isStarted())
+			triggeringPolicy.stop();
+		triggeringPolicy.start();
+
+		PatternLayoutEncoder encoder = new PatternLayoutEncoder();
+		encoder.setContext(loggerContext);
+		encoder.setPattern(ptrn);
+		if (encoder.isStarted())
+			encoder.stop();
+		encoder.start();
+
+		rfAppender.setEncoder(encoder);
+		rfAppender.setRollingPolicy(rollingPolicy);
+		rfAppender.setTriggeringPolicy(triggeringPolicy);
 
 		logbackLogger = loggerContext.getLogger(logName);
 		logbackLogger.addAppender(rfAppender);
@@ -181,11 +215,16 @@ public class LogUtil {
 		{
 			logbackLogger.setLevel(Level.ALL);												
 		}
-
 		return logbackLogger;
 	}
-	public static Logger getDailyLogger2(String pathname, String logName, String level, String ptrn) {
+	public static Logger getDailyLogger(String pathname, String logName, String level, String ptrn) {
 		Logger logbackLogger = (Logger) LoggerFactory.getLogger(logName);
+		RollingFileAppender<ILoggingEvent> a = (RollingFileAppender<ILoggingEvent>) ((AppenderAttachable<ILoggingEvent>) logbackLogger).getAppender(logName);
+		if (a != null)
+		{
+			System.out.println("Log Appender already exist");
+			return logbackLogger;
+		}		
 		LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
 		String fpn = "";
 		if (pathname != null && pathname.trim().length() > 0)
@@ -208,9 +247,9 @@ public class LogUtil {
 			fpn = pathname + File.separator + "archive" + File.separator + logName + "-%d{yyyy-MM-dd-HH-mm}.%i.log.zip";
 		else
 			fpn = "." + File.separator + "archive" + File.separator + logName + "-%d{yyyy-MM-dd-HH-mm}.%i.log.zip";
-		rollingPolicy.setMaxHistory(3);
+		rollingPolicy.setMaxHistory(5);
 		rollingPolicy.setFileNamePattern(fpn);
-		rollingPolicy.setCleanHistoryOnStart(false);
+		rollingPolicy.setCleanHistoryOnStart(true);
 		rollingPolicy.setContext(loggerContext);
 		rollingPolicy.setParent(rfAppender);
 		// Also impose a max size per file policy.
@@ -222,10 +261,6 @@ public class LogUtil {
 		rollingPolicy.setTimeBasedFileNamingAndTriggeringPolicy(fnatp);
 		rfAppender.setRollingPolicy(rollingPolicy);
 		rfAppender.setTriggeringPolicy(rollingPolicy);
-		// attach the rolling file appender to the logger of your choice
-		rollingPolicy.start();
-		rfAppender.start();
-
 		logbackLogger = loggerContext.getLogger(logName);
 		logbackLogger.addAppender(rfAppender);
 		if (level.equalsIgnoreCase("debug"))
@@ -244,6 +279,20 @@ public class LogUtil {
 		{
 			logbackLogger.setLevel(Level.ALL);												
 		}
+		rfAppender.setEncoder(encoder);
+		rfAppender.setRollingPolicy(rollingPolicy);
+
+		// attach the rolling file appender to the logger of your choice
+		if (encoder.isStarted())
+			encoder.stop();
+		encoder.start();
+		if (rollingPolicy.isStarted())
+			rollingPolicy.stop();
+		rollingPolicy.start();
+		if (rfAppender.isStarted())
+			rfAppender.stop();
+		rfAppender.start();
+
 		return logbackLogger;
 	}
 }
