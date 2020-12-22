@@ -34,7 +34,7 @@ import ch.qos.logback.core.util.FileSize;
 
 
 public class LogUtil {
-	public static Logger getDailyLoggerorig(String pathname, String logName, String level, String ptrn) {
+	public static Logger getDailyLogger(String pathname, String logName, String level, String ptrn) {
 		Logger logbackLogger = (Logger) LoggerFactory.getLogger(logName);
 //		RollingFileAppender<ILoggingEvent> a = (RollingFileAppender<ILoggingEvent>) ((AppenderAttachable<ILoggingEvent>) logbackLogger).getAppender(logName);
 /*		if (a != null)
@@ -166,12 +166,12 @@ public class LogUtil {
 		else
 			fpn = "." + File.separator + "archive" + File.separator + logName + "-%d{yyyy-MM-dd-HH-mm}.%i.log.zip";
 		rollingPolicy.setFileNamePattern(fpn);
-		rollingPolicy.setMaxHistory(5);
+		rollingPolicy.setMaxHistory(10);
 		rollingPolicy.setCleanHistoryOnStart(true);
 
 		SizeAndTimeBasedFNATP<ILoggingEvent> triggeringPolicy = new SizeAndTimeBasedFNATP<ILoggingEvent>();
 		triggeringPolicy.setContext(loggerContext);
-		triggeringPolicy.setMaxFileSize(FileSize.valueOf("30MB"));
+		triggeringPolicy.setMaxFileSize(FileSize.valueOf(String.format("%sKB", 307200l)));
 		triggeringPolicy.setTimeBasedRollingPolicy(rollingPolicy);
 
 		rollingPolicy.setTimeBasedFileNamingAndTriggeringPolicy(triggeringPolicy);
@@ -217,7 +217,7 @@ public class LogUtil {
 		}
 		return logbackLogger;
 	}
-	public static Logger getDailyLogger(String pathname, String logName, String level, String ptrn) {
+	public static Logger getDailyLogger2(String pathname, String logName, String level, String ptrn) {
 		Logger logbackLogger = (Logger) LoggerFactory.getLogger(logName);
 		RollingFileAppender<ILoggingEvent> a = (RollingFileAppender<ILoggingEvent>) ((AppenderAttachable<ILoggingEvent>) logbackLogger).getAppender(logName);
 		if (a != null)
@@ -247,7 +247,7 @@ public class LogUtil {
 			fpn = pathname + File.separator + "archive" + File.separator + logName + "-%d{yyyy-MM-dd-HH-mm}.%i.log.zip";
 		else
 			fpn = "." + File.separator + "archive" + File.separator + logName + "-%d{yyyy-MM-dd-HH-mm}.%i.log.zip";
-		rollingPolicy.setMaxHistory(5);
+		rollingPolicy.setMaxHistory(60);
 		rollingPolicy.setFileNamePattern(fpn);
 		rollingPolicy.setCleanHistoryOnStart(true);
 		rollingPolicy.setContext(loggerContext);
@@ -256,7 +256,7 @@ public class LogUtil {
 		SizeAndTimeBasedFNATP<ILoggingEvent> fnatp = new SizeAndTimeBasedFNATP<ILoggingEvent>();
 		fnatp.setContext(loggerContext);
 		fnatp.setTimeBasedRollingPolicy(rollingPolicy);
-		fnatp.setMaxFileSize(FileSize.valueOf("30MB"));
+		fnatp.setMaxFileSize(FileSize.valueOf(String.format("%sKB", 307200l)));
 		
 		rollingPolicy.setTimeBasedFileNamingAndTriggeringPolicy(fnatp);
 		rfAppender.setRollingPolicy(rollingPolicy);
@@ -294,5 +294,9 @@ public class LogUtil {
 		rfAppender.start();
 
 		return logbackLogger;
+	}
+	public static void stopLog(Logger tarLog) {
+		LoggerContext loggerContext = (LoggerContext) tarLog.getLoggerContext();
+		loggerContext.stop();
 	}
 }
