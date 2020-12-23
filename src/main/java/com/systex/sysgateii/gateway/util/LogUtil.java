@@ -69,9 +69,9 @@ public class LogUtil {
 		rollingPolicy.setParent(rfAppender);
 //		rollingPolicy.setFileNamePattern(logName + byDate + ".%i.log.zip");
 		if (pathname != null && pathname.trim().length() > 0)
-			fpn = pathname + File.separator + "archive" + File.separator + logName + "-%d{yyyy-MM-dd-HH-mm}.%i.log.zip";
+			fpn = pathname + File.separator + "archive" + File.separator + logName + "-%d{yyyyMMddHHmmss}.%i.log.zip";
 		else
-			fpn = "." + File.separator + "archive" + File.separator + logName + "-%d{yyyy-MM-dd-HH-mm}.%i.log.zip";
+			fpn = "." + File.separator + "archive" + File.separator + logName + "-%d{yyyyMMddHHmmss}.%i.log.zip";
 
 		rollingPolicy.setFileNamePattern(fpn );
 //mark20200430		rollingPolicy.setMaxHistory(5);
@@ -143,80 +143,6 @@ public class LogUtil {
 
 		return logbackLogger;
 	}
-	public static Logger getDailyLogger1(String pathname, String logName, String level, String ptrn) {
-		Logger logbackLogger = (Logger) LoggerFactory.getLogger(logName);
-		LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
-		RollingFileAppender<ILoggingEvent> rfAppender = new RollingFileAppender<ILoggingEvent>();
-		rfAppender.setContext(loggerContext);
-		String fpn = "";
-		if (pathname != null && pathname.trim().length() > 0)
-			fpn = pathname + File.separator + logName + ".log";
-		else
-			fpn = "." + File.separator + logName + ".log";
-		rfAppender.setContext(loggerContext);
-		rfAppender.setFile(fpn);
-		rfAppender.setAppend(true);
-		rfAppender.setPrudent(false);
-
-		TimeBasedRollingPolicy<ILoggingEvent> rollingPolicy = new TimeBasedRollingPolicy<>();
-		rollingPolicy.setContext(loggerContext);
-		rollingPolicy.setParent(rfAppender);
-		if (pathname != null && pathname.trim().length() > 0)
-			fpn = pathname + File.separator + "archive" + File.separator + logName + "-%d{yyyy-MM-dd-HH-mm}.%i.log.zip";
-		else
-			fpn = "." + File.separator + "archive" + File.separator + logName + "-%d{yyyy-MM-dd-HH-mm}.%i.log.zip";
-		rollingPolicy.setFileNamePattern(fpn);
-		rollingPolicy.setMaxHistory(10);
-		rollingPolicy.setCleanHistoryOnStart(true);
-
-		SizeAndTimeBasedFNATP<ILoggingEvent> triggeringPolicy = new SizeAndTimeBasedFNATP<ILoggingEvent>();
-		triggeringPolicy.setContext(loggerContext);
-		triggeringPolicy.setMaxFileSize(FileSize.valueOf(String.format("%sKB", 307200l)));
-		triggeringPolicy.setTimeBasedRollingPolicy(rollingPolicy);
-
-		rollingPolicy.setTimeBasedFileNamingAndTriggeringPolicy(triggeringPolicy);
-		if (rollingPolicy.isStarted())
-			rollingPolicy.stop();
-		rollingPolicy.start();
-		if (triggeringPolicy.isStarted())
-			triggeringPolicy.stop();
-		triggeringPolicy.start();
-
-		PatternLayoutEncoder encoder = new PatternLayoutEncoder();
-		encoder.setContext(loggerContext);
-		encoder.setPattern(ptrn);
-		if (encoder.isStarted())
-			encoder.stop();
-		encoder.start();
-
-		rfAppender.setEncoder(encoder);
-		rfAppender.setRollingPolicy(rollingPolicy);
-		rfAppender.setTriggeringPolicy(triggeringPolicy);
-
-		logbackLogger = loggerContext.getLogger(logName);
-		logbackLogger.addAppender(rfAppender);
-		if (rfAppender.isStarted())
-			rfAppender.stop();
-		rfAppender.start();
-
-		if (level.equalsIgnoreCase("debug"))
-		{
-			logbackLogger.setLevel(Level.DEBUG);			
-		}
-		else if (level.equalsIgnoreCase("info"))
-		{
-			logbackLogger.setLevel(Level.INFO);						
-		}
-		else if (level.equalsIgnoreCase("error"))
-		{
-			logbackLogger.setLevel(Level.ERROR);						
-		}
-		else
-		{
-			logbackLogger.setLevel(Level.ALL);												
-		}
-		return logbackLogger;
-	}
 	public static Logger getDailyLogger2(String pathname, String logName, String level, String ptrn) {
 		Logger logbackLogger = (Logger) LoggerFactory.getLogger(logName);
 		RollingFileAppender<ILoggingEvent> a = (RollingFileAppender<ILoggingEvent>) ((AppenderAttachable<ILoggingEvent>) logbackLogger).getAppender(logName);
@@ -244,10 +170,10 @@ public class LogUtil {
 		
 		TimeBasedRollingPolicy<ILoggingEvent> rollingPolicy = new TimeBasedRollingPolicy<>();
 		if (pathname != null && pathname.trim().length() > 0)
-			fpn = pathname + File.separator + "archive" + File.separator + logName + "-%d{yyyy-MM-dd-HH-mm}.%i.log.zip";
+			fpn = pathname + File.separator + "archive" + File.separator + logName + "-%d{yyyyMMddHHmmss}.%i.log.zip";
 		else
-			fpn = "." + File.separator + "archive" + File.separator + logName + "-%d{yyyy-MM-dd-HH-mm}.%i.log.zip";
-		rollingPolicy.setMaxHistory(60);
+			fpn = "." + File.separator + "archive" + File.separator + logName + "-%d{yyyyMMddHHmmss}.%i.log.zip";
+		rollingPolicy.setMaxHistory(3);
 		rollingPolicy.setFileNamePattern(fpn);
 		rollingPolicy.setCleanHistoryOnStart(true);
 		rollingPolicy.setContext(loggerContext);
