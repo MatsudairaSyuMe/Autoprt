@@ -583,16 +583,6 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 //		String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
 //				this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDACT);
 //20200910 change to use new UPSERT
-		String updValue = String.format(updValueptrn,this.rmtaddr.getAddress().getHostAddress(),
-				this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDACT);
-		if (jsel2ins == null)
-			jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
-		int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, this.brws + "," + PrnSvr.svrid);
-//----
-		log.debug("total {} records update status [{}]", row, Constants.STSUSEDACT);
-		jsel2ins.CloseConnect();
-		jsel2ins =  null;
-		prtcliFSM(!firstOpenConn);
 		this.seqNoFile = new File("SEQNO", "SEQNO_" + this.brws);
 		log.debug("seqNoFile local=" + this.seqNoFile.getAbsolutePath());
 		if (seqNoFile.exists() == false) {
@@ -609,6 +599,16 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				log.warn("WARN!!! create or open seqno file {} error {}", "SEQNO_" + this.brws, e.getMessage());
 			}
 		}
+		String updValue = String.format(updValueptrn,this.rmtaddr.getAddress().getHostAddress(),
+				this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDACT);
+		if (jsel2ins == null)
+			jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
+		int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, this.brws + "," + PrnSvr.svrid);
+//----
+		log.debug("total {} records update status [{}]", row, Constants.STSUSEDACT);
+		jsel2ins.CloseConnect();
+		jsel2ins =  null;
+		prtcliFSM(!firstOpenConn);
 	}
 
 	@Override
@@ -2748,7 +2748,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					//20200506
 //					this.startTime = System.currentTimeMillis();
 					//----
-				} else if (dispatcher.isTITA_TOTA_START() && alreadySendTelegram) {
+//				} else if (dispatcher.isTITA_TOTA_START() && alreadySendTelegram) {
+				} else if (alreadySendTelegram) {
 					this.rtelem = dispatcher.getResultTelegram();
 					if (this.rtelem != null) {
 						log.debug(
@@ -3023,7 +3024,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 			this.lastStateTime = -1l;			
 			//----
 			this.alreadySendTelegram = false;
-			this.dispatcher.setTITA_TOTA_START(false);
+			//20210108 mark by MatsudairaSyume
+			////this.dispatcher.setTITA_TOTA_START(false);
+			//----
 			this.iFirst = 0;
 			this.iEnd = 0;
 			this.dCount = "000";
@@ -3400,7 +3403,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 						amlog.info("[{}][{}][{}]:02檢查存摺頁次正確...正確頁次={} 插入頁次={} 行次={}", brws, pasname, account, npage, rpage, nline);
 
 						if (SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0010000000")) {
-							this.curState = SNDANDRCVTLM;
+							this.curState = SNDANDRCVTLM;this.dispatcher.setTITA_TOTA_START(false);//20210108
 							log.debug("{} {} {} AutoPrnCls : --change process telegram", brws, catagory, account);
 						} else {
 							this.curState = SETSIGAFTERCHKBARCODE;
@@ -3441,7 +3444,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				if (npage == rpage) {
 					amlog.info("[{}][{}][{}]:02檢查存摺頁次正確...正確頁次={} 插入頁次={} 行次={}", brws, pasname, account, npage, rpage, nline);
 					if (SetSignal(firstOpenConn, !firstOpenConn, "0000000000", "0010000000")) {
-						this.curState = SNDANDRCVTLM;
+						this.curState = SNDANDRCVTLM;this.dispatcher.setTITA_TOTA_START(false);//20200108
 						log.debug("{} {} {} AutoPrnCls : --change process telegram", brws, catagory, account);
 					} else {
 						this.curState = SETSIGAFTERCHKBARCODE;
@@ -3495,7 +3498,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 			log.debug("{} {} {} :AutoPrnCls : process setsignal after checkbcode", brws, catagory, account);
 			if (npage == rpage && rpage > 0) {  //20200718 for print with page bar code exist
 				if (SetSignal(!firstOpenConn, !firstOpenConn, "0000000000", "0010000000")) {
-					this.curState = SNDANDRCVTLM;
+					this.curState = SNDANDRCVTLM;this.dispatcher.setTITA_TOTA_START(false);//20210108
 					log.debug("{} {} {} AutoPrnCls : --change process telegram", brws, catagory, account);
 				}
 			} else {
@@ -3596,7 +3599,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 						long now = System.currentTimeMillis();
 						if ((now - startTime) > responseTimeout) {
 							this.curState = EJECTAFTERPAGEERROR;
-							log.error("ERROR!!! received data from host timeout {}", responseTimeout);
+							//20210108
+							this.dispatcher.releaseConn();
+							//----
+							log.error("ERROR!!! received data from host timeout {} release connection!!!!", responseTimeout);
 							amlog.info("[{}][{}][{}]:62存摺資料補登失敗！[{}]接電文逾時{}", brws, pasname, this.account,
 									responseTimeout);
 							SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000001");
@@ -3967,6 +3973,11 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				if (this.account == null)
 					this.account = "";
 			} else {
+				//20210108
+				if (this.curState == RECVTLM) {
+					this.dispatcher.releaseConn();
+					log.error("ERROR!!! RECVTLM timeout release connect");
+				}
 				// ----
 				this.curState = EJECTAFTERPAGEERROR;
 				log.error("ERROR!!! eject print host timeout {}", responseTimeout);

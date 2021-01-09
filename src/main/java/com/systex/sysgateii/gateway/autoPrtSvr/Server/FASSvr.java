@@ -211,16 +211,28 @@ public class FASSvr implements MessageListener<byte[]>, Runnable {
 					int sendlen = TXP.CONTROL_BUFFER_SIZE + telmsg.length;
 					this.currSeqMap = this.ec2.getseqfMap();
 					this.currSeqF = this.currSeqMap.get(this.currConn);
+					int seqno = 0;
 					try {
+						//20210107 mark for use local parameter
+						/*
 						this.setSeqNo = Integer.parseInt(FileUtils.readFileToString(this.currSeqF, Charset.defaultCharset())) + 1;
 						//20200910 sdjust setSeqNO from 2 ~ 999
 						if (this.setSeqNo > 999 || this.setSeqNo == 1)
 							this.setSeqNo = 2;
-						//----
-						FileUtils.writeStringToFile(this.currSeqF, Integer.toString(this.setSeqNo), Charset.defaultCharset());
+													FileUtils.writeStringToFile(this.currSeqF, Integer.toString(this.setSeqNo), Charset.defaultCharset());
 						header2 = String.format("\u0001%03d\u000f\u000f",setSeqNo);
+
+						*/
+						seqno = Integer.parseInt(FileUtils.readFileToString(this.currSeqF, Charset.defaultCharset())) + 1;
+						if (seqno > 999) {
+							seqno = 0;
+						}
+						FileUtils.writeStringToFile(this.currSeqF, Integer.toString(seqno), Charset.defaultCharset());
+						header2 = String.format("\u0001%03d\u000f\u000f",seqno);
+
 					} catch (Exception e) {
-						log.warn("WORNING!!! update new seq number string {} error {}",this.setSeqNo, e.getMessage());
+//						log.warn("WORNING!!! update new seq number string {} error {}",this.setSeqNo, e.getMessage());
+						log.warn("WORNING!!! update new seq number string {} error {}",seqno, e.getMessage());
 					}
 
 					ByteBuf req = Unpooled.buffer();
@@ -255,6 +267,17 @@ public class FASSvr implements MessageListener<byte[]>, Runnable {
 		return rtn;
 	}
 
+	//20210107
+	public void releaseConn() {
+		try {
+			this.ec2.getrcvBuf().clear();
+			this.ec2.getConnPool().release(this.currConn);
+		} catch (final Throwable cause) {
+			log.debug("free connect from pool error {}", cause.getMessage());
+		}
+		log.debug("return connect to pool");
+	}
+	//----
 	public byte[] getResultTelegram() {
 		byte[] rtn = null;
 		byte[] lenbary = new byte[3];
@@ -348,5 +371,6 @@ public class FASSvr implements MessageListener<byte[]>, Runnable {
 
 	public void setTITA_TOTA_START(boolean tITA_TOTA_START) {
 		TITA_TOTA_START = tITA_TOTA_START;
+		log.info("setTITA_TOTA_START=[{}]", TITA_TOTA_START);
 	}
 }
