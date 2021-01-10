@@ -2748,8 +2748,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					//20200506
 //					this.startTime = System.currentTimeMillis();
 					//----
-//				} else if (dispatcher.isTITA_TOTA_START() && alreadySendTelegram) {
-				} else if (alreadySendTelegram) {
+				} else if (dispatcher.isTITA_TOTA_START() && alreadySendTelegram) {
 					this.rtelem = dispatcher.getResultTelegram();
 					if (this.rtelem != null) {
 						log.debug(
@@ -2952,6 +2951,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					} else {
 						long now = System.currentTimeMillis();
 						if ((now - startTime) > responseTimeout) {
+							//20210108
+							this.dispatcher.releaseConn();
+							//----
 							// 20200504
 							this.curState = EJECTAFTERPAGEERROR;
 							log.error("ERROR!!! received data from host timeout {}", responseTimeout);
