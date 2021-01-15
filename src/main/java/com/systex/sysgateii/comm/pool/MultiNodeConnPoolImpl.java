@@ -39,6 +39,7 @@ import java.util.TimerTask;
  * semaphore limits the count of the simultaneously used connections. Based on
  * netty.
  * Modified by MatsudairaSyuMe on 2019/11/4
+ * Modifyed by MatsudairaSynMe on 2021/1/12 change for peer-to-peer connection
  */
 public class MultiNodeConnPoolImpl implements NonBlockingConnPool {
 	private static Logger LOG = LoggerFactory.getLogger(MultiNodeConnPoolImpl.class);
@@ -398,7 +399,9 @@ public class MultiNodeConnPoolImpl implements NonBlockingConnPool {
 	public final Channel lease() throws ConnectException {
 		Channel conn;
 		if (null == (conn = poll())) {
-			conn = connectToAnyNode();
+			//20210112 MatsudairaSyume
+			LOG.warn("WORNING!!! no connection");
+//			conn = connectToAnyNode();
 		}
 		if (conn == null) {
 			throw new ConnectException();
@@ -420,6 +423,29 @@ public class MultiNodeConnPoolImpl implements NonBlockingConnPool {
 			}
 		}
 		return count;
+	}
+	//20210112 MatsudairaSyume
+	@Override
+	public final Channel lease(int fail_every_conn_attempt, long test_time_seconds) throws ConnectException {
+		Channel conn;
+		int attempt = 0;
+		while (null == (conn = poll())) {
+			if (++attempt < fail_every_conn_attempt) {
+				//20210112 MatsudairaSyume
+				LOG.warn("WORNING!!! poll busy re-try after {} second(s)", test_time_seconds);
+				try {
+					Thread.sleep(test_time_seconds * 1000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					;
+				}
+			} else
+				break;
+		}
+		if (conn == null) {
+			throw new ConnectException();
+		}
+		return conn;
 	}
 
 	@Override

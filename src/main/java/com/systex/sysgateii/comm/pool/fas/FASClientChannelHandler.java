@@ -119,22 +119,24 @@ public class FASClientChannelHandler extends ChannelInboundHandlerAdapter {
 		MDC.put("LOCAL_ADDRESS", (String) localsock.getAddress().toString());
 		MDC.put("LOCAL_PORT", String.valueOf(localsock.getPort()));
 		clientId = String.valueOf(localsock.getPort());
-		seqNoFile = new File("SEQNO", "SEQNO_" + clientId);
-		log.debug("seqNoFile local=" + seqNoFile.getAbsolutePath());
-		if (seqNoFile.exists() == false) {
-			File parent = seqNoFile.getParentFile();
-			if (parent.exists() == false) {
-				parent.mkdirs();
-			}
-			try {
+		//20210112 MatsudairaSyume always initialize sequence no. from 0
+		try {
+			seqNoFile = new File("SEQNO", "SEQNO_" + clientId);
+			log.debug("seqNoFile local=" + seqNoFile.getAbsolutePath());
+			if (seqNoFile.exists() == false) {
+				File parent = seqNoFile.getParentFile();
+				if (parent.exists() == false) {
+					parent.mkdirs();
+				}
 				seqNoFile.createNewFile();
-				FileUtils.writeStringToFile(seqNoFile, "0", Charset.defaultCharset());
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-				log.error("error while create seqNofile : {}",e.getMessage());
 			}
+			FileUtils.writeStringToFile(seqNoFile, "0", Charset.defaultCharset());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			log.error("fatal error while create seqNofile : {}", e.getMessage());
 		}
+		//----20210112
 		this.seqf_map.put(ctx.channel(), seqNoFile);
 	}
 

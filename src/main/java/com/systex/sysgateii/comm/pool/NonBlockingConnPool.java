@@ -32,6 +32,14 @@ public interface NonBlockingConnPool extends Closeable {
 	throws ConnectException;
 	
 	/**
+	 Get the connection after re-try on failEveryConnAttempt times after sleep testTimeSeconds or null
+	 if no connection is available at the moment.
+	 @throws ConnectException if no connections are in the pool and was unable to create new connection
+	 */
+	Channel lease(int failEveryConnAttempt, long testTimeSeconds)
+	throws ConnectException;
+	
+	/**
 	 Get multiple connections immediately (don't block).
 	 @param conns The output buffer to store the leased connections
 	 @param maxCount The count limit

@@ -239,6 +239,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 	private byte[] cusid = null;
 	private FASSvr dispatcher;
 	private boolean alreadySendTelegram = false;
+	//20210122
+	private boolean PRT_CLI_TITA_TOTA_START = false;
+	//----
 	private byte[] resultmsg = null;
 	private byte[] rtelem = null;
 	private String msgid = "";
@@ -327,6 +330,24 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 		MDC.put("WSNO", this.brws.substring(3));
 		MDC.put("PID", pid);
 		responseTimeout = PrnSvr.setResponseTimeout;
+		//20210112 MatsudairaSyume always initialize sequence no. from 0
+		try {
+			this.seqNoFile = new File("SEQNO", "SEQNO_" + this.brws);
+			log.debug("seqNoFile local=" + this.seqNoFile.getAbsolutePath());
+			if (seqNoFile.exists() == false) {
+				File parent = seqNoFile.getParentFile();
+				if (parent.exists() == false) {
+					parent.mkdirs();
+				}
+				this.seqNoFile.createNewFile();
+			}
+			FileUtils.writeStringToFile(this.seqNoFile, "0", Charset.defaultCharset());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			log.error("error!!! create or open seqno file {} error {}", "SEQNO_" + this.brws, e.getMessage());
+		}
+		//----20210112
 		//20201115
 //		amlog = PrnSvr.amlog;
 		//20201214
@@ -385,6 +406,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				log.info("reset {} on {}", this.brws, PrnSvr.statustbname);
 				//----
 			}
+			//20210112 MatsudairaSyume
+			jsel2ins.CloseConnect();
+			jsel2ins = null;
+			//----
 		} catch (Exception e) {
 			log.error("Address format error!!! {}", e.getMessage());
 		}
@@ -583,22 +608,24 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 //		String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
 //				this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDACT);
 //20200910 change to use new UPSERT
-		this.seqNoFile = new File("SEQNO", "SEQNO_" + this.brws);
-		log.debug("seqNoFile local=" + this.seqNoFile.getAbsolutePath());
-		if (seqNoFile.exists() == false) {
-			File parent = seqNoFile.getParentFile();
-			if (parent.exists() == false) {
-				parent.mkdirs();
-			}
-			try {
+		//20210112 MatsudairaSyume always initialize sequence no. from 0
+/*		try {
+			this.seqNoFile = new File("SEQNO", "SEQNO_" + this.brws);
+			log.debug("seqNoFile local=" + this.seqNoFile.getAbsolutePath());
+			if (seqNoFile.exists() == false) {
+				File parent = seqNoFile.getParentFile();
+				if (parent.exists() == false) {
+					parent.mkdirs();
+				}
 				this.seqNoFile.createNewFile();
-				FileUtils.writeStringToFile(this.seqNoFile, "0", Charset.defaultCharset());
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-				log.warn("WARN!!! create or open seqno file {} error {}", "SEQNO_" + this.brws, e.getMessage());
 			}
-		}
+			FileUtils.writeStringToFile(this.seqNoFile, "0", Charset.defaultCharset());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			log.warn("WARN!!! create or open seqno file {} error {}", "SEQNO_" + this.brws, e.getMessage());
+		}*/
+		//----20210112
 		String updValue = String.format(updValueptrn,this.rmtaddr.getAddress().getHostAddress(),
 				this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDACT);
 		if (jsel2ins == null)
@@ -728,6 +755,11 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 			this.clientMessageBuf.clear();
 			aslog.info(String.format("ERR  %s[%04d]:", this.curSockNm, 0));
 		}
+		//20210112 MatshdairaSyuMe
+		else if (this.curState == RECVTLM && this.isTITA_TOTA_START() == true && this.alreadySendTelegram == true) {
+			log.warn("already send telegram and wait to receive telegram or received telegram error !!!!!!!!");
+		}
+		//----
 	}
 
 	@Override
@@ -2626,7 +2658,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 		int rtn = 0;
 
 		do {
-			log.debug("------------------------------------this.curState=[{}] this.Send_Recv_DATAInq=[{}] this.passSNDANDRCVTLM=[{}]" , this.curState, this.Send_Recv_DATAInq, this.passSNDANDRCVTLM);
+			log.debug("------------------------------------this.curState=[{}] this.Send_Recv_DATAInq=[{}] this.passSNDANDRCVTLM=[{}] alreadySendTelegram=[{}] isTITA_TOTA_START()=[{}]" , this.curState, this.Send_Recv_DATAInq, this.passSNDANDRCVTLM, alreadySendTelegram, this.isTITA_TOTA_START());
 
 			if (this.curState == SNDANDRCVTLM || this.curState == SNDANDRCVDELTLM) {
 				this.iLine = Integer.parseInt(tx_area.get("cline").trim());
@@ -2653,7 +2685,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 						FileUtils.writeStringToFile(this.seqNoFile, Integer.toString(this.setSeqNo),
 								Charset.defaultCharset());
 					} catch (Exception e) {
-						log.warn("WORNING!!! update new seq number string {} error {}", this.setSeqNo, e.getMessage());
+						log.error("ERROR!!! update new seq number string {} error {}", this.setSeqNo, e.getMessage());
 					}
 					tital.setValueRtoLfill("txseq", String.format("%d", this.setSeqNo), (byte) '0');
 					tital.setValue("trancd", "CB");
@@ -2712,7 +2744,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					//20200724
 					if (this.iCount > 0 && ifun == TXP.INQ) {
 						this.curState = SENDTLM;
-						log.debug("{} {} {} AutoPrnCls : --change start process telegram dispatcher.isTITA_TOTA_START()={} alreadySendTelegram ={} this.iCount=[{}]", brws, catagory, account, dispatcher.isTITA_TOTA_START(), this.alreadySendTelegram, this.iCount);
+						//20210112 mark by MatsudairaSyuMe TITA_TOTA_START flag checking change to PrtCli
+						log.debug("{} {} {} AutoPrnCls : --change start process telegram dispatcher.isTITA_TOTA_START()={} alreadySendTelegram ={} this.iCount=[{}]", brws, catagory, account, this.isTITA_TOTA_START(), this.alreadySendTelegram, this.iCount);
+						//----
 					} else {
 						if (SetSignal(firstOpenConn, !firstOpenConn, "0000000000", "0010000000")) {
 							this.curState = RECVTLM;
@@ -2732,29 +2766,48 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 			} else if (this.curState == WAITSETREQSIG) {
 				if (SetSignal(!firstOpenConn, !firstOpenConn, "0000000000", "0010000000")) {
 					this.curState = SENDTLM;
-					log.debug("{} {} {} AutoPrnCls : --change start process telegram dispatcher.isTITA_TOTA_START()={} alreadySendTelegram ={} ", brws, catagory, account, dispatcher.isTITA_TOTA_START(), this.alreadySendTelegram);
+					//20210112 mark by MatsudairaSyuMe TITA_TOTA_START flag checking change to PrtCli
+					log.debug("{} {} {} AutoPrnCls : --change start process telegram dispatcher.isTITA_TOTA_START()={} alreadySendTelegram ={} ", brws, catagory, account, this.isTITA_TOTA_START(), this.alreadySendTelegram);
+					//----
 				} else {
 					log.debug("{} {} {} AutoPrnCls : --change wait Set Signal for request data", brws, catagory,
 							account);
 				}
 			} else if (this.curState == SENDTLM || this.curState == RECVTLM) {
-				if (this.curState == SENDTLM  && !dispatcher.isTITA_TOTA_START() && !alreadySendTelegram) {
+				//20210112 mark by MatsudairaSyuMe TITA_TOTA_START flag checking change to PrtCli
+				if (this.curState == SENDTLM  && !this.isTITA_TOTA_START() && !alreadySendTelegram) {
+					//----
 					//not yet send telegram send firstly
 					alreadySendTelegram = dispatcher.sendTelegram(resultmsg);
-					if (ifun == 1 && iCount == 0) {
-						amlog.info("[{}][{}][{}]:05中心存摺補登資料接收中...", brws, pasname, this.account);
+					//20210112 add by MatsudairaSyuMe TITA_TOTA_START flag checking change to PrtCli
+					if (alreadySendTelegram == false && this.dispatcher.isCurrConnNull()) {
+						log.debug("can not get connect from pool !!!!!!!!!!!!!!!!!");
+						this.curState = EJECTAFTERPAGEERROR;
+					} else {
+						//----
+						if (alreadySendTelegram)
+							this.setTITA_TOTA_START(true);
+						// ----
+						if (ifun == 1 && iCount == 0) {
+							amlog.info("[{}][{}][{}]:05中心存摺補登資料接收中...", brws, pasname, this.account);
+						}
+						this.curState = RECVTLM;
 					}
-					this.curState = RECVTLM;
 					//20200506
 //					this.startTime = System.currentTimeMillis();
 					//----
-				} else if (dispatcher.isTITA_TOTA_START() && alreadySendTelegram) {
+					//20210112 mark by MatsudairaSyuMe TITA_TOTA_START flag checking change to PrtCli
+				} else if (this.isTITA_TOTA_START() && alreadySendTelegram) {
+					//----
 					this.rtelem = dispatcher.getResultTelegram();
 					if (this.rtelem != null) {
+						//20210112 mark by MatsudairaSyuMe TITA_TOTA_START flag checking change to PrtCli
+						this.setTITA_TOTA_START(false);
 						log.debug(
 								"{} {} {} :AutoPrnCls : process telegram isTITA_TOTA_START={} alreadySendTelegram={} get {} [{}]",
-								brws, catagory, account, dispatcher.isTITA_TOTA_START(), alreadySendTelegram,
+								brws, catagory, account, this.isTITA_TOTA_START(), alreadySendTelegram,
 								rtelem.length, new String(this.rtelem));
+						//----
 						total = new TOTATel();
 						boolean totalrtn = total.copyTotaLabel(Arrays.copyOfRange(rtelem, 0, total.getTotalLabelLen()));
 						log.debug("total.initTotaLabel rtn={} getTotalLabelLen={} {}", totalrtn,
@@ -2843,9 +2896,14 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 									this.Send_Recv_DATAInq = true;
 									this.passSNDANDRCVTLM = true;
 									this.alreadySendTelegram = false;
+									this.setTITA_TOTA_START(false);
 									resultmsg = DataINQ(TXP.SENDTHOST, TXP.C0099TYPE, this.dCount);
 									//not yet send telegram send firstly
 									alreadySendTelegram = dispatcher.sendTelegram(resultmsg);
+									//20210112 add by MatsudairaSyuMe TITA_TOTA_START flag checking change to PrtCli
+									if (alreadySendTelegram)
+										this.setTITA_TOTA_START(true);
+									//----
 									this.curState = RECVTLM;
 									//20200810
 									rtn = 622;
@@ -2951,8 +3009,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					} else {
 						long now = System.currentTimeMillis();
 						if ((now - startTime) > responseTimeout) {
-							//20210108
-							this.dispatcher.releaseConn();
+							//20210112 MatsudairaSyume
+							if (!this.dispatcher.getFASSvr().isCurrConnNull())
+								this.dispatcher.releaseConn();
 							//----
 							// 20200504
 							this.curState = EJECTAFTERPAGEERROR;
@@ -2971,19 +3030,23 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 							}
 							rtn = -1;
 						} else {
-							log.warn("WARN!!! not yet received data from host {} dispatcher.isTITA_TOTA_START()={} alreadySendTelegram={}", now - startTime, dispatcher.isTITA_TOTA_START(), alreadySendTelegram);
+							//20210112 mark by MatsudairaSyuMe TITA_TOTA_START flag checking change to PrtCli
+							log.warn("WARN!!! not yet received data from host {} dispatcher.isTITA_TOTA_START()={} alreadySendTelegram={}", now - startTime, this.isTITA_TOTA_START(), alreadySendTelegram);
+							//----
 							rtn = 0;
 						}
 					}
 //					this.alreadySendTelegram = false;
 				}
 			}
-			log.debug("====================================this.curState=[{}] this.Send_Recv_DATAInq=[{}] this.passSNDANDRCVTLM=[{}]" , this.curState, this.Send_Recv_DATAInq, this.passSNDANDRCVTLM);
+			log.debug("====================================this.curState=[{}] this.Send_Recv_DATAInq=[{}] this.passSNDANDRCVTLM=[{}] alreadySendTelegram=[{}] isTITA_TOTA_START()=[{}]" , this.curState, this.Send_Recv_DATAInq, this.passSNDANDRCVTLM, alreadySendTelegram , this.isTITA_TOTA_START());
 		} while (this.iCount < iCon);
 
 		//20200428 add for receive error TOTA  ERROR message set to this.curState == EJECTAFTERPAGEERROR
+		//20210112 mark by MatsudairaSyuMe TITA_TOTA_START flag checking change to PrtCli
 		if ((this.curState == STARTPROCTLM || this.curState == SNDANDRCVDELTLMCHKEND || this.curState == EJECTAFTERPAGEERROR)
-				&& !dispatcher.isTITA_TOTA_START() && alreadySendTelegram)
+				&& !this.isTITA_TOTA_START() && alreadySendTelegram)
+			//----
 			//relese channel
 			this.alreadySendTelegram = false;
 
@@ -2998,7 +3061,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 
 	private void resetPassBook() {
 		this.alreadySendTelegram = false;
-		this.dispatcher.setTITA_TOTA_START(false);
+		//20210112 mark by MatsudairaSyuMe TITA_TOTA_START flag checking change to PrtCli
+		this.setTITA_TOTA_START(false);
+		//----
 		this.iFirst = 0;
 		this.iEnd = 0;
 		this.dCount = "000";
@@ -3026,8 +3091,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 			this.lastStateTime = -1l;			
 			//----
 			this.alreadySendTelegram = false;
-			//20210108 mark by MatsudairaSyume
-			////this.dispatcher.setTITA_TOTA_START(false);
+			//20210108 mark by MatsudairaSyuMe
+			////this.setTITA_TOTA_START(false);
 			//----
 			this.iFirst = 0;
 			this.iEnd = 0;
@@ -3164,7 +3229,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 
 		case OPENPRINTER:
 			this.alreadySendTelegram = false;
-			this.dispatcher.setTITA_TOTA_START(false);
+			//20210112 mark by MatsudairaSyuMe TITA_TOTA_START flag checking change to PrtCli
+			this.setTITA_TOTA_START(false);
+			//----
 			this.iFirst = 0;
 			this.iEnd = 0;
 			this.dCount = "000";
@@ -3405,7 +3472,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 						amlog.info("[{}][{}][{}]:02檢查存摺頁次正確...正確頁次={} 插入頁次={} 行次={}", brws, pasname, account, npage, rpage, nline);
 
 						if (SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0010000000")) {
-							this.curState = SNDANDRCVTLM;this.dispatcher.setTITA_TOTA_START(false);//20210108
+							//20210112 mark by MatsudairaSyuMe TITA_TOTA_START flag checking change to PrtCli
+							this.curState = SNDANDRCVTLM;this.setTITA_TOTA_START(false);//20210108
+							//20210112 mark by MatsudairaSyuMe TITA_TOTA_START flag checking change to PrtCli
 							log.debug("{} {} {} AutoPrnCls : --change process telegram", brws, catagory, account);
 						} else {
 							this.curState = SETSIGAFTERCHKBARCODE;
@@ -3446,7 +3515,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				if (npage == rpage) {
 					amlog.info("[{}][{}][{}]:02檢查存摺頁次正確...正確頁次={} 插入頁次={} 行次={}", brws, pasname, account, npage, rpage, nline);
 					if (SetSignal(firstOpenConn, !firstOpenConn, "0000000000", "0010000000")) {
-						this.curState = SNDANDRCVTLM;this.dispatcher.setTITA_TOTA_START(false);//20200108
+						//20210112 mark by MatsudairaSyuMe TITA_TOTA_START flag checking change to PrtCli
+						this.curState = SNDANDRCVTLM;this.setTITA_TOTA_START(false);//20200108
+						//----
 						log.debug("{} {} {} AutoPrnCls : --change process telegram", brws, catagory, account);
 					} else {
 						this.curState = SETSIGAFTERCHKBARCODE;
@@ -3500,7 +3571,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 			log.debug("{} {} {} :AutoPrnCls : process setsignal after checkbcode", brws, catagory, account);
 			if (npage == rpage && rpage > 0) {  //20200718 for print with page bar code exist
 				if (SetSignal(!firstOpenConn, !firstOpenConn, "0000000000", "0010000000")) {
-					this.curState = SNDANDRCVTLM;this.dispatcher.setTITA_TOTA_START(false);//20210108
+					//20210112 mark by MatsudairaSyuMe TITA_TOTA_START flag checking change to PrtCli
+					this.curState = SNDANDRCVTLM;this.setTITA_TOTA_START(false);//20210108
+					//----
 					log.debug("{} {} {} AutoPrnCls : --change process telegram", brws, catagory, account);
 				}
 			} else {
@@ -3550,8 +3623,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 			break;
 
 		case SNDANDRCVTLM:
+			//20210112 mark by MatsudairaSyuMe TITA_TOTA_START flag checking change to PrtCli
 			log.debug("{} {} {} :AutoPrnCls : process telegram isTITA_TOTA_START={} alreadySendTelegram={}", brws,
-					catagory, account, dispatcher.isTITA_TOTA_START(), alreadySendTelegram);
+					catagory, account, this.isTITA_TOTA_START(), alreadySendTelegram);
+			//----
 			int r = 0;
 			this.Send_Recv_DATAInq = true;
 			this.passSNDANDRCVTLM = true;  //20200714
@@ -3585,9 +3660,11 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 		case WAITSETREQSIG:
 		case SENDTLM:
 		case RECVTLM:
+			//20210112 mark by MatsudairaSyuMe TITA_TOTA_START flag checking change to PrtCli
 			log.debug(
 					"{} {} {} :AutoPrnCls : process set req signal before send telegram isTITA_TOTA_START={} alreadySendTelegram={} this.Send_Recv_DATAInq={}",
-					brws, catagory, account, dispatcher.isTITA_TOTA_START(), alreadySendTelegram, this.Send_Recv_DATAInq);
+					brws, catagory, account, this.isTITA_TOTA_START(), alreadySendTelegram, this.Send_Recv_DATAInq);
+			//----
 			r = 0;
 			if (this.Send_Recv_DATAInq) {
 				if ((r = Send_Recv(this.iFig, TXP.INQ, "0", "0")) != 0) {
@@ -3597,16 +3674,26 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 						amlog.info("[{}][{}][{}]:61存摺資料補登失敗！", brws, pasname, account);
 					}
 				} else {
-					if (r == 0 && dispatcher.isTITA_TOTA_START() == false && this.alreadySendTelegram == false) {
+					//20210112 mark by MatsudairaSyuMe TITA_TOTA_START flag checking change to PrtCli
+					if ((r == 0 && this.isTITA_TOTA_START() == false && this.alreadySendTelegram == false)
+							|| (this.curState == EJECTAFTERPAGEERROR)) {
+						//----
 						long now = System.currentTimeMillis();
-						if ((now - startTime) > responseTimeout) {
+						//20210112 mark by MatsudairaSyuMe TITA_TOTA_START flag checking change to PrtCli
+						if (((now - startTime) > responseTimeout) || (this.curState == EJECTAFTERPAGEERROR)) {
+						//----
 							this.curState = EJECTAFTERPAGEERROR;
-							//20210108
-							this.dispatcher.releaseConn();
-							//----
-							log.error("ERROR!!! received data from host timeout {} release connection!!!!", responseTimeout);
-							amlog.info("[{}][{}][{}]:62存摺資料補登失敗！[{}]接電文逾時{}", brws, pasname, this.account,
+							if (this.dispatcher.getFASSvr().isCurrConnNull()) {
+								log.error("ERROR!!! received data from host timeout {} can't get connection!!!!", responseTimeout);
+								amlog.info("[{}][{}][{}]:62存摺資料補登失敗！與中心連線逾時", brws, pasname, this.account);
+							} else {
+								log.error("ERROR!!! received data from host timeout {} release connection!!!!", responseTimeout);
+								amlog.info("[{}][{}][{}]:62存摺資料補登失敗！[{}]接電文逾時", brws, pasname, this.account,
 									responseTimeout);
+								//20210112
+								this.dispatcher.releaseConn();
+								//----
+							}
 							SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000001");
 							// ----
 							if (SetSignal(!firstOpenConn, firstOpenConn, "0000000000", "0000000001")) {
@@ -3628,10 +3715,18 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 						this.curState = SESSIONBREAK;
 						amlog.info("[{}][{}][{}]:61存摺資料補登失敗！", brws, pasname, account);
 					} else {
-						if (r == 0 && dispatcher.isTITA_TOTA_START() == false && this.alreadySendTelegram == false) {
+						//20210112 mark by MatsudairaSyuMe TITA_TOTA_START flag checking change to PrtCli
+						if ((r == 0 && this.isTITA_TOTA_START() == false && this.alreadySendTelegram == false)
+								|| (this.curState == EJECTAFTERPAGEERROR)) {
+							//----
 							long now = System.currentTimeMillis();
-							if ((now - startTime) > responseTimeout) {
+							//20210112 mark by MatsudairaSyuMe TITA_TOTA_START flag checking change to PrtCl
+							if (((now - startTime) > responseTimeout) || (this.curState == EJECTAFTERPAGEERROR)) {
+							//----
 								this.curState = EJECTAFTERPAGEERROR;
+								//20210108
+								this.dispatcher.releaseConn();
+								//----
 								log.error("ERROR!!! received data from host timeout {}", responseTimeout);
 								amlog.info("[{}][{}][{}]:62存摺刪除資料補登失敗！[{}]接電文逾時{}", brws, pasname, this.account,
 										responseTimeout);
@@ -3654,24 +3749,32 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 			}
 			switch (this.iFig) {
 				case TXP.PBTYPE:
+					//20210112 mark by MatsudairaSyuMe TITA_TOTA_START flag checking change to PrtCli
 					log.debug(
 						"SENDTLM/RECVTLM r = {} pb_arr.size=>{} isTITA_TOTA_START={} alreadySendTelegram={}=====check prtcliFSM",
-						r, pb_arr.size(), dispatcher.isTITA_TOTA_START(), this.alreadySendTelegram);
+						r, pb_arr.size(), this.isTITA_TOTA_START(), this.alreadySendTelegram);
+					//----
 					break;
 				case TXP.FCTYPE:
+					//20210112 mark by MatsudairaSyuMe TITA_TOTA_START flag checking change to PrtCli
 					log.debug(
 						"SENDTLM/RECVTLM r = {} fc_arr.size=>{} isTITA_TOTA_START={} alreadySendTelegram={}=====check prtcliFSM",
-						r, fc_arr.size(), dispatcher.isTITA_TOTA_START(), this.alreadySendTelegram);
+						r, fc_arr.size(), this.isTITA_TOTA_START(), this.alreadySendTelegram);
+					//----
 					break;
 				case TXP.GLTYPE:
+					//20210112 mark by MatsudairaSyuMe TITA_TOTA_START flag checking change to PrtCli
 					log.debug(
 						"SENDTLM/RECVTLM r = {} gl_arr.size=>{} isTITA_TOTA_START={} alreadySendTelegram={}=====check prtcliFSM",
-						r, gl_arr.size(), dispatcher.isTITA_TOTA_START(), this.alreadySendTelegram);
+						r, gl_arr.size(), this.isTITA_TOTA_START(), this.alreadySendTelegram);
+					//----
 					break;
 				default:
+					//20210112 mark by MatsudairaSyuMe TITA_TOTA_START flag checking change to PrtCli
 					log.debug(
 						"SENDTLM/RECVTLM r = {} unonow passbook type=[{}] isTITA_TOTA_START={} alreadySendTelegram={}=====check prtcliFSM",
-						r, this.iFig, dispatcher.isTITA_TOTA_START(), this.alreadySendTelegram);
+						r, this.iFig, this.isTITA_TOTA_START(), this.alreadySendTelegram);
+					//----
 					break;
 			}
 			//20200718
@@ -3774,8 +3877,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 			break;
 
 		case SNDANDRCVDELTLM:
+			//20210112 mark by MatsudairaSyuMe TITA_TOTA_START flag checking change to PrtCli
 			log.debug("{} {} {} :AutoPrnCls : process SNDANDRCVDELTLM isTITA_TOTA_START={} alreadySendTelegram={}", brws,
-					catagory, account, dispatcher.isTITA_TOTA_START(), alreadySendTelegram);
+					catagory, account, this.isTITA_TOTA_START(), alreadySendTelegram);
+			//----
 			r = 0;
 			this.Send_Recv_DATAInq = false;
 			if ((r = Send_Recv(this.iFig, TXP.DEL, "", tx_area.get("mbal"))) != 0) {
@@ -3837,7 +3942,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 							//20200611 turn page processing
 //							this.curState = CAPTUREPASSBOOK;
 							this.alreadySendTelegram = false;
-							this.dispatcher.setTITA_TOTA_START(false);
+							//20210112 mark by MatsudairaSyuMe TITA_TOTA_START flag checking change to PrtCli
+							this.setTITA_TOTA_START(false);
+							//----
 							this.curState = ENTERPASSBOOKSIG;
 							SetSignal(firstOpenConn, firstOpenConn, "1100000000", "0000010000");
 							log.debug("{}=====resetPassBook for turn page prtcliFSM", this.curState);
@@ -3873,7 +3980,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 						//20200611 turn page processing
 //						this.curState = CAPTUREPASSBOOK;
 						this.alreadySendTelegram = false;
-						this.dispatcher.setTITA_TOTA_START(false);
+						//20210112 mark by MatsudairaSyuMe TITA_TOTA_START flag checking change to PrtCli
+						this.setTITA_TOTA_START(false);
+						//----
 						this.curState = ENTERPASSBOOKSIG;
 						SetSignal(firstOpenConn, firstOpenConn, "1100000000", "0000010000");
 						log.debug("{}=====resetPassBook for turn page prtcliFSM", this.curState);
@@ -4161,6 +4270,16 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 			e.printStackTrace();
 			log.debug("insert am error status table error e:[{}]", e.toString());
 		}
+	}
+	//----
+	//20210112
+	public boolean isTITA_TOTA_START() {
+		return PRT_CLI_TITA_TOTA_START;
+	}
+
+	public void setTITA_TOTA_START(boolean tITA_TOTA_START) {
+		PRT_CLI_TITA_TOTA_START = tITA_TOTA_START;
+		log.info("setTITA_TOTA_START=[{}]", PRT_CLI_TITA_TOTA_START);
 	}
 	//----
 }
