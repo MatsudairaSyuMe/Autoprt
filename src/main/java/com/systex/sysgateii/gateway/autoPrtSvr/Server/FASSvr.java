@@ -153,6 +153,9 @@ public class FASSvr implements MessageListener<byte[]>, Runnable {
 				NODES[i] = NODES[i].trim();
 				log.debug("Enter createServer {}", NODES[i]);
 			}
+			//20210116 MatsudairaSyuMe for imcoming TOTA telegram Map
+			Constants.incomingTelegramMap.clear();
+			//----
 			log.debug("Enter createServer size={}", NODES.length);
 			server = new FASSvr(_map);
 		}
@@ -186,34 +189,29 @@ public class FASSvr implements MessageListener<byte[]>, Runnable {
 	}
 
 	public boolean sendTelegram(byte[] telmsg) {
-		boolean rtn = false;
-		if (telmsg == null) {
-			log.debug("sendTelegram error send telegam null");
-			return rtn;
-		}
+		//20210116 MatsydairaSyuMe
+		synchronized (NODES) {
+			boolean rtn = false;
+			if (telmsg == null) {
+				log.debug("sendTelegram error send telegam null");
+				return rtn;
+			}
 //20210112 MatsudairaSyuMe			int attempt = 0;
-		this.currConn = null;
-		log.debug("1 start sendTelegram [{}]", this.currConn);
-			//20210112 MatsudairaSyuMe
-/*			int attempt = 0;
-			while (null == (this.currConn = this.ec2.getConnPool().lease())) {
-				if (++attempt < FAIL_EVERY_CONN_ATTEMPT) {
-					//20210112 MatsudairaSyuMe
-					log.warn("WORNING!!! poll busy re-try after {} second(s)", TEST_TIME_SECONDS);
-					Thread.sleep(TEST_TIME_SECONDS * 1000);
-				} else
-					break;
-			}*/
-		try {
-			this.currConn = this.ec2.getConnPool().lease(FAIL_EVERY_CONN_ATTEMPT, TEST_TIME_SECONDS);
-				//----
-//			} catch (final InterruptedException e) {
-//				log.debug("get connect from pool error {}", e.getMessage());
-		} catch (final Throwable cause) {
-			log.debug("get connect from pool error {}", cause.getMessage());
-		}
-		if (this.currConn != null) {
+			log.debug("1 start sendTelegram [{}]", this.currConn);
+			// 20210112 MatsudairaSyuMe
+			/*
+			 * int attempt = 0;
+			 * while (null == (this.currConn = this.ec2.getConnPool().lease())) {
+			 *    if (++attempt < FAIL_EVERY_CONN_ATTEMPT) {
+			 * //20210112 MatsudairaSyuMe
+			 *        log.warn("WORNING!!! poll busy re-try after {} second(s)",
+			 *        TEST_TIME_SECONDS); Thread.sleep(TEST_TIME_SECONDS * 1000);
+			 *     } else
+			 *        break;
+			 *  }
+			 */
 			try {
+				this.currConn = this.ec2.getConnPool().lease(FAIL_EVERY_CONN_ATTEMPT, TEST_TIME_SECONDS);
 				InetSocketAddress localsock = (InetSocketAddress) this.currConn.localAddress();
 				InetSocketAddress remotsock = (InetSocketAddress) this.currConn.remoteAddress();
 				MDC.put("SERVER_ADDRESS", (String) remotsock.getAddress().toString());
@@ -225,24 +223,24 @@ public class FASSvr implements MessageListener<byte[]>, Runnable {
 				this.currSeqF = this.currSeqMap.get(this.currConn);
 				int seqno = 0;
 				try {
-					//20210107 mark for use local parameter
+					// 20210107 mark for use local parameter
 					/*
-					this.setSeqNo = Integer.parseInt(FileUtils.readFileToString(this.currSeqF, Charset.defaultCharset())) + 1;
-					//20200910 sdjust setSeqNO from 2 ~ 999
-					if (this.setSeqNo > 999 || this.setSeqNo == 1)
-						this.setSeqNo = 2;
-												FileUtils.writeStringToFile(this.currSeqF, Integer.toString(this.setSeqNo), Charset.defaultCharset());
-					header2 = String.format("\u0001%03d\u000f\u000f",setSeqNo);
-						*/
-					seqno = Integer.parseInt(FileUtils.readFileToString(this.currSeqF, Charset.defaultCharset())) + 1;
+					 * this.setSeqNo = Integer.parseInt(FileUtils.readFileToString(this.currSeqF,
+					 * Charset.defaultCharset())) + 1; //20200910 sdjust setSeqNO from 2 ~ 999 if
+					 * (this.setSeqNo > 999 || this.setSeqNo == 1) this.setSeqNo = 2;
+					 * FileUtils.writeStringToFile(this.currSeqF, Integer.toString(this.setSeqNo),
+					 * Charset.defaultCharset()); header2 =
+					 * String.format("\u0001%03d\u000f\u000f",setSeqNo);
+					 */
+					seqno = Integer.parseInt(FileUtils.readFileToString(this.currSeqF, Charset.defaultCharset()))
+							+ 1;
 					if (seqno > 999) {
 						seqno = 0;
 					}
 					FileUtils.writeStringToFile(this.currSeqF, Integer.toString(seqno), Charset.defaultCharset());
-					header2 = String.format("\u0001%03d\u000f\u000f",seqno);
+					header2 = String.format("\u0001%03d\u000f\u000f", seqno);
 				} catch (Exception e) {
-//					log.warn("WORNING!!! update new seq number string {} error {}",this.setSeqNo, e.getMessage());
-					log.warn("WORNING!!! update new seq number string {} error {}",seqno, e.getMessage());
+					log.warn("WORNING!!! update new seq number string {} error {}", seqno, e.getMessage());
 				}
 
 				ByteBuf req = Unpooled.buffer();
@@ -252,53 +250,179 @@ public class FASSvr implements MessageListener<byte[]>, Runnable {
 				req.writeBytes(header2.getBytes());
 				req.writeBytes(telmsg);
 				this.currConn.writeAndFlush(req.retain()).sync();
-				//20210112 mark by MatsudairaSyuMe TITA_TOTA_START flag checking change to PrtCli
-				//this.setTITA_TOTA_START(true);
-				//----
 				rtn = true;
-				//---20200903 move after send and convert 0x00 to ' '
-//					for (int _tmpi = 0; _tmpi < telmsg.length; _tmpi++)
-//						if ((byte)telmsg[_tmpi] == (byte)0x0)
-//							telmsg[_tmpi] = (byte)' ';
 				try {
-					log.debug(String.format(fasSendPtrn, header1.getBytes().length  + dataUtil.to3ByteArray(sendlen).length + header2.getBytes().length + telmsg.length, charcnv.BIG5bytesUTF8str(telmsg)) + " isCurrConnNull=[" +isCurrConnNull()+ "]");
-					faslog.debug(String.format(fasSendPtrn, header1.getBytes().length  + dataUtil.to3ByteArray(sendlen).length + header2.getBytes().length + telmsg.length, charcnv.BIG5bytesUTF8str(telmsg)));
+					log.debug(String.format(fasSendPtrn,
+							header1.getBytes().length + dataUtil.to3ByteArray(sendlen).length
+									+ header2.getBytes().length + telmsg.length,
+							charcnv.BIG5bytesUTF8str(telmsg)) + " isCurrConnNull=[" + isCurrConnNull() + "]");
+					faslog.debug(
+							String.format(fasSendPtrn,
+									header1.getBytes().length + dataUtil.to3ByteArray(sendlen).length
+											+ header2.getBytes().length + telmsg.length,
+									charcnv.BIG5bytesUTF8str(telmsg)));
 				} catch (Exception e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-				//----
+				// ----
+			} catch (final InterruptedException e) {
+				log.debug("get connect from pool error {}", e.getMessage());
+			} catch (final Throwable cause) {
+				log.debug("get connect from pool error {}", cause.getMessage());
+			} finally {
+				log.debug("2 end sendTelegram isCurrConnNull=[{}]", isCurrConnNull());
+				releaseConn();
+			}
+			log.debug("3 end sendTelegram isCurrConnNull=[{}]", isCurrConnNull());
+			return rtn;
+		}
+		//----
+	}
+
+	public boolean sendTelegramold(byte[] telmsg) {
+		//20210116 MatsydairaSyuMe
+		synchronized (NODES) {
+			boolean rtn = false;
+			if (telmsg == null) {
+				log.debug("sendTelegram error send telegam null");
+				return rtn;
+			}
+//20210112 MatsudairaSyuMe			int attempt = 0;
+			this.currConn = null;
+			log.debug("1 start sendTelegram [{}]", this.currConn);
+			// 20210112 MatsudairaSyuMe
+			/*
+			 * int attempt = 0; while (null == (this.currConn =
+			 * this.ec2.getConnPool().lease())) { if (++attempt < FAIL_EVERY_CONN_ATTEMPT) {
+			 * //20210112 MatsudairaSyuMe
+			 * log.warn("WORNING!!! poll busy re-try after {} second(s)",
+			 * TEST_TIME_SECONDS); Thread.sleep(TEST_TIME_SECONDS * 1000); } else break; }
+			 */
+			try {
+				this.currConn = this.ec2.getConnPool().lease(FAIL_EVERY_CONN_ATTEMPT, TEST_TIME_SECONDS);
+				// ----
+//			} catch (final InterruptedException e) {
+//				log.debug("get connect from pool error {}", e.getMessage());
+			} catch (final Throwable cause) {
+				log.debug("get connect from pool error {}", cause.getMessage());
+			}
+			if (this.currConn != null) {
+				try {
+					InetSocketAddress localsock = (InetSocketAddress) this.currConn.localAddress();
+					InetSocketAddress remotsock = (InetSocketAddress) this.currConn.remoteAddress();
+					MDC.put("SERVER_ADDRESS", (String) remotsock.getAddress().toString());
+					MDC.put("SERVER_PORT", String.valueOf(remotsock.getPort()));
+					MDC.put("LOCAL_ADDRESS", (String) localsock.getAddress().toString());
+					MDC.put("LOCAL_PORT", String.valueOf(localsock.getPort()));
+					int sendlen = TXP.CONTROL_BUFFER_SIZE + telmsg.length;
+					this.currSeqMap = this.ec2.getseqfMap();
+					this.currSeqF = this.currSeqMap.get(this.currConn);
+					int seqno = 0;
+					try {
+						// 20210107 mark for use local parameter
+						/*
+						 * this.setSeqNo = Integer.parseInt(FileUtils.readFileToString(this.currSeqF,
+						 * Charset.defaultCharset())) + 1; //20200910 sdjust setSeqNO from 2 ~ 999 if
+						 * (this.setSeqNo > 999 || this.setSeqNo == 1) this.setSeqNo = 2;
+						 * FileUtils.writeStringToFile(this.currSeqF, Integer.toString(this.setSeqNo),
+						 * Charset.defaultCharset()); header2 =
+						 * String.format("\u0001%03d\u000f\u000f",setSeqNo);
+						 */
+						seqno = Integer.parseInt(FileUtils.readFileToString(this.currSeqF, Charset.defaultCharset()))
+								+ 1;
+						if (seqno > 999) {
+							seqno = 0;
+						}
+						FileUtils.writeStringToFile(this.currSeqF, Integer.toString(seqno), Charset.defaultCharset());
+						header2 = String.format("\u0001%03d\u000f\u000f", seqno);
+					} catch (Exception e) {
+//					log.warn("WORNING!!! update new seq number string {} error {}",this.setSeqNo, e.getMessage());
+						log.warn("WORNING!!! update new seq number string {} error {}", seqno, e.getMessage());
+					}
+
+					ByteBuf req = Unpooled.buffer();
+					req.clear();
+					req.writeBytes(header1.getBytes());
+					req.writeBytes(dataUtil.to3ByteArray(sendlen));
+					req.writeBytes(header2.getBytes());
+					req.writeBytes(telmsg);
+					this.currConn.writeAndFlush(req.retain()).sync();
+					// 20210112 mark by MatsudairaSyuMe TITA_TOTA_START flag checking change to
+					// PrtCli
+					// this.setTITA_TOTA_START(true);
+					// ----
+					rtn = true;
+					// ---20200903 move after send and convert 0x00 to ' '
+//					for (int _tmpi = 0; _tmpi < telmsg.length; _tmpi++)
+//						if ((byte)telmsg[_tmpi] == (byte)0x0)
+//							telmsg[_tmpi] = (byte)' ';
+					try {
+						log.debug(String.format(fasSendPtrn,
+								header1.getBytes().length + dataUtil.to3ByteArray(sendlen).length
+										+ header2.getBytes().length + telmsg.length,
+								charcnv.BIG5bytesUTF8str(telmsg)) + " isCurrConnNull=[" + isCurrConnNull() + "]");
+						faslog.debug(
+								String.format(fasSendPtrn,
+										header1.getBytes().length + dataUtil.to3ByteArray(sendlen).length
+												+ header2.getBytes().length + telmsg.length,
+										charcnv.BIG5bytesUTF8str(telmsg)));
+					} catch (Exception e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					// ----
 //				} catch (UnsupportedEncodingException e) {
 //					// TODO Auto-generated catch block
 //					e.printStackTrace();
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-				log.debug("sendTelegram error {}", e.getMessage());
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+					log.debug("sendTelegram error {}", e.getMessage());
+				}
 			}
+			// 20210112 MatsudairaSyuMe
+			else {
+				log.error("can not get connection from pool after retry [{}] time per [{}] seconds",
+						FAIL_EVERY_CONN_ATTEMPT, TEST_TIME_SECONDS);
+			}
+			log.debug("2 end sendTelegram [{}]", this.currConn);
+			return rtn;
 		}
-		//20210112 MatsudairaSyuMe
-		else {
-			log.error("can not get connection from pool after retry [{}] time per [{}] seconds", FAIL_EVERY_CONN_ATTEMPT, TEST_TIME_SECONDS);
-		}
-		log.debug("2 end sendTelegram [{}]", this.currConn);
-		return rtn;
+		//----
 	}
 
 	//20210107
 	public void releaseConn() {
-		try {
+		//20210116 MatsydairaSyuMe
+		synchronized (NODES) {
+			try {
 			//20210112 MatshdairaSyume release connection error handling
-			if (this.ec2.getConnPool() != null && this.currConn != null) {
-				this.ec2.getConnPool().release(this.currConn);
-				this.currConn = null;
-				log.debug("return connect to pool");
-			} else
-				log.warn("connection poll is [{}] or current connection is [{}]", this.ec2.getConnPool(), this.currConn);
-		} catch (final Throwable cause) {
-			log.debug("free connect from pool error {}", cause.getMessage());
+				if (this.ec2.getConnPool() != null && this.currConn != null) {
+					this.ec2.getConnPool().release(this.currConn);
+					this.currConn = null;
+					log.debug("return connect to pool");
+				} else
+					log.warn("connection poll is [{}] or current connection is [{}]", this.ec2.getConnPool(), this.currConn);
+			} catch (final Throwable cause) {
+				log.debug("free connect from pool error {}", cause.getMessage());
+			}
 		}
 //		log.debug("return connect to pool");
+	}
+	//20210116 MatshdairaSyume
+	public byte[] getResultTelegram(String telegramKey) {
+		synchronized (Constants.incomingTelegramMap) {
+			log.debug("look by telegramKey=[{}] size={}", telegramKey, Constants.incomingTelegramMap.size());
+			byte[] rtn = null;
+			if (null == (rtn = (byte[]) Constants.incomingTelegramMap.remove(telegramKey))) {
+				log.debug("not yet get incomming telegram");
+			} else {
+				log.debug("get incomming telegram");
+//				releaseConn();
+			}
+			return rtn; 
+		}
 	}
 	//----
 	public byte[] getResultTelegram() {

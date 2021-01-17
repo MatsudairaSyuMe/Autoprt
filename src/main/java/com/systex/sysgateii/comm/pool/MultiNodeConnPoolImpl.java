@@ -428,22 +428,24 @@ public class MultiNodeConnPoolImpl implements NonBlockingConnPool {
 	@Override
 	public final Channel lease(int fail_every_conn_attempt, long test_time_seconds) throws ConnectException {
 		Channel conn;
-		int attempt = 0;
-		while (null == (conn = poll())) {
-			if (++attempt < fail_every_conn_attempt) {
-				//20210112 MatsudairaSyume
-				LOG.warn("WORNING!!! poll busy re-try after {} second(s)", test_time_seconds);
-				try {
-					Thread.sleep(test_time_seconds * 1000);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					;
-				}
-			} else
-				break;
-		}
-		if (conn == null) {
-			throw new ConnectException();
+		synchronized (allConns) {
+			int attempt = 0;
+			while (null == (conn = poll())) {
+				if (++attempt < fail_every_conn_attempt) {
+					// 20210112 MatsudairaSyume
+					LOG.warn("WORNING!!! poll busy re-try after {} second(s)", test_time_seconds);
+					try {
+						Thread.sleep(test_time_seconds * 1000);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						;
+					}
+				} else
+					break;
+			}
+			if (conn == null) {
+				throw new ConnectException();
+			}
 		}
 		return conn;
 	}

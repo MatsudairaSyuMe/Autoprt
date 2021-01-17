@@ -298,6 +298,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 	GwDao amtbcon = null;
 	private String amstatusptrn = "'%s','%s','%s','%s','%s'";
 
+	//20210116 MataudairaSyuMe  for incoming TOTA telegram
+	private String telegramKey = "";
+	//----
+
 	//----
 
 	public List<ActorStatusListener> getActorStatusListeners() {
@@ -2741,6 +2745,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 //20200619					SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0010000000");
 					//----
 					atlog.info("TITA_TEXT=[{}]",new String(resultmsg));
+					//20210116 MataudairaSyuMe  for incoming TOTA telegram
+					this.telegramKey = dataUtil.getTelegramKey(resultmsg);
+					log.info("telegramKey=[{}]", this.telegramKey);
+					//----
 					//20200724
 					if (this.iCount > 0 && ifun == TXP.INQ) {
 						this.curState = SENDTLM;
@@ -2799,7 +2807,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					//20210112 mark by MatsudairaSyuMe TITA_TOTA_START flag checking change to PrtCli
 				} else if (this.isTITA_TOTA_START() && alreadySendTelegram) {
 					//----
-					this.rtelem = dispatcher.getResultTelegram();
+					//20210116 MatshdairaSyuMe
+//					this.rtelem = dispatcher.getResultTelegram();
+					this.rtelem = dispatcher.getResultTelegram(this.telegramKey);
 					if (this.rtelem != null) {
 						//20210112 mark by MatsudairaSyuMe TITA_TOTA_START flag checking change to PrtCli
 						this.setTITA_TOTA_START(false);
@@ -3010,8 +3020,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 						long now = System.currentTimeMillis();
 						if ((now - startTime) > responseTimeout) {
 							//20210112 MatsudairaSyume
+							/* 20210116 MatsudairaSyuMe
 							if (!this.dispatcher.getFASSvr().isCurrConnNull())
 								this.dispatcher.releaseConn();
+								*/
 							//----
 							// 20200504
 							this.curState = EJECTAFTERPAGEERROR;
@@ -3207,6 +3219,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				// 20201006
 				if (this.lastState != SESSIONBREAK) {
 					log.info("CurMode {} curState == [{}] stop the thread", getCurMode(), this.curState);
+					// 20210116 MatsudairaSyuMe
+					if (!this.dispatcher.getFASSvr().isCurrConnNull())
+						this.dispatcher.releaseConn();
+					//----
 					PrnSvr.closeNode(this.brws, true);
 					LogUtil.stopLog((ch.qos.logback.classic.Logger) amlog);
 					Thread.currentThread().interrupt();
@@ -3682,16 +3698,17 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 						//20210112 mark by MatsudairaSyuMe TITA_TOTA_START flag checking change to PrtCli
 						if (((now - startTime) > responseTimeout) || (this.curState == EJECTAFTERPAGEERROR)) {
 						//----
-							this.curState = EJECTAFTERPAGEERROR;
-							if (this.dispatcher.getFASSvr().isCurrConnNull()) {
+							//this.curState = EJECTAFTERPAGEERROR;
+							if (this.curState == EJECTAFTERPAGEERROR) {
 								log.error("ERROR!!! received data from host timeout {} can't get connection!!!!", responseTimeout);
 								amlog.info("[{}][{}][{}]:62存摺資料補登失敗！與中心連線逾時", brws, pasname, this.account);
 							} else {
 								log.error("ERROR!!! received data from host timeout {} release connection!!!!", responseTimeout);
+								this.curState = EJECTAFTERPAGEERROR;
 								amlog.info("[{}][{}][{}]:62存摺資料補登失敗！[{}]接電文逾時", brws, pasname, this.account,
 									responseTimeout);
 								//20210112
-								this.dispatcher.releaseConn();
+								//20210116 MAtsudairaSyuMe this.dispatcher.releaseConn();
 								//----
 							}
 							SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000001");
@@ -3725,7 +3742,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 							//----
 								this.curState = EJECTAFTERPAGEERROR;
 								//20210108
-								this.dispatcher.releaseConn();
+								//20210116 MatsudairaSyume this.dispatcher.releaseConn();
 								//----
 								log.error("ERROR!!! received data from host timeout {}", responseTimeout);
 								amlog.info("[{}][{}][{}]:62存摺刪除資料補登失敗！[{}]接電文逾時{}", brws, pasname, this.account,
@@ -4086,7 +4103,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 			} else {
 				//20210108
 				if (this.curState == RECVTLM) {
-					this.dispatcher.releaseConn();
+//	20210116 MAtsudairaSyuMe				this.dispatcher.releaseConn();
 					log.error("ERROR!!! RECVTLM timeout release connect");
 				}
 				// ----

@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -19,6 +20,8 @@ import org.slf4j.MDC;
 import com.systex.sysgateii.gateway.telegram.S004;
 import com.systex.sysgateii.gateway.util.CharsetCnv;
 import com.systex.sysgateii.gateway.util.dataUtil;
+import com.systex.sysgateii.gateway.comm.Constants;
+import com.systex.sysgateii.gateway.comm.TXP;
 import com.systex.sysgateii.gateway.listener.ActorStatusListener;
 
 import io.netty.buffer.ByteBuf;
@@ -227,6 +230,22 @@ public class FASClientChannelHandler extends ChannelInboundHandlerAdapter {
 								}
 								
 							}
+							//20210116 MatsudairaSyuMe
+							else {
+								byte[] resultmsg = cnvResultTelegram();
+								String telegramKey = dataUtil.getTelegramKey(resultmsg);
+								if (Constants.incomingTelegramMap.containsKey(telegramKey)) {
+									if (Constants.incomingTelegramMap.replace(telegramKey, resultmsg) == null)
+										log.error("new incoming update by telegramKey [{}] into map table error!!!!", telegramKey);
+									else
+										log.debug("new incoming already update by telegramKey [{}] into map table", telegramKey);
+								} else {
+									Constants.incomingTelegramMap.put(telegramKey, resultmsg);
+									log.debug("new incoming telegram put into map table by telegramKey [{}]", telegramKey);
+								}
+								log.debug("new incoming telegram map table size=[{}]", Constants.incomingTelegramMap.size());
+							}
+							//----
 						}
 					}
 				} else // if
@@ -376,5 +395,49 @@ public class FASClientChannelHandler extends ChannelInboundHandlerAdapter {
 		this.isConnected.set(false);
 		log.debug("-publish end-");
 	}
-
+	//20200116 MatsudairaSyuMe
+	private byte[] cnvResultTelegram() {
+		byte[] rtn = null;
+		byte[] lenbary = new byte[3];
+		byte[] telmbyteary = null;
+		int size = 0;
+		if (this.clientMessageBuf.hasArray() && this.clientMessageBuf.readableBytes() > 0) {
+			if (this.clientMessageBuf.readableBytes() >= 12) {
+				this.clientMessageBuf.getBytes(this.clientMessageBuf.readerIndex() + 3, lenbary);
+				size = dataUtil.fromByteArray(lenbary);
+				log.debug("clientMessageBuf.readableBytes={} size={}", this.clientMessageBuf.readableBytes(), size);
+				if (size > 0 && size <= this.clientMessageBuf.readableBytes()) {
+					telmbyteary = new byte[size];
+					this.clientMessageBuf.readBytes(telmbyteary);
+					log.debug("read {} byte(s) from clientMessageBuf after {}", size,
+							this.clientMessageBuf.readableBytes());
+					try {
+						rtn = new byte[telmbyteary.length - TXP.CONTROL_BUFFER_SIZE];
+						System.arraycopy(telmbyteary, TXP.CONTROL_BUFFER_SIZE, rtn, 0,
+								telmbyteary.length - TXP.CONTROL_BUFFER_SIZE);
+						byte[] faslogary = new byte[rtn.length];
+						System.arraycopy(rtn, 0, faslogary, 0, rtn.length);
+						for (int _tmpidx = 0; _tmpidx < rtn.length; _tmpidx++)
+							faslogary[_tmpidx] = (rtn[_tmpidx] == (byte) 0x0 ? (byte) ' ' : rtn[_tmpidx]);
+						faslog.debug(
+								String.format(fasRecvPtrn, telmbyteary.length, charcnv.BIG5bytesUTF8str(faslogary)));
+						rtn = remove03(rtn);
+						log.debug("get rtn len= {}", rtn.length);
+					} catch (Exception e) {
+						log.warn("WORNING!!! update new seq number string {} error {}", this.getSeqStr, e.getMessage());
+					}
+				} // else
+			}
+		}
+		return rtn;
+	}
+	
+	private byte[] remove03(byte[] source) {
+		if (source[source.length - 1] == 0x03) {
+			source = ArrayUtils.subarray(source, 0, source.length - 1);
+			log.debug("remove03");
+		}
+		return source;
+	}
+	//----
 }

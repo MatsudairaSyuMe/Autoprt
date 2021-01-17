@@ -1,5 +1,7 @@
 package com.systex.sysgateii.gateway.comm;
-
+//20210116 MatsudairaSyume
+import java.util.concurrent.ConcurrentHashMap;
+//----
 public class Constants {
 	public static String LABEL_KEY_SYNC = "syncCheck";
 	public static final String DEF_ENCODING = "UTF-8";
@@ -67,4 +69,7 @@ public class Constants {
 	public static final String STSUSEDINACT = "1";
 	public static final String STSUSEDACT = "2";
 	public static final String STSBACKACT = "3";
+	//20210116  MatsudairaSyume add for incoming TOTA Telegram
+	public static final ConcurrentHashMap<String, Object> incomingTelegramMap = new ConcurrentHashMap<String, Object>();
+	//----	
 }

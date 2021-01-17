@@ -1,5 +1,6 @@
 package com.systex.sysgateii.gateway.util;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import org.apache.commons.lang3.ArrayUtils;
@@ -233,5 +234,20 @@ public class dataUtil {
 		T[] result = Arrays.copyOf(first, first.length + second.length);
 		System.arraycopy(second, 0, result, first.length, second.length);
 		return result;
+	}
+	private static int keyOffset = 0;
+	private static int keyLength = 15;
+
+	//20210116 MatsudairaSyuMe for incoming TOTA telegram
+	public static String getTelegramKey(byte[] bytes) {
+		if (bytes == null) {
+			return "";
+		}
+		if (bytes.length < keyLength) {
+			return "";
+		}
+
+		bytes = ArrayUtils.subarray(bytes, keyOffset, keyOffset + keyLength);
+		return new String(bytes, StandardCharsets.UTF_8);
 	}
 }
