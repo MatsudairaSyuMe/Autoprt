@@ -3219,10 +3219,6 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				// 20201006
 				if (this.lastState != SESSIONBREAK) {
 					log.info("CurMode {} curState == [{}] stop the thread", getCurMode(), this.curState);
-					// 20210116 MatsudairaSyuMe
-					if (!this.dispatcher.getFASSvr().isCurrConnNull())
-						this.dispatcher.releaseConn();
-					//----
 					PrnSvr.closeNode(this.brws, true);
 					LogUtil.stopLog((ch.qos.logback.classic.Logger) amlog);
 					Thread.currentThread().interrupt();
