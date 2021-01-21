@@ -18,8 +18,6 @@ import java.util.Vector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.systex.sysgateii.gateway.autoPrtSvr.Server.PrnSvr;
-import com.systex.sysgateii.gateway.comm.Constants;
 import com.systex.sysgateii.gateway.util.DataConvert;
 
 public class GwDao {
@@ -36,14 +34,9 @@ public class GwDao {
 	private ResultSet rs = null;
 	private boolean verbose = true;
 	private String sfn = "";
-	//20200815
-	private PreparedStatement tbsdytblpreparedStatement = null;
 	private Vector<String> tbsdytblcolumnNames = null;
 	private Vector<Integer> tbsdytblcolumnTypes = null;
 	private ResultSet tbsdytblrs = null;
-	private String tbsdysfn = "";
-	//----
-
 	/**
 	 * 
 	 */
@@ -65,110 +58,7 @@ public class GwDao {
 		this.verbose = v;
 	}
 
-	public int UPSERT2(String fromTblName, String field, String updval, String keyname, String selkeyval)
-			throws Exception {
-		columnNames = new Vector<String>();
-		columnTypes = new Vector<Integer>();
-		// STEP 4: Execute a query
-		//20200908 add check for field and keyname
-		if (fromTblName == null || fromTblName.trim().length() == 0 || field == null || field.trim().length() == 0
-				|| keyname == null || keyname.trim().length() == 0)
-			throw new Exception("given table name or field or keyname error =>" + fromTblName);
-		log.debug(String.format("Select from table %s... where %s=%s", fromTblName, keyname, selkeyval));
-		java.sql.Statement stmt = selconn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE, ResultSet.CLOSE_CURSORS_AT_COMMIT);
-		//20200908
-		String keyset = "";
-		if (keyname.indexOf(',') > -1 && selkeyval.indexOf(',') > -1) {
-			String[] keynameary = keyname.split(",");
-			String[] keyvalueary = selkeyval.split(",");
-			if (keynameary.length != keyvalueary.length)
-				throw new Exception("given fields keyname can't correspond to keyvfield =>keynames [" + keyname + "] selkayvals [" + selkeyval + "]");
-			else {
-				for (int i = 0; i < keynameary.length; i++)
-					keyset = keyset + keynameary[i] + " = " + keyvalueary[i] + (i == (keynameary.length - 1) ? "" : " and ");
-			}
-		} else
-			keyset = keyname + " = " + selkeyval;
-		//----
-        //20200908 modify for multiple fields key value
-//		rs = ((java.sql.Statement) stmt)
-//				.executeQuery("SELECT " + field + " FROM " + fromTblName + " where " + keyname + "=" + selkeyval);
-		rs = ((java.sql.Statement) stmt)
-				.executeQuery("SELECT " + field + " FROM " + fromTblName + " where " + keyset);
-		//----
-		log.debug("update value [{}]", updval);
-		String[] valary = updval.split(",");
-		for (int i = 0; i < valary.length; i++) {
-			int s = valary[i].indexOf('\'');
-			int l = valary[i].lastIndexOf('\'');
-			if (s != l && s >= 0 && l >= 0 && s < l)
-				valary[i] = valary[i].substring(s + 1, l);
-		}
-		int type = -1;
-		int row = 0;
-
-		if (rs != null) {
-			ResultSetMetaData rsmd = rs.getMetaData();
-			int columnCount = 0;
-			while (columnCount < rsmd.getColumnCount()) {
-				columnCount++;
-				type = rsmd.getColumnType(columnCount);
-				if (verbose)
-					log.debug("ColumnName={} ColumnTypeName={} ", rsmd.getColumnName(columnCount), rsmd.getColumnTypeName(columnCount) );
-				columnNames.add(rsmd.getColumnName(columnCount));
-				columnTypes.add(type);
-			}
-			String colNames = "";
-			String vals = "";
-			String updcolNames = "";
-			String updvals = "";
-			log.debug("table fields {}", Arrays.toString(columnNames.toArray()));
-			log.debug("given vals {}", Arrays.toString(valary));
-
-			for (columnCount = 0; columnCount < columnNames.size(); columnCount++) {
-				if (colNames.trim().length() > 0) {
-					colNames = colNames + "," + columnNames.get(columnCount);
-					vals = vals + ",?";
-				} else {
-					colNames = columnNames.get(columnCount);
-					vals = "?";
-				}
-				if (!columnNames.get(columnCount).equalsIgnoreCase(keyname)) {
-					if (updcolNames.trim().length() > 0) {
-						updcolNames = updcolNames + "," + columnNames.get(columnCount);
-						updvals = updvals + ",?";
-					} else {
-						updcolNames = columnNames.get(columnCount);
-						updvals = "?";
-					}
-				}
-			}
-			String SQL_INSERT = "INSERT INTO " + fromTblName + " (" + colNames + ") VALUES (" + vals + ")";
-			//20200908 modify for multi key value
-//			String SQL_UPDATE = "UPDATE " + fromTblName + " SET (" + updcolNames + ") = (" + updvals + ") WHERE "
-//					+ keyname + " = " + selkeyval;
-			String SQL_UPDATE = "UPDATE " + fromTblName + " SET (" + updcolNames + ") = (" + updvals + ") WHERE "
-					+ keyset;
-			log.debug("given SQL_INSERT = {}", SQL_INSERT);
-			log.debug("given SQL_UPDATE = {}", SQL_UPDATE);
-			//----
-			if (rs.next()) {
-				preparedStatement = selconn.prepareStatement(SQL_UPDATE);
-				log.debug("record exist using update:{}", SQL_UPDATE);
-				log.debug("record exist using valary:{} len={}", valary, valary.length);
-				setValueps(preparedStatement, valary, true);
-
-			} else {
-				preparedStatement = selconn.prepareStatement(SQL_INSERT);
-				setValueps(preparedStatement, valary, false);
-				log.debug("record not exist using insert:{}", SQL_INSERT);
-			}
-
-			row = preparedStatement.executeUpdate();
-
-		}
-		return row;
-	}
+	//20210118 MatsudairaSyuMe delete change for vulnerability scanning sql injection defense
 	public int UPSERT(String fromTblName, String field, String updval, String keyname, String selkeyval)
 			throws Exception {
 		columnNames = new Vector<String>();
@@ -177,20 +67,25 @@ public class GwDao {
 				|| keyname == null || keyname.trim().length() == 0)
 			throw new Exception("given table name or field or keyname error =>" + fromTblName);
 		log.debug(String.format("Select from table %s... where %s=%s", fromTblName, keyname, selkeyval));
-		java.sql.Statement stmt = selconn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE, ResultSet.CLOSE_CURSORS_AT_COMMIT);
-		//20200908
 		String keyset = "";
 		String[] keynameary = keyname.split(",");
 		String[] keyvalueary = selkeyval.split(",");
+		String[] keyvaluearynocomm = selkeyval.split(",");
 		if (keynameary.length != keyvalueary.length)
-			throw new Exception("given fields keyname can't correspond to keyvfield =>keynames [" + keyname + "] selkayvals [" + selkeyval + "]");
+			throw new Exception("given fields keyname can't correspond to keyvfield =>keynames [" + keyname + "] selkeyval [" + selkeyval + "]");
 		else {
 			for (int i = 0; i < keynameary.length; i++)
-				keyset = keyset + keynameary[i] + " = " + keyvalueary[i] + (i == (keynameary.length - 1) ? "" : " and ");
+				keyset = keyset + keynameary[i] + " = " + "?" + (i == (keynameary.length - 1) ? "" : " and ");
+			for (int i = 0; i < keyvaluearynocomm.length; i++) {
+				int s = keyvalueary[i].indexOf('\'');
+				int l = keyvalueary[i].lastIndexOf('\'');
+				if (s != l && s >= 0 && l >= 0 && s < l)
+					keyvaluearynocomm[i] = keyvalueary[i].substring(s + 1, l);
+			}
 		}
-		rs = ((java.sql.Statement) stmt)
-				.executeQuery("SELECT " + keyname + "," + field + " FROM " + fromTblName + " where " + keyset);
-		log.debug("update value [{}] selkeyval [{}]", updval, selkeyval);
+		String selstr = "SELECT " + keyname + "," + field + " FROM " + fromTblName + " where " + keyset;
+		log.debug("UPSERT selstr [{}]", selstr);
+		log.debug("update value [{}]", updval);
 		String[] valary = updval.split(",");
 		for (int i = 0; i < valary.length; i++) {
 			int s = valary[i].indexOf('\'');
@@ -198,22 +93,24 @@ public class GwDao {
 			if (s != l && s >= 0 && l >= 0 && s < l)
 				valary[i] = valary[i].substring(s + 1, l);
 		}
-		String[] selkeyvalary = selkeyval.split(",");
-		for (int i = 0; i < selkeyvalary.length; i++) {
-			int s = selkeyvalary[i].indexOf('\'');
-			int l = selkeyvalary[i].lastIndexOf('\'');
-			if (s != l && s >= 0 && l >= 0 && s < l)
-				selkeyvalary[i] = selkeyvalary[i].substring(s + 1, l);
+
+		PreparedStatement stmt = selconn.prepareStatement(selstr);
+		for (int i = 0; i < keyvalueary.length; i++) {
+			if (keyvalueary[i].indexOf('\'') > -1 )
+				stmt.setString(i + 1, keyvaluearynocomm[i]);
+			else
+				stmt.setInt(i + 1, Integer.valueOf(keyvaluearynocomm[i]));
 		}
+		ResultSet tblrs = stmt.executeQuery();
 		int type = -1;
 		int row = 0;
 		//verbose=true;
-		if (rs != null) {
-			ResultSetMetaData rsmd = rs.getMetaData();
+		if (tblrs != null) {
+			ResultSetMetaData rsmd = tblrs.getMetaData();
 			int columnCount = 0;
 			boolean updateMode = false;
 			log.debug("table request fields {}", field);
-			if (rs.next()) {
+			if (tblrs.next()) {
 				log.debug("update mode");
 				updateMode = true;
 			} else
@@ -237,7 +134,7 @@ public class GwDao {
 			String vals = "";
 			String updcolNames = "";
 			String updvals = "";
-			log.debug("given vals {} selkeyvalary {}", Arrays.toString(valary), Arrays.toString(selkeyvalary));
+			log.debug("given vals {} keyvaluearynocomm {}", Arrays.toString(valary), Arrays.toString(keyvaluearynocomm));
 
 			for (columnCount = 0; columnCount < columnNames.size(); columnCount++) {
 				if (colNames.trim().length() > 0) {
@@ -258,31 +155,38 @@ public class GwDao {
 				}
 			}
 			String SQL_INSERT = "INSERT INTO " + fromTblName + " (" + colNames + ") VALUES (" + vals + ")";
-			//20200908 modify for multi key value
-//			String SQL_UPDATE = "UPDATE " + fromTblName + " SET (" + updcolNames + ") = (" + updvals + ") WHERE "
-//					+ keyname + " = " + selkeyval;
 			String SQL_UPDATE = "UPDATE " + fromTblName + " SET (" + updcolNames + ") = (" + updvals + ") WHERE "
 					+ keyset;
-			//----
+			String[] insvalary = null;
 			if (updateMode) {
+				for (int i = 0; i < keynameary.length; i++) {
+					columnCount++;
+					if (verbose)
+						log.debug("columnCount=[{}] ColumnName={} ColumnTypeName={} ", columnCount, keynameary[i], keyvalueary[i].indexOf('\'') > -1? "VARCHAR":"INTEGER");
+					columnNames.add(keynameary[i]);
+					if (keyvalueary[i].indexOf('\'') > -1)
+						columnTypes.add(Types.VARCHAR);
+					else
+						columnTypes.add(Types.INTEGER);
+				}
+				insvalary = com.systex.sysgateii.gateway.util.dataUtil.concatArray(valary, keyvaluearynocomm);
 				preparedStatement = selconn.prepareStatement(SQL_UPDATE);
 				log.debug("record exist using update:{}", SQL_UPDATE);
-				log.debug("record exist using valary:{} len={}", valary, valary.length);
-				setValueps(preparedStatement, valary, false);
+				log.debug("record exist using valary:{} len={}", insvalary, insvalary.length);
+				setValueps(preparedStatement, insvalary, false);
 
 			} else {
 				preparedStatement = selconn.prepareStatement(SQL_INSERT);
-				String[] insvalary = com.systex.sysgateii.gateway.util.dataUtil.concatArray(selkeyvalary, valary);
-				setValueps(preparedStatement, insvalary, false);
 				log.debug("record not exist using insert:{}", SQL_INSERT);
+				insvalary = com.systex.sysgateii.gateway.util.dataUtil.concatArray(keyvaluearynocomm, valary);
+				setValueps(preparedStatement, insvalary, false);
 			}
-
 			row = preparedStatement.executeUpdate();
-
+			tblrs.close();
 		}
 		return row;
 	}
-	//20200908 update only
+	//20210118 MatsudairaSyuMe delete change for vulnerability scanning sql injection defense
 	public int UPDT(String fromTblName, String field, String updval, String keyname, String selkeyval)
 			throws Exception {
 		columnNames = new Vector<String>();
@@ -293,27 +197,11 @@ public class GwDao {
 				|| keyname == null || keyname.trim().length() == 0)
 			throw new Exception("given table name or field or keyname error =>" + fromTblName);
 		log.debug(String.format("Select from table %s... where %s=%s", fromTblName, keyname, selkeyval));
-		java.sql.Statement stmt = selconn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE, ResultSet.CLOSE_CURSORS_AT_COMMIT);
-		//20200908
+		
 		String keyset = "";
-		if (keyname.indexOf(',') > -1 && selkeyval.indexOf(',') > -1) {
-			String[] keynameary = keyname.split(",");
-			String[] keyvalueary = selkeyval.split(",");
-			if (keynameary.length != keyvalueary.length)
-				throw new Exception("given fields keyname can't correspond to keyvfield =>keynames [" + keyname + "] selkayvals [" + selkeyval + "]");
-			else {
-				for (int i = 0; i < keynameary.length; i++)
-					keyset = keyset + keynameary[i] + " = " + keyvalueary[i] + (i == (keynameary.length - 1) ? "" : " and ");
-			}
-		} else
-			keyset = keyname + " = " + selkeyval;
-		//----
-        //20200908 modify for multiple fields key value
-//		rs = ((java.sql.Statement) stmt)
-//				.executeQuery("SELECT " + field + " FROM " + fromTblName + " where " + keyname + "=" + selkeyval);
-		rs = ((java.sql.Statement) stmt)
-				.executeQuery("SELECT " + field + " FROM " + fromTblName + " where " + keyset);
-		//----
+		String[] keynameary = keyname.split(",");
+		String[] keyvalueary = selkeyval.split(",");
+		String[] keyvaluearynocomm = selkeyval.split(",");
 		log.debug("update value [{}]", updval);
 		String[] valary = updval.split(",");
 		for (int i = 0; i < valary.length; i++) {
@@ -322,17 +210,40 @@ public class GwDao {
 			if (s != l && s >= 0 && l >= 0 && s < l)
 				valary[i] = valary[i].substring(s + 1, l);
 		}
+		
+		if (keynameary.length != keyvalueary.length)
+			throw new Exception("given fields keyname can't correspond to keyvfield =>keynames [" + keyname + "] selkeyval [" + selkeyval + "]");
+		else {
+			for (int i = 0; i < keynameary.length; i++)
+				keyset = keyset + keynameary[i] + " = " + "?" + (i == (keynameary.length - 1) ? "" : " and ");
+			for (int i = 0; i < keyvaluearynocomm.length; i++) {
+				int s = keyvalueary[i].indexOf('\'');
+				int l = keyvalueary[i].lastIndexOf('\'');
+				if (s != l && s >= 0 && l >= 0 && s < l)
+					keyvaluearynocomm[i] = keyvalueary[i].substring(s + 1, l);
+			}
+		}
+		String selstr = "SELECT " + field + " FROM " + fromTblName + " where " + keyset;
+		log.debug("UPDT selstr [{}]", selstr);
+		PreparedStatement stmt = selconn.prepareStatement(selstr);
+		for (int i = 0; i < keyvalueary.length; i++) {
+			if (keyvalueary[i].indexOf('\'') > -1 )
+				stmt.setString(i + 1, keyvaluearynocomm[i]);
+			else
+				stmt.setInt(i + 1, Integer.valueOf(keyvaluearynocomm[i]));
+		}
+		ResultSet tblrs = stmt.executeQuery();
 		int type = -1;
 		int row = 0;
 
-		if (rs != null) {
-			ResultSetMetaData rsmd = rs.getMetaData();
+		if (tblrs != null) {
+			ResultSetMetaData rsmd = tblrs.getMetaData();
 			int columnCount = 0;
 			while (columnCount < rsmd.getColumnCount()) {
 				columnCount++;
 				type = rsmd.getColumnType(columnCount);
 				if (verbose)
-					log.debug("ColumnName={} ColumnTypeName={} ", rsmd.getColumnName(columnCount), rsmd.getColumnTypeName(columnCount) );
+					log.debug("columnCount=[{}] ColumnName={} ColumnTypeName={} ", columnCount, rsmd.getColumnName(columnCount), rsmd.getColumnTypeName(columnCount));
 				columnNames.add(rsmd.getColumnName(columnCount));
 				columnTypes.add(type);
 			}
@@ -341,7 +252,7 @@ public class GwDao {
 			String updcolNames = "";
 			String updvals = "";
 			log.debug("table fields {}", Arrays.toString(columnNames.toArray()));
-			log.debug("given vals {}", Arrays.toString(valary));
+			log.debug("given keyvaluearynocomm {}", Arrays.toString(keyvaluearynocomm));
 
 			for (columnCount = 0; columnCount < columnNames.size(); columnCount++) {
 				if (colNames.trim().length() > 0) {
@@ -362,26 +273,32 @@ public class GwDao {
 				}
 			}
 			String SQL_INSERT = "INSERT INTO " + fromTblName + " (" + colNames + ") VALUES (" + vals + ")";
-			//20200908 modify for multi key value
-//			String SQL_UPDATE = "UPDATE " + fromTblName + " SET (" + updcolNames + ") = (" + updvals + ") WHERE "
-//					+ keyname + " = " + selkeyval;
 			String SQL_UPDATE = "UPDATE " + fromTblName + " SET (" + updcolNames + ") = (" + updvals + ") WHERE "
 					+ keyset;
 			//----
-			if (rs.next()) {
+			String[] insvalary = com.systex.sysgateii.gateway.util.dataUtil.concatArray(valary, keyvaluearynocomm);
+			if (tblrs.next()) {
+				for (int i = 0; i < keynameary.length; i++) {
+					columnCount++;
+					if (verbose)
+						log.debug("columnCount=[{}] ColumnName={} ColumnTypeName={} ", columnCount, keynameary[i], keyvalueary[i].indexOf('\'') > -1? "VARCHAR":"INTEGER");
+					columnNames.add(keynameary[i]);
+					if (keyvalueary[i].indexOf('\'') > -1)
+						columnTypes.add(Types.VARCHAR);
+					else
+						columnTypes.add(Types.INTEGER);
+				}
 				preparedStatement = selconn.prepareStatement(SQL_UPDATE);
+				setValueps(preparedStatement, insvalary, false);
 				log.debug("record exist using update:{}", SQL_UPDATE);
-				log.debug("record exist using valary:{} len={}", valary, valary.length);
-				setValueps(preparedStatement, valary, false);
-
+				log.debug("record exist using valary:{} len={}", insvalary, insvalary.length);
 			} else {
 				preparedStatement = selconn.prepareStatement(SQL_INSERT);
-				setValueps(preparedStatement, valary, false);
+				setValueps(preparedStatement, insvalary, false);
 				log.debug("record not exist using insert:{}", SQL_INSERT);
 			}
-
 			row = preparedStatement.executeUpdate();
-
+			tblrs.close();
 		}
 		return row;
 	}
@@ -401,6 +318,7 @@ public class GwDao {
 //					rtnVal = Integer.toString(tbsdytblrs.getInt(fieldn));
 					rtnVal = tbsdytblrs.getString(fieldn);
 				}
+				tbsdytblrs.close();	
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -409,7 +327,7 @@ public class GwDao {
 		log.debug("return TBSDY=[{}]", rtnVal);
 		return rtnVal;
 	}
-	//20200815
+	//20210118 MatsudairaSyuMe delete change for vulnerability scanning sql injection defense
 	public String SELONEFLD(String fromTblName, String fieldn, String keyname, String keyvalue, boolean verbose)
 			throws Exception {
 		String rtnVal = "";
@@ -420,36 +338,40 @@ public class GwDao {
 			return rtnVal;
 		try {
 			log.debug("keyname = keyvalue=[{}]",  keyname + "=" + keyvalue);
-
-			//20200901
-
 			String keyset = "";
-			if (keyname.indexOf(',') > -1 && keyvalue.indexOf(',') > -1) {
-				String[] keynameary = keyname.split(",");
-				String[] keyvalueary = keyvalue.split(",");
-				if (keynameary.length != keyvalueary.length)
-					return rtnVal;
-				else {
-					for (int i = 0; i < keynameary.length; i++)
-						keyset = keyset + keynameary[i] + " = " + keyvalueary[i] + (i == (keynameary.length - 1) ? "" : " and ");
+			String[] keynameary = keyname.split(",");
+			String[] keyvalueary = keyvalue.split(",");
+			String[] keyvaluearynocomm = keyvalue.split(",");
+			if (keynameary.length != keyvalueary.length)
+				throw new Exception("given fields keyname can't correspond to keyvfield =>keynames [" + keyname + "] keyvalues [" + keyvalue + "]");
+			else {
+				for (int i = 0; i < keynameary.length; i++)
+					keyset = keyset + keynameary[i] + " = " + "?" + (i == (keynameary.length - 1) ? "" : " and ");
+				for (int i = 0; i < keyvaluearynocomm.length; i++) {
+					int s = keyvalueary[i].indexOf('\'');
+					int l = keyvalueary[i].lastIndexOf('\'');
+					if (s != l && s >= 0 && l >= 0 && s < l)
+						keyvaluearynocomm[i] = keyvalueary[i].substring(s + 1, l);
 				}
-			} else
-				keyset = keyname + " = " + keyvalue;
+			}
 
-			//----
-			java.sql.Statement stmt = selconn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE, ResultSet.CLOSE_CURSORS_AT_COMMIT);
-//20200901 change to use key set
-//			tbsdytblrs = ((java.sql.Statement) stmt).executeQuery("SELECT " + fieldn + " FROM " + fromTblName + " where "
-//					+ keyname + "=" + keyvalue);
-
-			tbsdytblrs = ((java.sql.Statement) stmt).executeQuery("SELECT " + fieldn + " FROM " + fromTblName + " where "
-					+ keyset);
-
+			if ((keyname.indexOf(',') > -1) && (keyvalue.indexOf(',') > -1)
+					&& (keynameary.length != keyvalueary.length))
+				return rtnVal;
+			String selstr = "SELECT " + fieldn + " FROM " + fromTblName + " where " + keyset;
+			log.debug("selstr=[{}]", selstr);
+			PreparedStatement stmt = selconn.prepareStatement(selstr);
+			for (int i = 0; i < keyvalueary.length; i++) {
+				if (keyvalueary[i].indexOf('\'') > -1 )
+					stmt.setString(i + 1, keyvaluearynocomm[i]);
+				else
+					stmt.setInt(i + 1, Integer.valueOf(keyvaluearynocomm[i]));
+			}
+			ResultSet tblrs = stmt.executeQuery();
+			
 			int type = -1;
-			log.debug("ketset=[{}]", keyset);
-
-			if (tbsdytblrs != null) {
-				ResultSetMetaData rsmd = tbsdytblrs.getMetaData();
+			if (tblrs != null) {
+				ResultSetMetaData rsmd = tblrs.getMetaData();
 				int columnCount = 0;
 				while (columnCount < rsmd.getColumnCount()) {
 					columnCount++;
@@ -459,16 +381,15 @@ public class GwDao {
 					tbsdytblcolumnNames.add(rsmd.getColumnName(columnCount));
 					tbsdytblcolumnTypes.add(type);
 				}
-				//20200901
 				int idx = 0;
-				while (tbsdytblrs.next()) {
-//					log.debug("-->[{}]",gettbsdytblValue(tbsdytblrs, fieldn, verbose));
+				while (tblrs.next()) {
 					if (idx == 0)
-						rtnVal = tbsdytblrs.getString(fieldn);
+						rtnVal = tblrs.getString(fieldn);
 					else
-						rtnVal = rtnVal + "," + tbsdytblrs.getString(fieldn);
+						rtnVal = rtnVal + "," + tblrs.getString(fieldn);
 					idx++;
 				}
+				tblrs.close();
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -478,7 +399,7 @@ public class GwDao {
 		return rtnVal;
 	}
 	//----
-	//20200901
+	//20210118 MatsudairaSyuMe delete change for vulnerability scanning sql injection defense
 	public String[] SELMFLD(String fromTblName, String fieldsn, String keyname, String keyvalue, boolean verbose)
 			throws Exception {
 		String[] rtnVal = {};
@@ -497,27 +418,41 @@ public class GwDao {
 				fieldset[0] = fieldsn;
 			}
 			String keyset = "";
-			if (keyname.indexOf(',') > -1 && keyvalue.indexOf(',') > -1) {
-				String[] keynameary = keyname.split(",");
-				String[] keyvalueary = keyvalue.split(",");
-				if (keynameary.length != keyvalueary.length)
-					return rtnVal;
-				else {
-					for (int i = 0; i < keynameary.length; i++)
-						keyset = keyset + keynameary[i] + " = " + keyvalueary[i] + (i == (keynameary.length - 1) ? "" : " and ");
+			String[] keynameary = keyname.split(",");
+			String[] keyvalueary = keyvalue.split(",");
+			String[] keyvaluearynocomm = keyvalue.split(",");
+			if (keynameary.length != keyvalueary.length)
+				throw new Exception("given fields keyname can't correspond to keyvfield =>keynames [" + keyname + "] keyvalues [" + keyvalue + "]");
+			else {
+				for (int i = 0; i < keynameary.length; i++)
+					keyset = keyset + keynameary[i] + " = " + "?" + (i == (keynameary.length - 1) ? "" : " and ");
+				for (int i = 0; i < keyvaluearynocomm.length; i++) {
+					int s = keyvalueary[i].indexOf('\'');
+					int l = keyvalueary[i].lastIndexOf('\'');
+					if (s != l && s >= 0 && l >= 0 && s < l)
+						keyvaluearynocomm[i] = keyvalueary[i].substring(s + 1, l);
 				}
-			} else
-				keyset = keyname + " = " + keyvalue;
-			java.sql.Statement stmt = selconn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE, ResultSet.CLOSE_CURSORS_AT_COMMIT);
-			tbsdytblrs = ((java.sql.Statement) stmt).executeQuery("SELECT " + fieldsn + " FROM " + fromTblName + " where "
-					+ keyset);
+			}
 
+			if ((keyname.indexOf(',') > -1) && (keyvalue.indexOf(',') > -1)
+					&& (keynameary.length != keyvalueary.length))
+				return rtnVal;
+
+			String selstr = "SELECT " + fieldsn + " FROM " + fromTblName + " where " + keyset;
+			log.debug("selstr=[{}]", selstr);
+			PreparedStatement stmt = selconn.prepareStatement(selstr);
+			for (int i = 0; i < keyvalueary.length; i++) {
+				if (keyvalueary[i].indexOf('\'') > -1 )
+					stmt.setString(i + 1, keyvaluearynocomm[i]);
+				else
+					stmt.setInt(i + 1, Integer.valueOf(keyvaluearynocomm[i]));
+			}
+			ResultSet tblrs = stmt.executeQuery();
+			
 			int type = -1;
-			if (verbose)
-				log.debug("ketset=[{}]", keyset);
 
-			if (tbsdytblrs != null) {
-				ResultSetMetaData rsmd = tbsdytblrs.getMetaData();
+			if (tblrs != null) {
+				ResultSetMetaData rsmd = tblrs.getMetaData();
 				int columnCount = 0;
 				while (columnCount < rsmd.getColumnCount()) {
 					columnCount++;
@@ -528,7 +463,7 @@ public class GwDao {
 					tbsdytblcolumnTypes.add(type);
 				}
 				int idx = 0;
-				while (tbsdytblrs.next()) {
+				while (tblrs.next()) {
 					if (idx <= 0)
 						rtnVal = new String[1];
 					else {
@@ -541,14 +476,14 @@ public class GwDao {
 						}
 					}
 					for (int i = 0; i < fieldset.length; i++) {
-//						log.debug("i={}-->[{}]",i, gettbsdytblValue(tbsdytblrs, fieldset[i], verbose));
 						if (i == 0)
-							rtnVal[idx] = tbsdytblrs.getString(fieldset[i]);
+							rtnVal[idx] = tblrs.getString(fieldset[i]);
 						else
-							rtnVal[idx] = rtnVal[idx] + "," + tbsdytblrs.getString(fieldset[i]);
+							rtnVal[idx] = rtnVal[idx] + "," + tblrs.getString(fieldset[i]);
 					}
 					idx++;
 				}
+				tblrs.close();
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -558,6 +493,7 @@ public class GwDao {
 			log.debug("return SELMFLD length=[{}]", rtnVal.length);
 		return rtnVal;
 	}
+
 	//20201019
 	public String[] SELMFLDNOIDX(String fromTblName, String fieldsn, boolean verbose)
 			throws Exception {
@@ -612,64 +548,74 @@ public class GwDao {
 					}
 					idx++;
 				}
+				tbsdytblrs.close();
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 			log.error("error : {}", e.toString());
 		}
-		log.debug("return SELMFLD length=[{}]", rtnVal.length);
+		log.debug("return SELMFLDNOIDX length=[{}]", rtnVal.length);
 		return rtnVal;
 	}
-	//20201028
-	public String[] INSSELChoiceKey(String fromTblName, String field, String updval, String keyname, String selkeyval, boolean usekey, boolean verbose) throws Exception {
+
+	//20210118 MatsudairaSyuMe delete change for vulnerability scanning sql injection defense
+	public String[] INSSELChoiceKey(String fromTblName, String field, String selupdval, String keyname, String selkeyval, boolean usekey, boolean verbose) throws Exception {
 		String[] rtnVal = null;
 		columnNames = new Vector<String>();
 		columnTypes = new Vector<Integer>();
 		if (fromTblName == null || fromTblName.trim().length() == 0 || field == null || field.trim().length() == 0
 				|| keyname == null || keyname.trim().length() == 0)
 			throw new Exception("given table name or field or keyname error =>" + fromTblName);
-		log.debug(String.format("test Select from table %s... where %s=%s", fromTblName, keyname, selkeyval));
-		java.sql.Statement stmt = selconn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE, ResultSet.CLOSE_CURSORS_AT_COMMIT);
-		//20201028
+		log.debug(String.format("first test Select from table %s... where %s=%s", fromTblName, keyname, selkeyval));
 		String keyset = "";
+		String selstr = "";
 		String[] keynameary = keyname.split(",");
 		String[] keyvalueary = selkeyval.split(",");
+		String[] keyvaluearynocomm = selkeyval.split(",");
 		if (keynameary.length != keyvalueary.length)
 			throw new Exception("given fields keyname can't correspond to keyvfield =>keynames [" + keyname + "] selkayvals [" + selkeyval + "]");
 		else {
 			for (int i = 0; i < keynameary.length; i++)
-				keyset = keyset + keynameary[i] + " = " + keyvalueary[i] + (i == (keynameary.length - 1) ? "" : " and ");
+				keyset = keyset + keynameary[i] + " = " + "?" + (i == (keynameary.length - 1) ? "" : " and ");			for (int i = 0; i < keyvaluearynocomm.length; i++) {
+				int s = keyvaluearynocomm[i].indexOf('\'');
+				int l = keyvaluearynocomm[i].lastIndexOf('\'');
+				if (s != l && s >= 0 && l >= 0 && s < l)
+					keyvaluearynocomm[i] = keyvaluearynocomm[i].substring(s + 1, l);
+			}
 		}
-		if (usekey)
-			rs = ((java.sql.Statement) stmt)
-				.executeQuery("SELECT " + keyname + "," + field + " FROM " + fromTblName + " where " + keyset);
-		else
-			rs = ((java.sql.Statement) stmt)
-			.executeQuery("SELECT " + field + " FROM " + fromTblName + " where " + keyset);
-		log.debug("update value [{}] selkeyval [{}]", updval, selkeyval);
-		String[] valary = updval.split(",");
+
+		if (usekey) {
+			selstr = "SELECT " + keyname + "," + field + " FROM " + fromTblName + " where " + keyset;
+		} else {
+			selstr = "SELECT " + field + " FROM " + fromTblName + " where " + keyset;
+		}
+		log.debug("sqlstr=[{}] selupdval value [{}] selkeyval [{}]", selstr, selupdval, selkeyval);
+		String[] valary = selupdval.split(",");
+		String[] valarynocomm = selupdval.split(",");
 		for (int i = 0; i < valary.length; i++) {
-			int s = valary[i].indexOf('\'');
-			int l = valary[i].lastIndexOf('\'');
+			int s = valarynocomm[i].indexOf('\'');
+			int l = valarynocomm[i].lastIndexOf('\'');
 			if (s != l && s >= 0 && l >= 0 && s < l)
-				valary[i] = valary[i].substring(s + 1, l);
-		}
-		String[] selkeyvalary = selkeyval.split(",");
-		for (int i = 0; i < selkeyvalary.length; i++) {
-			int s = selkeyvalary[i].indexOf('\'');
-			int l = selkeyvalary[i].lastIndexOf('\'');
-			if (s != l && s >= 0 && l >= 0 && s < l)
-				selkeyvalary[i] = selkeyvalary[i].substring(s + 1, l);
+				valarynocomm[i] = valarynocomm[i].substring(s + 1, l);
 		}
 		int type = -1;
 		int row = 0;
 
-		if (rs != null) {
-			ResultSetMetaData rsmd = rs.getMetaData();
+		PreparedStatement stmt = selconn.prepareStatement(selstr);
+		for (int i = 0; i < keyvalueary.length; i++) {
+			if (keyvalueary[i].indexOf('\'') > -1 )
+				stmt.setString(i + 1, keyvaluearynocomm[i]);
+			else
+				stmt.setInt(i + 1, Integer.valueOf(keyvaluearynocomm[i]));
+		}
+		ResultSet tblrs = stmt.executeQuery();
+
+		if (tblrs != null) {
+			ResultSetMetaData rsmd = tblrs.getMetaData();
 			int columnCount = 0;
 			boolean updateMode = false;
 			log.debug("table request fields {}", field);
-			if (rs.next()) {
+			if (tblrs.next()) {
 				log.debug("update mode");
 				updateMode = true;
 			} else
@@ -693,7 +639,7 @@ public class GwDao {
 			String vals = "";
 			String updcolNames = "";
 			String updvals = "";
-			log.debug("given vals {} selkeyvalary {}", Arrays.toString(valary), Arrays.toString(selkeyvalary));
+			log.debug("given vals {} selkeyvalary {}", Arrays.toString(valary), Arrays.toString(keyvaluearynocomm));
 
 			for (columnCount = 0; columnCount < columnNames.size(); columnCount++) {
 				if (colNames.trim().length() > 0) {
@@ -717,18 +663,30 @@ public class GwDao {
 			String SQL_UPDATE = "UPDATE " + fromTblName + " SET (" + updcolNames + ") = (" + updvals + ") WHERE "
 					+ keyset;
 			String cnvInsertStr = "";
+			String[] insvalary = null;
 			if (updateMode) {
+				for (int i = 0; i < keynameary.length; i++) {
+					columnCount++;
+					if (verbose)
+						log.debug("columnCount=[{}] ColumnName={} ColumnTypeName={} ", columnCount, keynameary[i], keyvalueary[i].indexOf('\'') > -1? "VARCHAR":"INTEGER");
+					columnNames.add(keynameary[i]);
+					if (keyvalueary[i].indexOf('\'') > -1)
+						columnTypes.add(Types.VARCHAR);
+					else
+						columnTypes.add(Types.INTEGER);
+				}
+
+				insvalary = com.systex.sysgateii.gateway.util.dataUtil.concatArray(valarynocomm, keyvaluearynocomm);
 				preparedStatement = selconn.prepareStatement(SQL_UPDATE);
 				log.debug("record exist using update:{}", SQL_UPDATE);
-				log.debug("record exist using valary:{} len={}", valary, valary.length);
-				setValueps(preparedStatement, valary, usekey);
+				log.debug("record exist using valary:{} len={}", insvalary, insvalary.length);
+				setValueps(preparedStatement, insvalary, usekey);
 			} else {
 				try {
-				String[] insvalary = null;
 				if (usekey)
-					insvalary = com.systex.sysgateii.gateway.util.dataUtil.concatArray(selkeyvalary, valary);
+					insvalary = com.systex.sysgateii.gateway.util.dataUtil.concatArray(keyvaluearynocomm, valarynocomm);
 				else
-					insvalary = valary;
+					insvalary = valarynocomm;
 				//20201116
 				cnvInsertStr = generateActualSql(SQL_INSERT, (Object[])insvalary);
 				//----
@@ -748,11 +706,11 @@ public class GwDao {
 					rtnVal[0] = selkeyval;
 				}
 			} else {
-				rs = ((java.sql.Statement) stmt).executeQuery(cnvInsertStr);
-				log.debug("executeQuery()");
+				java.sql.Statement stmt2 = selconn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE, ResultSet.CLOSE_CURSORS_AT_COMMIT);
+				rs = ((java.sql.Statement) stmt2).executeQuery(cnvInsertStr);
+				log.debug("executeUpdate()");
 				int idx = 0;
 				while (rs.next()) {
-//					rtnVal = rs.getString("SNO");
 					if (idx <= 0)
 						rtnVal = new String[1];
 					else {
@@ -773,38 +731,54 @@ public class GwDao {
 					idx++;
 				}
 			}
+			if (rs != null)
+				rs.close();
+			tblrs.close();
 		}
 		return rtnVal;
 	}
 	
 	//20201028 delete
-	public void DELETETB(String fromTblName, String keyname, String selkeyval)
+	//----
+	//20210118 MatsudairaSyuMe delete change for vulnerability scanning sql injection defense
+	public boolean DELETETB(String fromTblName, String keyname, String selkeyval)
 			throws Exception {
-		// STEP 4: Execute a query
 		if (fromTblName == null || fromTblName.trim().length() == 0 || keyname == null || keyname.trim().length() == 0)
 			throw new Exception("given table name or field or keyname error =>" + fromTblName);
 		log.debug(String.format("delete table %s... where %s=%s", fromTblName, keyname, selkeyval));
-		java.sql.Statement stmt = selconn.createStatement();
-		String keyset = "";
+		String[] keynameary = keyname.split(",");
+		String[] keyvalueary = selkeyval.split(",");
+		String[] valary = selkeyval.split(",");
+		String deletesql = "DELETE FROM " + fromTblName + " WHERE ";
+
 		if (keyname.indexOf(',') > -1 && selkeyval.indexOf(',') > -1) {
-			String[] keynameary = keyname.split(",");
-			String[] keyvalueary = selkeyval.split(",");
+			keynameary = keyname.split(",");
+			keyvalueary = selkeyval.split(",");
 			if (keynameary.length != keyvalueary.length)
 				throw new Exception("given fields keyname can't correspond to keyvfield =>keynames [" + keyname + "] selkayvals [" + selkeyval + "]");
 			else {
 				for (int i = 0; i < keynameary.length; i++)
-					keyset = keyset + keynameary[i] + " = " + keyvalueary[i] + (i == (keynameary.length - 1) ? "" : " and ");
+					deletesql = deletesql + keynameary[i] + " = " + "?" + (i == (keynameary.length - 1) ? "" : " and ");
 			}
 		} else
-			keyset = keyname + " = " + selkeyval;
-		log.debug("keyset = [{}] ", keyset);
-		stmt.executeUpdate("delete from " + fromTblName + " where " + keyset);
-		//----
-		log.debug("delete [{}] finished", fromTblName);
-		return;
-	}
-	//----
+			deletesql = deletesql + keyname + " = ?";
+		log.debug("deletesql = [{}] ", deletesql);
+		for (int i = 0; i < keyvalueary.length; i++) {
+			int s = valary[i].indexOf('\'');
+			int l = valary[i].lastIndexOf('\'');
+			if (s != l && s >= 0 && l >= 0 && s < l)
+				valary[i] = valary[i].substring(s + 1, l);
+		}
 
+		PreparedStatement stmt = selconn.prepareStatement(deletesql);
+		for (int i = 0; i < keyvalueary.length; i++) {
+			if (keyvalueary[i].indexOf('\'') > -1 )
+				stmt.setString(i + 1, valary[i]);
+			else
+				stmt.setInt(i + 1, Integer.valueOf(valary[i]));
+		}
+		return stmt.execute();
+	}
 	private String generateActualSql(String sqlQuery, Object... parameters) throws Exception {
 	    String[] parts = sqlQuery.split("\\?");
 	    StringBuilder sb = new StringBuilder();
@@ -849,7 +823,7 @@ public class GwDao {
 		if (!fromOne)
 			j = 0;
 		int i = 1;
-//		verbose = true;
+		verbose = true;
 		if (verbose)
 			log.debug("j={} columnNames.size()={}",j,columnNames.size());
 		for (; j < columnNames.size(); j++) {
@@ -1090,23 +1064,19 @@ public class GwDao {
 		String url = "jdbc:hsqldb:data/tutorial";
 		return DriverManager.getConnection(url, "sa", "");
 	}
-
-	private Connection getMySqlConnection() throws Exception {
+	//20210118 MatsudairaSyuMe for vulnerability scanning sql injection defense
+	private Connection getMySqlConnection(String url, String username, String password) throws Exception {
 		String driver = "org.gjt.mm.mysql.Driver";
-		String url = "jdbc:mysql://localhost/demo2s";
-		String username = "oost";
-		String password = "oost";
-
+		//String url = "jdbc:mysql://localhost/demo2s";
 		Class.forName(driver);
 		Connection conn = DriverManager.getConnection(url, username, password);
 		return conn;
 	}
 
-	private Connection getOracleConnection() throws Exception {
+	//20210118 MatsudairaSyuMe for vulnerability scanning sql injection defense
+	private Connection getOracleConnection(String url, String username, String password) throws Exception {
 		String driver = "oracle.jdbc.driver.OracleDriver";
-		String url = "jdbc:oracle:thin:@localhost:1521:caspian";
-		String username = "mp";
-		String password = "mp2";
+//		String url = "jdbc:oracle:thin:@localhost:1521:caspian";
 
 		Class.forName(driver); // load Oracle driver
 		Connection conn = DriverManager.getConnection(url, username, password);
@@ -1172,14 +1142,14 @@ public class GwDao {
 	public static void main(String[] args) {
 		int total = 0;
 		GwDao jsel2ins = null;
-		String fromurl = "jdbc:db2://172.16.71.128:50000/BISDB";
+		String fromurl = "jdbc:db2://172.16.71.141:50000/BISDB";
 		String fromuser = "BIS_USER";
 		String frompass = "bisuser";
 
 		boolean verbose = true;
 //		String fn = "BISAP.TB_AUDEVSTS";
-//		String fn = "BISAP.TB_AUDEVCMDHIS";
-		String fn = "BISAP.TB_AUDEVCMD";
+		String fn = "BISAP.TB_AUDEVCMDHIS";
+//		String fn = "BISAP.TB_AUDEVCMD";
 		if (args.length > 0) {
 			for (int j = 0; j < args.length; j++) {
 				if (args[j].equalsIgnoreCase("--from")) {
@@ -1238,10 +1208,11 @@ public class GwDao {
 //			total = jsel2ins.UPSERT(fn, selField, updValue, keyName, keyValue);
 //			total = jsel2ins.UPSERT("BISAP.TB_AUSVRPRM", "TBSDY", "01090910", "SVRID", "1");
 //			String[] sno = jsel2ins.INSSELChoiceKey(fn, "SVRID,AUID,BRWS,CMD,CMDCREATETIME,CURSTUS", "1,1,'9838901','START','2020-10-21 09:46:38.368000','0'", "SNO", "-1", false, true);
-//			String[] sno = jsel2ins.INSSELChoiceKey(fn, "SVRID,AUID,BRWS,CMD,CMDCREATETIME,CMDRESULT,CMDRESULTTIME,CURSTUS", "1,1,'9838901','','2020-10-21 09:46:38.368000','START','2020-10-21 09:46:38.368000','0','2'", "SNO", "31", false, true);
-//			for (int i = 0; i < sno.length; i++)
-//				System.out.println("sno[" + i + "] = ["+sno[i]+"]");
-			jsel2ins.DELETETB(fn, "SVRID,BRWS", "1,'9838901'");
+			String[] sno = jsel2ins.INSSELChoiceKey(fn, "SVRID,AUID,BRWS,CMD,CMDCREATETIME,CMDRESULT,CMDRESULTTIME,CURSTUS", "1,1,'9838901','','2020-10-21 09:46:38.368000','START','2020-10-21 09:46:38.368000','2'", "SNO", "1030", false, true);
+			for (int i = 0; i < sno.length; i++)
+				System.out.println("sno[" + i + "] = ["+sno[i]+"]");
+//			jsel2ins.DELETETB(fn, "SVRID,BRWS", "1,'9838901'");
+//			jsel2ins.DELETETB(fn, "BRWS", "'9838901'");
 			jsel2ins.CloseConnect();
 			jsel2ins = null;
 			System.out.println("total " + total + " records transferred");
@@ -1251,7 +1222,7 @@ public class GwDao {
 				jsel2ins = new GwDao(fromurl, fromuser, frompass, verbose);
 			String tb = "BISAP.TB_AUDEVCMD";
 			System.out.println("table " + tb);
-			String[] cmd = jsel2ins.SELMFLD(tb, "SVRID,CMD", "SVRID", "1", true);
+			String[] cmd = jsel2ins.SELMFLD(tb, "SVRID,BRWS,CMD,AUID,CMDCREATETIME,EMPNO", "SVRID", "1", true);
 			for (String c: cmd)
 				System.out.println(" cmd= " + c);
 			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
@@ -1260,7 +1231,7 @@ public class GwDao {
 			updValue = "'','START','" + t + "'";
 
 			int row = jsel2ins.UPDT(tb, "CMD, CMDRESULT,CMDRESULTTIME", updValue, "SVRID,BRWS", "1,9838901");
-			log.debug("total {} records update  status [{}]", row, Constants.STSUSEDINACT);
+			log.debug("total {} records update", row);
 
 			jsel2ins.CloseConnect();
 			jsel2ins = null;
@@ -1281,5 +1252,5 @@ public class GwDao {
 		} // end try
 
 		System.out.println("Goodbye!");
-	}// en
+	}// en*/
 }

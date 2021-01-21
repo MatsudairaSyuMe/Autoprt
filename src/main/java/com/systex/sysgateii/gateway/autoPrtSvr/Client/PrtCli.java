@@ -3175,7 +3175,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 //	mark for RESTART				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
 //	mark for RESTART				String t = sdf.format(new java.util.Date());
 						row = jsel2ins.UPDT(PrnSvr.cmdtbname, "CMD, CMDRESULT,CMDRESULTTIME", "'','STOP','" + t + "'",
-							"SVRID,BRWS", PrnSvr.svrid + "," + this.brws);
+							"SVRID,BRWS", PrnSvr.svrid + ",'" + this.brws + "'");
 						log.debug("total {} records update status [{}]", row, this.curMode);
 						jsel2ins.CloseConnect();
 						jsel2ins = null;
@@ -4184,7 +4184,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
 				String t = sdf.format(new java.util.Date());
 				int row = jsel2ins.UPDT(PrnSvr.cmdtbname, "CMD, CMDRESULT,CMDRESULTTIME", "'','START','" + t + "'",
-						"SVRID,BRWS", PrnSvr.svrid + "," + this.brws);
+						"SVRID,BRWS", PrnSvr.svrid + ",'" + this.brws + "'");
 				log.debug("total {} records update status [{}]", row, this.curMode);
 				jsel2ins.CloseConnect();
 				jsel2ins = null;
