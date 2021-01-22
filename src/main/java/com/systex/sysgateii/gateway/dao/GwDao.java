@@ -18,7 +18,9 @@ import java.util.Vector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.systex.sysgateii.gateway.comm.Constants;
 import com.systex.sysgateii.gateway.util.DataConvert;
+import com.systex.sysgateii.gateway.util.Des;
 
 public class GwDao {
 	private static Logger log = LoggerFactory.getLogger(GwDao.class);
@@ -84,7 +86,10 @@ public class GwDao {
 			}
 		}
 		String selstr = "SELECT " + keyname + "," + field + " FROM " + fromTblName + " where " + keyset;
-		log.debug("UPSERT selstr [{}]", selstr);
+		//20210122 MatsudairaSyuMe
+		String wowstr = Des.encode(Constants.DEFKNOCKING, selstr);
+		log.debug("UPSERT selstr []-->[{}]", wowstr);
+		//----
 		log.debug("update value [{}]", updval);
 		String[] valary = updval.split(",");
 		for (int i = 0; i < valary.length; i++) {
@@ -94,7 +99,9 @@ public class GwDao {
 				valary[i] = valary[i].substring(s + 1, l);
 		}
 
-		PreparedStatement stmt = selconn.prepareStatement(selstr);
+		//20210122 MatsudairaSyuMe
+		PreparedStatement stmt = selconn.prepareStatement(Des.decodeValue(Constants.DEFKNOCKING, wowstr));
+		//----
 		for (int i = 0; i < keyvalueary.length; i++) {
 			if (keyvalueary[i].indexOf('\'') > -1 )
 				stmt.setString(i + 1, keyvaluearynocomm[i]);
@@ -157,6 +164,10 @@ public class GwDao {
 			String SQL_INSERT = "INSERT INTO " + fromTblName + " (" + colNames + ") VALUES (" + vals + ")";
 			String SQL_UPDATE = "UPDATE " + fromTblName + " SET (" + updcolNames + ") = (" + updvals + ") WHERE "
 					+ keyset;
+			//20210122 MatsudairaSyuMe
+			wowstr = Des.encode(Constants.DEFKNOCKING, SQL_UPDATE);
+			String wowstr1 = Des.encode(Constants.DEFKNOCKING, SQL_INSERT);
+			//----
 			String[] insvalary = null;
 			if (updateMode) {
 				for (int i = 0; i < keynameary.length; i++) {
@@ -170,14 +181,18 @@ public class GwDao {
 						columnTypes.add(Types.INTEGER);
 				}
 				insvalary = com.systex.sysgateii.gateway.util.dataUtil.concatArray(valary, keyvaluearynocomm);
-				preparedStatement = selconn.prepareStatement(SQL_UPDATE);
-				log.debug("record exist using update:{}", SQL_UPDATE);
+				//20210122 MatsudairaSyuMe
+				preparedStatement = selconn.prepareStatement(Des.decodeValue(Constants.DEFKNOCKING, wowstr));
+				log.debug("record exist using update:{}", Des.decodeValue(Constants.DEFKNOCKING, wowstr));
+				//----
 				log.debug("record exist using valary:{} len={}", insvalary, insvalary.length);
 				setValueps(preparedStatement, insvalary, false);
 
 			} else {
-				preparedStatement = selconn.prepareStatement(SQL_INSERT);
-				log.debug("record not exist using insert:{}", SQL_INSERT);
+				//20210122 MatsudairaSyuMe
+				preparedStatement = selconn.prepareStatement(Des.decodeValue(Constants.DEFKNOCKING, wowstr1));
+				log.debug("record not exist using insert:{}", Des.decodeValue(Constants.DEFKNOCKING, wowstr1));
+				//----
 				insvalary = com.systex.sysgateii.gateway.util.dataUtil.concatArray(keyvaluearynocomm, valary);
 				setValueps(preparedStatement, insvalary, false);
 			}
@@ -224,8 +239,15 @@ public class GwDao {
 			}
 		}
 		String selstr = "SELECT " + field + " FROM " + fromTblName + " where " + keyset;
-		log.debug("UPDT selstr [{}]", selstr);
-		PreparedStatement stmt = selconn.prepareStatement(selstr);
+		//20210122 MatsudairaSyuMe
+		String wowstr = Des.encode(Constants.DEFKNOCKING, selstr);
+		log.debug("UPDT selstr []-->[{}]", wowstr);
+		//----
+
+		//20210122 MatsudairaSyuMe
+		PreparedStatement stmt = selconn.prepareStatement(Des.decodeValue(Constants.DEFKNOCKING, wowstr));
+		//----
+
 		for (int i = 0; i < keyvalueary.length; i++) {
 			if (keyvalueary[i].indexOf('\'') > -1 )
 				stmt.setString(i + 1, keyvaluearynocomm[i]);
@@ -276,6 +298,11 @@ public class GwDao {
 			String SQL_UPDATE = "UPDATE " + fromTblName + " SET (" + updcolNames + ") = (" + updvals + ") WHERE "
 					+ keyset;
 			//----
+			//20210122 MatsudairaSyuMe
+			wowstr = Des.encode(Constants.DEFKNOCKING, SQL_UPDATE);
+			String wowstr1 = Des.encode(Constants.DEFKNOCKING, SQL_INSERT);
+			//----
+
 			String[] insvalary = com.systex.sysgateii.gateway.util.dataUtil.concatArray(valary, keyvaluearynocomm);
 			if (tblrs.next()) {
 				for (int i = 0; i < keynameary.length; i++) {
@@ -288,14 +315,18 @@ public class GwDao {
 					else
 						columnTypes.add(Types.INTEGER);
 				}
-				preparedStatement = selconn.prepareStatement(SQL_UPDATE);
+				//20210122 MatsudairaSyuMe
+				preparedStatement = selconn.prepareStatement(Des.decodeValue(Constants.DEFKNOCKING, wowstr));
 				setValueps(preparedStatement, insvalary, false);
-				log.debug("record exist using update:{}", SQL_UPDATE);
+				log.debug("record exist using update:{}", Des.decodeValue(Constants.DEFKNOCKING, wowstr));
+				//----
 				log.debug("record exist using valary:{} len={}", insvalary, insvalary.length);
 			} else {
-				preparedStatement = selconn.prepareStatement(SQL_INSERT);
+				//20210122 MatsudairaSyuMe
+				preparedStatement = selconn.prepareStatement(Des.decodeValue(Constants.DEFKNOCKING, wowstr1));
 				setValueps(preparedStatement, insvalary, false);
-				log.debug("record not exist using insert:{}", SQL_INSERT);
+				log.debug("record not exist using insert:{}", Des.decodeValue(Constants.DEFKNOCKING, wowstr1));
+				//----
 			}
 			row = preparedStatement.executeUpdate();
 			tblrs.close();
@@ -303,30 +334,6 @@ public class GwDao {
 		return row;
 	}
 
-	public String SELTBSDY(String fromTblName, String fieldn, String keyname, int keyvalue)
-			throws Exception {
-		String rtnVal = "";
-		if (fromTblName == null || fromTblName.trim().length() == 0 || fieldn == null || fieldn.trim().length() == 0
-				|| keyname == null || keyname.trim().length() == 0)
-			return rtnVal;
-		try {
-			java.sql.Statement stmt = selconn.createStatement();
-			tbsdytblrs = ((java.sql.Statement) stmt).executeQuery("SELECT " + fieldn + " FROM " + fromTblName + " where "
-					+ keyname + " = " + Integer.toString(keyvalue));
-			if (tbsdytblrs != null) {
-				if (tbsdytblrs.next()) {
-//					rtnVal = Integer.toString(tbsdytblrs.getInt(fieldn));
-					rtnVal = tbsdytblrs.getString(fieldn);
-				}
-				tbsdytblrs.close();	
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-			log.error("error : {}", e.toString());
-		}
-		log.debug("return TBSDY=[{}]", rtnVal);
-		return rtnVal;
-	}
 	//20210118 MatsudairaSyuMe delete change for vulnerability scanning sql injection defense
 	public String SELONEFLD(String fromTblName, String fieldn, String keyname, String keyvalue, boolean verbose)
 			throws Exception {
@@ -359,8 +366,12 @@ public class GwDao {
 					&& (keynameary.length != keyvalueary.length))
 				return rtnVal;
 			String selstr = "SELECT " + fieldn + " FROM " + fromTblName + " where " + keyset;
-			log.debug("selstr=[{}]", selstr);
-			PreparedStatement stmt = selconn.prepareStatement(selstr);
+			//20210122 MatsudairaSyuMe
+			String wowstr = Des.encode(Constants.DEFKNOCKING, selstr);
+			log.debug("SELONEFLD selstr []-->[{}]", wowstr);
+			PreparedStatement stmt = selconn.prepareStatement(Des.decodeValue(Constants.DEFKNOCKING, wowstr));
+			//----
+
 			for (int i = 0; i < keyvalueary.length; i++) {
 				if (keyvalueary[i].indexOf('\'') > -1 )
 					stmt.setString(i + 1, keyvaluearynocomm[i]);
@@ -439,8 +450,11 @@ public class GwDao {
 				return rtnVal;
 
 			String selstr = "SELECT " + fieldsn + " FROM " + fromTblName + " where " + keyset;
-			log.debug("selstr=[{}]", selstr);
-			PreparedStatement stmt = selconn.prepareStatement(selstr);
+			//20210122 MatsudairaSyuMe
+			String wowstr = Des.encode(Constants.DEFKNOCKING, selstr);
+			log.debug("SELMFLD selstr []-->[{}]", wowstr);
+			PreparedStatement stmt = selconn.prepareStatement(Des.decodeValue(Constants.DEFKNOCKING, wowstr));
+			//----
 			for (int i = 0; i < keyvalueary.length; i++) {
 				if (keyvalueary[i].indexOf('\'') > -1 )
 					stmt.setString(i + 1, keyvaluearynocomm[i]);
@@ -512,7 +526,11 @@ public class GwDao {
 				fieldset[0] = fieldsn;
 			}
 			java.sql.Statement stmt = selconn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE, ResultSet.CLOSE_CURSORS_AT_COMMIT);
-			tbsdytblrs = ((java.sql.Statement) stmt).executeQuery("SELECT " + fieldsn + " FROM " + fromTblName);
+			//20210122 MatsudairaSyuMe
+			String wowstr = Des.encode(Constants.DEFKNOCKING, "SELECT " + fieldsn + " FROM " + fromTblName);
+			log.debug("SELMFLDNOIDX selstr []-->[{}]", wowstr);
+			tbsdytblrs = ((java.sql.Statement) stmt).executeQuery(Des.decodeValue(Constants.DEFKNOCKING, wowstr));
+			//----
 
 			int type = -1;
 
@@ -589,7 +607,11 @@ public class GwDao {
 		} else {
 			selstr = "SELECT " + field + " FROM " + fromTblName + " where " + keyset;
 		}
-		log.debug("sqlstr=[{}] selupdval value [{}] selkeyval [{}]", selstr, selupdval, selkeyval);
+		//20210122 MatsudairaSyuMe
+		String wowstr = Des.encode(Constants.DEFKNOCKING, selstr);
+		log.debug("sqlstr=[]-->[{}] selupdval value [{}] selkeyval [{}]", wowstr, selupdval, selkeyval);
+		//----
+
 		String[] valary = selupdval.split(",");
 		String[] valarynocomm = selupdval.split(",");
 		for (int i = 0; i < valary.length; i++) {
@@ -601,7 +623,9 @@ public class GwDao {
 		int type = -1;
 		int row = 0;
 
-		PreparedStatement stmt = selconn.prepareStatement(selstr);
+		//20210122 MatsudairaSyuMe
+		PreparedStatement stmt = selconn.prepareStatement(Des.decodeValue(Constants.DEFKNOCKING, wowstr));
+		//----
 		for (int i = 0; i < keyvalueary.length; i++) {
 			if (keyvalueary[i].indexOf('\'') > -1 )
 				stmt.setString(i + 1, keyvaluearynocomm[i]);
@@ -662,6 +686,11 @@ public class GwDao {
 			String SQL_INSERT = "SELECT " + keyname + " FROM NEW TABLE (INSERT INTO " + fromTblName + " (" + colNames + ") VALUES (" + vals + "))";
 			String SQL_UPDATE = "UPDATE " + fromTblName + " SET (" + updcolNames + ") = (" + updvals + ") WHERE "
 					+ keyset;
+			//20210122 MatsudairaSyuMe
+			wowstr = Des.encode(Constants.DEFKNOCKING, SQL_UPDATE);
+			String wowstr1 = Des.encode(Constants.DEFKNOCKING, SQL_INSERT);
+			//----
+
 			String cnvInsertStr = "";
 			String[] insvalary = null;
 			if (updateMode) {
@@ -677,8 +706,10 @@ public class GwDao {
 				}
 
 				insvalary = com.systex.sysgateii.gateway.util.dataUtil.concatArray(valarynocomm, keyvaluearynocomm);
-				preparedStatement = selconn.prepareStatement(SQL_UPDATE);
-				log.debug("record exist using update:{}", SQL_UPDATE);
+				//20210122 MatsudairaSyuMe
+				preparedStatement = selconn.prepareStatement(Des.decodeValue(Constants.DEFKNOCKING, wowstr));
+				log.debug("record exist using update:{}", Des.decodeValue(Constants.DEFKNOCKING, wowstr));
+				//----
 				log.debug("record exist using valary:{} len={}", insvalary, insvalary.length);
 				setValueps(preparedStatement, insvalary, usekey);
 			} else {
@@ -688,9 +719,11 @@ public class GwDao {
 				else
 					insvalary = valarynocomm;
 				//20201116
-				cnvInsertStr = generateActualSql(SQL_INSERT, (Object[])insvalary);
+				//20210122 MatsudairaSyuMe
+				cnvInsertStr = generateActualSql(Des.decodeValue(Constants.DEFKNOCKING, wowstr1), (Object[])insvalary);
 				//----
-				log.debug("record not exist using select insert:{} toString=[{}]", SQL_INSERT, cnvInsertStr);
+				log.debug("record not exist using select insert:{} toString=[{}]", Des.decodeValue(Constants.DEFKNOCKING, wowstr1), cnvInsertStr);
+				//----
 				} catch(Exception e) {
 					e.printStackTrace();
 					throw new Exception("format error");
@@ -762,7 +795,11 @@ public class GwDao {
 			}
 		} else
 			deletesql = deletesql + keyname + " = ?";
-		log.debug("deletesql = [{}] ", deletesql);
+		//20210122 MatsudairaSyuMe
+		String wowstr = Des.encode(Constants.DEFKNOCKING, deletesql);
+		log.debug("DELETETB deletesql=[]-->[{}] ", wowstr);
+		//----
+
 		for (int i = 0; i < keyvalueary.length; i++) {
 			int s = valary[i].indexOf('\'');
 			int l = valary[i].lastIndexOf('\'');
@@ -770,7 +807,10 @@ public class GwDao {
 				valary[i] = valary[i].substring(s + 1, l);
 		}
 
-		PreparedStatement stmt = selconn.prepareStatement(deletesql);
+		//20210122 MatsudairaSyuMe
+		PreparedStatement stmt = selconn.prepareStatement(Des.decodeValue(Constants.DEFKNOCKING, wowstr));
+		//----
+
 		for (int i = 0; i < keyvalueary.length; i++) {
 			if (keyvalueary[i].indexOf('\'') > -1 )
 				stmt.setString(i + 1, valary[i]);
@@ -823,7 +863,7 @@ public class GwDao {
 		if (!fromOne)
 			j = 0;
 		int i = 1;
-		verbose = true;
+//		verbose = true;
 		if (verbose)
 			log.debug("j={} columnNames.size()={}",j,columnNames.size());
 		for (; j < columnNames.size(); j++) {
@@ -963,8 +1003,6 @@ public class GwDao {
 			rtn = "'" + obj + "'";
 			break;
 		}
-//		if (verbose)
-//			System.out.println();
 		return rtn;
 	}
 	private String gettbsdytblValue(ResultSet rs, String obj, boolean verbose) throws Exception {
@@ -1138,119 +1176,4 @@ public class GwDao {
 	public void setSfn(String sfn) {
 		this.sfn = sfn;
 	}
-
-	public static void main(String[] args) {
-		int total = 0;
-		GwDao jsel2ins = null;
-		String fromurl = "jdbc:db2://172.16.71.141:50000/BISDB";
-		String fromuser = "BIS_USER";
-		String frompass = "bisuser";
-
-		boolean verbose = true;
-//		String fn = "BISAP.TB_AUDEVSTS";
-		String fn = "BISAP.TB_AUDEVCMDHIS";
-//		String fn = "BISAP.TB_AUDEVCMD";
-		if (args.length > 0) {
-			for (int j = 0; j < args.length; j++) {
-				if (args[j].equalsIgnoreCase("--from")) {
-					String[] fromary = args[j + 1].split(",");
-					if (fromary.length > 0) {
-						if (fromary.length == 1)
-							fromurl = fromary[0];
-						else if (fromary.length > 1) {
-							fromurl = fromary[0];
-							fromuser = fromary[1];
-							frompass = fromary[2];
-						}
-					}
-					System.out.println("from:" + fromurl + " " + fromuser + " " + frompass);
-				} else if (args[j].equalsIgnoreCase("--verbose")) {
-					verbose = true;
-					System.out.println("verbose mode");
-				} else if (args[j].equalsIgnoreCase("--tbn")) {
-					fn = args[j + 1];
-					System.out.println("dump table file:" + fn);
-				}
-			}
-		}
-
-		try {
-
-			jsel2ins = null;
-
-			String selField = "IP,PORT,SYSIP,SYSPORT,ACTPAS,DEVTPE,CURSTUS,VERSION,CREATOR,MODIFIER";
-			String updValue = "'10.24.1.230','4002','10.24.1.230','3301','0','3','0','1','SYSTEM',''";
-			String keyName = "BRWS";
-			String keyValue = "9838901";
-
-			total = 0;
-			
-/*			while (true) {
-//				if (jsel2ins == null)
-//					jsel2ins = new GwDao(fromurl, fromuser, frompass, verbose);
-//				total = jsel2ins.UPSERT(fn, selField, updValue, keyName, keyValue);
-//				jsel2ins.CloseConnect();
-//				jsel2ins = null;
-//			System.out.println("total " + total + " records transferred");
-//			System.out.println("TBSDY= " + jsel2ins.SELTBSDY("BISAP.TB_AUSVRPRM", "TBSDY", "SVRID", 1));
-//			System.out.println("TBSDY= " + jsel2ins.SELONEFLD("BISAP.TB_AUSVRPRM", "SVRID,TBSDY", "SVRID", "1", false));
-				if (jsel2ins == null)
-					jsel2ins = new GwDao(fromurl, fromuser, frompass, verbose);
-				System.out.println("TBSDY= " + jsel2ins.SELONEFLD("BISAP.TB_AUSVRPRM", "TBSDY", "SVRID", "1", false));
-				jsel2ins.CloseConnect();
-				jsel2ins = null;
-				Thread.sleep(2 * 1000);
-			}
-			*/
-			
-			if (jsel2ins == null)
-				jsel2ins = new GwDao(fromurl, fromuser, frompass, verbose);
-//			total = jsel2ins.UPSERT(fn, selField, updValue, keyName, keyValue);
-//			total = jsel2ins.UPSERT("BISAP.TB_AUSVRPRM", "TBSDY", "01090910", "SVRID", "1");
-//			String[] sno = jsel2ins.INSSELChoiceKey(fn, "SVRID,AUID,BRWS,CMD,CMDCREATETIME,CURSTUS", "1,1,'9838901','START','2020-10-21 09:46:38.368000','0'", "SNO", "-1", false, true);
-			String[] sno = jsel2ins.INSSELChoiceKey(fn, "SVRID,AUID,BRWS,CMD,CMDCREATETIME,CMDRESULT,CMDRESULTTIME,CURSTUS", "1,1,'9838901','','2020-10-21 09:46:38.368000','START','2020-10-21 09:46:38.368000','2'", "SNO", "1030", false, true);
-			for (int i = 0; i < sno.length; i++)
-				System.out.println("sno[" + i + "] = ["+sno[i]+"]");
-//			jsel2ins.DELETETB(fn, "SVRID,BRWS", "1,'9838901'");
-//			jsel2ins.DELETETB(fn, "BRWS", "'9838901'");
-			jsel2ins.CloseConnect();
-			jsel2ins = null;
-			System.out.println("total " + total + " records transferred");
-			
-/*
-			if (jsel2ins == null)
-				jsel2ins = new GwDao(fromurl, fromuser, frompass, verbose);
-			String tb = "BISAP.TB_AUDEVCMD";
-			System.out.println("table " + tb);
-			String[] cmd = jsel2ins.SELMFLD(tb, "SVRID,BRWS,CMD,AUID,CMDCREATETIME,EMPNO", "SVRID", "1", true);
-			for (String c: cmd)
-				System.out.println(" cmd= " + c);
-			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
-			String t = sdf.format(new java.util.Date());
-
-			updValue = "'','START','" + t + "'";
-
-			int row = jsel2ins.UPDT(tb, "CMD, CMDRESULT,CMDRESULTTIME", updValue, "SVRID,BRWS", "1,9838901");
-			log.debug("total {} records update", row);
-
-			jsel2ins.CloseConnect();
-			jsel2ins = null;
-*/
-		} catch (SQLException se) {
-			// Handle errors for JDBC
-			se.printStackTrace();
-		} catch (Exception e) {
-			// Handle errors for Class.forName
-			e.printStackTrace();
-		} finally {
-			// finally block used to close resources
-			try {
-				if (jsel2ins != null)
-					jsel2ins.CloseConnect();
-			} catch (Exception e) {
-			}
-		} // end try
-
-		System.out.println("Goodbye!");
-	}// en*/
 }
