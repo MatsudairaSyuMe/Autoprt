@@ -14,6 +14,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.systex.sysgateii.gateway.autoPrtSvr.Server.PrnSvr;
+import com.systex.sysgateii.gateway.comm.Constants;
+import com.systex.sysgateii.gateway.util.Des;
 
 public class DscptMappingTable {
 	private static Logger log = LoggerFactory.getLogger(DscptMappingTable.class);
@@ -47,8 +49,10 @@ public class DscptMappingTable {
 			log.debug("select records from the table...");
 			stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE,
 					ResultSet.CLOSE_CURSORS_AT_COMMIT);
-//			rs = ((Statement) stmt).executeQuery("SELECT ID, NAME FROM BISAP.TB_AUDMPRM");
-			rs = ((Statement) stmt).executeQuery("SELECT ID, NAME FROM " + PrnSvr.dmtbname);
+			//20210122 MatsudairaSyuMe
+			String wowstr = Des.encode(Constants.DEFKNOCKING, "SELECT ID, NAME FROM " + PrnSvr.dmtbname);
+			rs = ((Statement) stmt).executeQuery(Des.decodeValue(Constants.DEFKNOCKING, wowstr));
+			//----
 			while (rs.next()) {
 				id = rs.getString("ID");
 				flddm = rs.getBytes("NAME");
