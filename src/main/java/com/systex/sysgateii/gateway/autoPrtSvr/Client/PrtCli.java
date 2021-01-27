@@ -1586,7 +1586,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 
 			for (int i = 0; i < gl_arr.size(); i++) {
 				//空格(1)+日期
-				pr_data = "";
+				//20210127 MatsudairaSyume add back 1 space
+				pr_data = " ";
+				//----
 				pbpr_date = pr_data + new String(p0880DataFormat.getTotaTextValueSrc("txday", gl_arr.get(i)));
 				pr_data = pr_data + pbpr_date;
 
@@ -1604,8 +1606,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 
 				//空格(1)+幣別(NT/US)(2)+單價(7)
 				//單價(4.2)
-				pbpr_crdbT = pbpr_crdbT + "  " + new String(p0880DataFormat.getTotaTextValueSrc("curcd", gl_arr.get(i)));
-				pr_data = pr_data + "  " + new String(p0880DataFormat.getTotaTextValueSrc("curcd", gl_arr.get(i)));
+				//20210127 MatshdairaSyume cut back to 1 space
+				pbpr_crdbT = pbpr_crdbT + " " + new String(p0880DataFormat.getTotaTextValueSrc("curcd", gl_arr.get(i)));
+				pr_data = pr_data + " " + new String(p0880DataFormat.getTotaTextValueSrc("curcd", gl_arr.get(i)));
+				//----
 
 				//20200731 Matsudaira check for null value!!!!!!
 				byte[] pricechk = p0880DataFormat.getTotaTextValueSrc("price", gl_arr.get(i));
