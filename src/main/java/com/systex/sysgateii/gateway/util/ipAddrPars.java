@@ -144,7 +144,9 @@ public class ipAddrPars {
 					try {
 						remotePort = Integer.parseInt(sParts[1]);
 					} catch (NumberFormatException e) {
-						log.error("port format error!! :{}", sParts[1]);
+						//20210204 MatsudairaSyuMe
+						final String logStr = String.format("port format error!! :%s", sParts[1]);
+						log.error(logStr);
 						this.formatError = true;
 						return formatCorrect;
 					}
@@ -164,7 +166,9 @@ public class ipAddrPars {
 						remoteHostAddr = sParts[0];
 //                log.debug("2===>add remoteHostAddr: {}", remoteHostAddr);
 					} else {
-						log.error("port format error!! :{}", sParts[0]);
+						//20210204 MatsudairaSyuMe
+						final String logStr = String.format("port format error!! :%s", sParts[0]);
+						log.error(logStr);
 						this.formatError = true;
 						return formatCorrect;
 					}
@@ -187,7 +191,9 @@ public class ipAddrPars {
 							remotePort = Integer.parseInt(s);
 //                   log.debug("remotePort ={}",s);
 						} catch (NumberFormatException e) {
-							log.error("remotePort format error!! >{}", s);
+							//20210204 MatsudairaSyuMe
+							final String logStr = String.format("remotePort format error!! >%s", s);
+							log.error(logStr);
 							this.formatError = true;
 							return formatCorrect;
 						}

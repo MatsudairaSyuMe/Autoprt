@@ -119,7 +119,10 @@ public class Server {
 					//conductor mode start the monitor module
 					Conductor.createServer(dcf.getConHashMap(), svrip);
 					Conductor.startServer();
-					log.info("sysgateii server after start conductor svrip=[{}]", svrip);
+					//20210204 MAtsudairaSyuMe
+					final String logStr = String.format("sysgateii server after start conductor svrip=[%s]", svrip);
+//					log.info("sysgateii server after start conductor svrip=[{}]", svrip);
+					log.info(logStr);
 				}
 				//----
 			}
@@ -142,8 +145,10 @@ public class Server {
 				//AUID,BRNO,IP,CURSTUS,PID,CREATOR,MODIFIER,LASTUPDATE
 //				auid = dcf.getAuid();
 //				svrip = dcf.getSvrip();
-				//20201116 change to use given svrid
-				log.info("sysgateii server start complete! auid=[{}] svrip=[{}]", auid, svrip);
+				//20201116 change to use given svrid, 20210204 MatsudairaSyuME
+//				log.info("sysgateii server start complete! auid=[{}] svrip=[{}]", auid, svrip);
+				final String logStr = String.format("sysgateii server start complete! auid=[%s] svrip=[%s]", auid, svrip);
+				log.info(logStr);
 				if (auid.trim().length() == 0 || auid.trim().length() == 0) {
 					auid = "0";
 					setIsShouldShutDown(true);

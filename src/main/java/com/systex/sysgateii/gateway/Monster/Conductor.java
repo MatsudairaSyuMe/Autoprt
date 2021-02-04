@@ -71,8 +71,12 @@ public class Conductor implements Runnable {
 					} else if (s.length() > 0) {
 						log.debug("get SERVICE [{}] in service table [{}]", s, svrprmtb);
 						String[] setArg = {"bin/autosvr", "start", "--svrid", s};
-						DoProcessBuilder dp = new DoProcessBuilder(setArg);
-						dp.Go();
+//						DoProcessBuilder dp = new DoProcessBuilder(setArg);
+//						dp.Go();
+						//20210202 MatsudairsSyuMe
+						DoProcessBuilder dp = new DoProcessBuilder();
+						dp.Go("bin/autosvr", "start", "--svrid", s);
+						//----
 						//store new service
 						Conductor.svridnodeMap.put(s, getSvrip());
 					} else
@@ -152,7 +156,9 @@ public class Conductor implements Runnable {
 								if (DateTimeUtil.MinDurationToCurrentTime(3,cmdary[2])) {
 									log.debug("brws=[{}] keep in cmd table longer then 3 minutes will be cleared",cmdary[0]);
 									if (cmdary[1].trim().length() > 0) {
-										log.debug("brws=[{}] cmd[{}] not execute will be marked fail in cmdhis",cmdary[0], cmdary[1]);
+										//20210204 MatsudairaSyuMe
+										final String logStr = String.format("brws=[%s] cmd[%s] not execute will be marked fail in cmdhis",((cmdary == null) || (cmdary[0] == null)) ? "" : cmdary[0], ((cmdary == null) || (cmdary.length < 2) || (cmdary[1] == null)) ? "" : cmdary[1]);
+										log.debug(logStr);
 										if (cmdhiscon == null)
 											cmdhiscon = new GwDao(dburl, dbuser, dbpass, false);
 										String[] chksno = cmdhiscon.SELMFLD(svrcmdhistbname, "SNO", "SVRID,CMD,CMDCREATETIME", "'" + cmdary[0] + "','"+ cmdary[1] + "','"+ cmdary[2]+ "'", false);
@@ -181,10 +187,16 @@ public class Conductor implements Runnable {
 									cmdhiscon = new GwDao(dburl, dbuser, dbpass, false);
 									if (Conductor.svridnodeMap != null && Conductor.svridnodeMap.size() > 0) {
 										if (Conductor.svridnodeMap.containsKey(cmdary[0])) {
-											log.error("!!! cmd object node=[{}] already in nodeMap please STOP this node before START !!!", cmdary[0]);
+											//20210204 MatsudairaSyuMe
+											final String logStr = String.format("!!! cmd object node=[%s] already in nodeMap please STOP this node before START !!!", cmdary[0]);
+//											log.error("!!! cmd object node=[{}] already in nodeMap please STOP this node before START !!!", cmdary[0]);
+											log.error(logStr);
 											createNode = false;
 										} else {
-											log.debug("!!! cmd object node=[{}] not in nodeList will be created", cmdary[0]);
+											//20210204 MatsudairaSyuMe
+											final String logStr = String.format("!!! cmd object node=[%s] not in nodeList will be created", cmdary[0]);
+//											log.debug("!!! cmd object node=[{}] not in nodeList will be created", cmdary[0]);
+											log.debug(logStr);
 											createNode = true;
 										}
 									}
@@ -230,7 +242,10 @@ public class Conductor implements Runnable {
 									//----
 								}
 								//----
-								log.debug("table sno=[{}] createNode=[{}] restartAlreadyStop=[{}]", (sno == null ? 0: sno[0]), createNode, restartAlreadyStop);
+								//log.debug("table sno=[{}] createNode=[{}] restartAlreadyStop=[{}]", (sno == null ? 0: sno[0]), createNode, restartAlreadyStop);
+								//20210204 MatsudairaSyume
+								final String logStr = String.format("table sno=[{}] createNode=[%s] restartAlreadyStop=[%s]", (sno == null ? 0: sno[0]), createNode, restartAlreadyStop);
+								log.debug(logStr);
 								switch (curcmd) {
 								case "START":
 									if (Conductor.svridnodeMap.containsKey(cmdary[0])) {
@@ -238,8 +253,12 @@ public class Conductor implements Runnable {
 									} else {
 										Conductor.svridnodeMap.put(cmdary[0], getSvrip());
 										String[] monSetArg = {"bin/autosvr", "start", "--svrid", cmdary[0]};
-										DoProcessBuilder monDp = new DoProcessBuilder(monSetArg);
-										monDp.Go();
+										//20210202 MatsudairaSyuMe
+//										DoProcessBuilder monDp = new DoProcessBuilder(monSetArg);
+//										monDp.Go();
+										DoProcessBuilder monDp = new DoProcessBuilder();
+										monDp.Go("bin/autosvr", "start", "--svrid", cmdary[0]);
+										//----
 										SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
 										String t = sdf.format(new java.util.Date());
 										int row = jdawcon.UPDT(cmdtbname, "CMD,CMDRESULT,CMDRESULTTIME", "'','START','" + t + "'",
@@ -260,11 +279,17 @@ public class Conductor implements Runnable {
 									break;
 								case "STOP":
 									if (!Conductor.svridnodeMap.containsKey(cmdary[0])) {
-										log.info("cmd object node=[{}] current is not running in this server no need to STOP!!", cmdary[0]);
+										//20210204 MatsudairaSyuMe
+										final String logStr2 = String.format("cmd object node=[%s] current is not running in this server no need to STOP!!", cmdary[0]);
+										log.info(logStr2);
 									} else {
-										String[] monSetArg = {"bin/autosvr", "stop", "--svrid", cmdary[0]};
-										DoProcessBuilder monDp = new DoProcessBuilder(monSetArg);
-										monDp.Go();
+										//20210202 MatsudairSyuMe
+//										String[] monSetArg = {"bin/autosvr", "stop", "--svrid", cmdary[0]};
+//										DoProcessBuilder monDp = new DoProcessBuilder(monSetArg);
+//										monDp.Go();
+										DoProcessBuilder monDp = new DoProcessBuilder();
+										monDp.Go("bin/autosvr", "stop", "--svrid", cmdary[0]);
+										//----
 										SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
 										String t = sdf.format(new java.util.Date());
 //										int row = jdawcon.UPDT(cmdtbname, "CMD,CMDCREATETIME,CMDRESULT,CMDRESULTTIME", "'','','STOP','" + t + "'",
@@ -289,6 +314,7 @@ public class Conductor implements Runnable {
 									break;
 								case "RESTART":
 									String monSetArg[] = null;
+									//----
 									if (Conductor.svridnodeMap.containsKey(cmdary[0])) {
 										String[] tmpsetArg = {"bin/autosvr", "restart", "--svrid", cmdary[0]};
 										monSetArg = tmpsetArg;
@@ -300,8 +326,12 @@ public class Conductor implements Runnable {
 										monSetArg = tmpsetArg;
 										log.debug("start to create new node=[{}]", cmdary[0]);
 									}
-									DoProcessBuilder monDp = new DoProcessBuilder(monSetArg);
-									monDp.Go();
+									//20210202 MatsuDairaSyume
+//									DoProcessBuilder monDp = new DoProcessBuilder(monSetArg);
+//									monDp.Go();
+									DoProcessBuilder monDp = new DoProcessBuilder();
+									monDp.Go(monSetArg[0], monSetArg[1], monSetArg[2], monSetArg[3]);
+									//----
 									SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
 									String t = sdf.format(new java.util.Date());
 									int row = jdawcon.UPDT(cmdtbname, "CMD,CMDRESULT,CMDRESULTTIME", "'','RESTART','" + t + "'",
@@ -323,10 +353,16 @@ public class Conductor implements Runnable {
 									log.debug("!!! cmd object node=[{}] cmd [{}] ignore", cmdary[0], cmdary[1]);
 									break;
 								}
-							} else
-								log.debug("!!! cmd object node=[{}] format error !!!", cmdary[0]);													
-						} else
-							log.error("!!!current row cmd error [{}]", s);
+							} else {
+								//20210204 MatsidairaSyuMe
+								final String logStr = String.format("!!! cmd object node=[%s] format error !!!", ((cmdary == null) || (cmdary[0] == null)) ? "" : cmdary[0]);
+								log.debug(logStr);	
+							}
+						} else {
+							//20210204 MatsudairaSyuMe
+							final String logStr = String.format("!!!current row cmd error [%s]", s);
+							log.error(logStr);
+						}
 					}
 				jdawcon.CloseConnect();
 				jdawcon = null;

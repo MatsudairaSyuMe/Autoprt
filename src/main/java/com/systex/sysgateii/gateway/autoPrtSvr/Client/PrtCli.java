@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -336,20 +337,28 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 		responseTimeout = PrnSvr.setResponseTimeout;
 		//20210112 MatsudairaSyume always initialize sequence no. from 0
 		try {
-			this.seqNoFile = new File("SEQNO", "SEQNO_" + this.brws);
-			log.debug("seqNoFile local=" + this.seqNoFile.getAbsolutePath());
-			if (seqNoFile.exists() == false) {
-				File parent = seqNoFile.getParentFile();
-				if (parent.exists() == false) {
-					parent.mkdirs();
+			// 20210202 MAtsydairaSyuMe checj brws for digit
+			Pattern FILTER_PATTERN = Pattern.compile("[0-9]+");
+			if (FILTER_PATTERN.matcher(this.brws).matches()) {
+				this.seqNoFile = new File("SEQNO", "SEQNO_" + this.brws);
+				log.debug("seqNoFile local=" + this.seqNoFile.getAbsolutePath());
+				if (seqNoFile.exists() == false) {
+					File parent = seqNoFile.getParentFile();
+					if (parent.exists() == false) {
+						parent.mkdirs();
+					}
+					this.seqNoFile.createNewFile();
 				}
-				this.seqNoFile.createNewFile();
+				FileUtils.writeStringToFile(this.seqNoFile, "0", Charset.defaultCharset());
+			} else {
+				log.error("error!!! brws name is not digit type {} can ot create seqno file", this.brws);
 			}
-			FileUtils.writeStringToFile(this.seqNoFile, "0", Charset.defaultCharset());
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-			log.error("error!!! create or open seqno file {} error {}", "SEQNO_" + this.brws, e.getMessage());
+			//20210204 MatsuDairaSyuMe
+			final String logStr = String.format("error!!! create or open seqno file SEQNO_%s error %s", this.brws, e.getMessage());
+			log.error(logStr);
 		}
 		//----20210112
 		//20201115
@@ -384,8 +393,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 			atlog.info("Auto Printer type define error!");
 			return;
 		}
-		log.info("=================={} {}",this.brws.substring(0, 5), this.brws.substring(3));
-		
+		//MatsudairaSyuMe
+		final String logStr = String.format("==================%s %s",this.brws.substring(0, 5), this.brws.substring(3));
+		log.info(logStr);
 		this.statusfields = PrnSvr.statustbfields;
 		
 		ipAddrPars nodePars = new ipAddrPars();
@@ -407,7 +417,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
 				//20201119 add for make reset the status table
 				jsel2ins.DELETETB(PrnSvr.statustbname, "BRWS",this.brws);
-				log.info("reset {} on {}", this.brws, PrnSvr.statustbname);
+				//20210204 MatsudairaSyuMe
+				final String logStr2 = String.format("reset %s on %s", this.brws, PrnSvr.statustbname);
+				log.info(logStr2);
 				//----
 			}
 			//20210112 MatsudairaSyume
@@ -442,7 +454,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 			//20200827 converto to UTF-8 message
 //			aslog.info(String.format("SEND %s[%04d]:%s", this.curSockNm, msg.length, new String(msg)));
 			try {
-				aslog.info(String.format("SEND %s[%04d]:%s", this.curSockNm, msg.length, charcnv.BIG5bytesUTF8str(msg)));
+				//20210204 MatsudairaSyuMe
+				final String logStr = String.format("SEND %s[%04d]:%s", this.curSockNm, msg.length, charcnv.BIG5bytesUTF8str(msg));
+				aslog.info(logStr);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -1259,7 +1273,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				log.debug("pbpr_date=[{}] pbpr_wsno=[{}] pbpr_dscpt=[{}] pbpr_crdb=[{}] pbpr_balance=[{}] pr_data=[{}] pbpr_crdbT=[{}]", pbpr_date, pbpr_wsno, pbpr_dscpt, pbpr_crdb, pbpr_balance, pr_data, pbpr_crdbT);
 				log.debug("pr_datalog=[{}]", pr_datalog);
 				//20200826
-				atlog.info(": PbDataFormat() -- All Data=[{}]", pr_datalog);
+				//20210204 MatsudairaSyuMe
+				final String logStr = String.format(": PbDataFormat() -- All Data=[%s]", pr_datalog);
+				atlog.info(logStr);
 				//----
 				//Print Data
 				//20200915

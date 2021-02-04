@@ -1,127 +1,84 @@
 package com.systex.sysgateii.gateway.util;
 
-import java.security.Key;
-import java.security.SecureRandom;
-import java.security.spec.AlgorithmParameterSpec;
-
+import java.security.spec.KeySpec;
+import javax.crypto.SecretKey;
 import javax.crypto.Cipher;
-import javax.crypto.SecretKeyFactory;
-import javax.crypto.spec.DESKeySpec;
+import javax.crypto.spec.SecretKeySpec;
 import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.PBEKeySpec;
+import javax.crypto.SecretKeyFactory;
 import java.util.Base64;
+
 
 /**
  * DES 小工具
  * 20210122 MatsudairaSyuMe
+ * change to AES256 Algorithm
  */
 
 public class Des {
-	public static final String ALGORITHM_DES = "DES/CBC/PKCS5Padding";
-	public static final Base64.Decoder decoder = Base64.getDecoder();
-	public static final Base64.Encoder encoder = Base64.getEncoder();
+//	public static final String ALGORITHM_DES = "DES/CBC/PKCS5Padding";
+	private static String salt = "ssshhhhhhhhhhh!!!!";
+	public static final String ALGORITHM_AES256 = "PBKDF2WithHmacSHA256";
+	public static final String ALGORITHM_AES = "AES";
+	public static final String ALGORITHM_AESCBCPAD = "AES/CTR/PKCS5PADDING";
 
 	/**
 	 * DES演算法，加密
 	 *
-	 * @param data 待加密字串
-	 * @param key  加密私鑰，長度不能夠小於8位
+	 * @param strToEncrypt 待加密字串
+	 * @param secret  加密私鑰
 	 * @return 加密後的位元組陣列，一般結合Base64編碼使用
 	 * @throws CryptException 異常
 	 */
-	public static String encode(String key, String data) throws Exception {
-		return encode(key, data.getBytes());
-	}
-
-	/**
-	 * DES演算法，加密
-	 *
-	 * @param data 待加密字串
-	 * @param key  加密私鑰，長度不能夠小於8位
-	 * @return 加密後的位元組陣列，一般結合Base64編碼使用
-	 * @throws CryptException 異常
-	 */
-	public static String encode(String key, byte[] data) throws Exception {
+	public static String encode(String secret, String strToEncrypt) throws Exception {
 		try {
-			DESKeySpec dks = new DESKeySpec(key.getBytes());
+			byte[] iv = { 0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x7, 0x6, 0x5, 0x4, 0x3, 0x2, 0x1, 0 };
+			IvParameterSpec ivspec = new IvParameterSpec(iv);
 
-			SecretKeyFactory keyFactory = SecretKeyFactory.getInstance("DES");
-			// key的長度不能夠小於8位位元組
-			Key secretKey = keyFactory.generateSecret(dks);
-			Cipher cipher = Cipher.getInstance(ALGORITHM_DES);
-			IvParameterSpec iv = new IvParameterSpec("********".getBytes());
-			AlgorithmParameterSpec paramSpec = iv;
-			cipher.init(Cipher.ENCRYPT_MODE, secretKey, paramSpec);
+			SecretKeyFactory factory = SecretKeyFactory.getInstance(ALGORITHM_AES256);
+			KeySpec spec = new PBEKeySpec(secret.toCharArray(), salt.getBytes(), 65536, 256);
+			SecretKey tmp = factory.generateSecret(spec);
+			SecretKeySpec secretKeySpec = new SecretKeySpec(tmp.getEncoded(), ALGORITHM_AES);
 
-			byte[] bytes = cipher.doFinal(data);
-			return encoder.encodeToString(bytes);
+			Cipher cipher = Cipher.getInstance(ALGORITHM_AESCBCPAD);
+			cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec, ivspec);
+			return Base64.getEncoder().encodeToString(cipher.doFinal(strToEncrypt.getBytes("UTF-8")));
 		} catch (Exception e) {
-			throw new Exception(e);
+			System.out.println("Error while encrypting: " + e.toString());
 		}
+		return null;
 	}
 
-	/**
-	 * DES演算法，解密
-	 *
-	 * @param data 待解密字串
-	 * @param key  解密私鑰，長度不能夠小於8位
-	 * @return 解密後的位元組陣列
-	 * @throws Exception 異常
-	 */
-	public static byte[] decode(String key, byte[] data) throws Exception {
-		try {
-			SecureRandom sr = new SecureRandom();
-			DESKeySpec dks = new DESKeySpec(key.getBytes());
-			SecretKeyFactory keyFactory = SecretKeyFactory.getInstance("DES");
-			// key的長度不能夠小於8位位元組
-			Key secretKey = keyFactory.generateSecret(dks);
-			Cipher cipher = Cipher.getInstance(ALGORITHM_DES);
-			IvParameterSpec iv = new IvParameterSpec("********".getBytes());
-			AlgorithmParameterSpec paramSpec = iv;
-			cipher.init(Cipher.DECRYPT_MODE, secretKey, paramSpec);
-			return cipher.doFinal(data);
-		} catch (Exception e) {
-//         e.printStackTrace();
-			throw new Exception(e);
-		}
-	}
 
 	/**
 	 * 獲取編碼後的值
 	 * 
-	 * @param key
-	 * @param data
+	 * @param secret
+	 * @param strToDecrypt
 	 * @return
 	 * @throws Exception
 	 * @throws Exception
 	 */
-	public static String decodeValue(String key, String data) throws Exception {
-		byte[] datas;
-		String value = null;
-
-		datas = decode(key, decoder.decode(data));
-
-		value = new String(datas);
-		if (value.equals("")) {
-			throw new Exception();
-		}
-		return value;
-	}
-
-	public static void main(String[] args) throws Exception {
-		// 待加密內容
-		String str = "加密內容";
-		// 密碼,長度要是8的倍數
-		String password = "9588028820109132570743325311898426347857298773549468758875018579537757772163084478873699447306034466200616411960574122434059469100235892702736860872901247123456";
-
-		String result = Des.encode(password, str);
-		System.out.println("加密後:" + result);
-
-		// 直接將如上內容解密
+	public static String decodeValue(String secret, String strToDecrypt) throws Exception {
 		try {
-			String decryResult = Des.decodeValue(password, result);
-			System.out.println("解密後:" + decryResult);
-		} catch (Exception e1) {
-			e1.printStackTrace();
+			byte[] iv = { 0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x7, 0x6, 0x5, 0x4, 0x3, 0x2, 0x1, 0 };
+			IvParameterSpec ivspec = new IvParameterSpec(iv);
+
+			SecretKeyFactory factory = SecretKeyFactory.getInstance(ALGORITHM_AES256);
+			KeySpec spec = new PBEKeySpec(secret.toCharArray(), salt.getBytes(), 65536, 256);
+			SecretKey tmp = factory.generateSecret(spec);
+			SecretKeySpec secretKeySpec = new SecretKeySpec(tmp.getEncoded(), ALGORITHM_AES);
+
+			Cipher cipher = Cipher.getInstance(ALGORITHM_AESCBCPAD);
+			cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, ivspec);
+			return new String(cipher.doFinal(Base64.getDecoder().decode(strToDecrypt)));
+		} catch (Exception e) {
+			System.out.println("Error while decrypting: " + e.toString());
 		}
+		return null;
 	}
+	//20210202 MatsudairaSyuMe
+	//cut out main
+	//----
 }

@@ -688,7 +688,7 @@ public class GwDao {
 					+ keyset;
 			//20210122 MatsudairaSyuMe
 			wowstr = Des.encode(Constants.DEFKNOCKING, SQL_UPDATE);
-			String wowstr1 = Des.encode(Constants.DEFKNOCKING, SQL_INSERT);
+			String wowstr1 = ""; //20210202 MatsudairaSyuMe
 			//----
 
 			String cnvInsertStr = "";
@@ -719,8 +719,9 @@ public class GwDao {
 				else
 					insvalary = valarynocomm;
 				//20201116
-				//20210122 MatsudairaSyuMe
-				cnvInsertStr = generateActualSql(Des.decodeValue(Constants.DEFKNOCKING, wowstr1), (Object[])insvalary);
+				cnvInsertStr = generateActualSql(SQL_INSERT, (Object[])insvalary);
+				//20210202 MatsudairaSyuMe
+				wowstr1 = Des.encode(Constants.DEFKNOCKING, cnvInsertStr);
 				//----
 				log.debug("record not exist using select insert:{} toString=[{}]", Des.decodeValue(Constants.DEFKNOCKING, wowstr1), cnvInsertStr);
 				//----
@@ -740,7 +741,7 @@ public class GwDao {
 				}
 			} else {
 				java.sql.Statement stmt2 = selconn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE, ResultSet.CLOSE_CURSORS_AT_COMMIT);
-				rs = ((java.sql.Statement) stmt2).executeQuery(cnvInsertStr);
+				rs = ((java.sql.Statement) stmt2).executeQuery(Des.decodeValue(Constants.DEFKNOCKING, wowstr1));//20210202 MatsudairaSyuMe
 				log.debug("executeUpdate()");
 				int idx = 0;
 				while (rs.next()) {
@@ -1095,12 +1096,12 @@ public class GwDao {
 		log.debug("Driver Loaded.");
 		return DriverManager.getConnection(url, username, password);
 	}
-
-	private Connection getHSQLConnection() throws Exception {
+    //20210202 MatsudairaSyuMe change to use gievn url, username, password
+	private Connection getHSQLConnection(String url, String username, String password) throws Exception {
 		Class.forName("org.hsqldb.jdbcDriver");
-		System.out.println("Driver Loaded.");
-		String url = "jdbc:hsqldb:data/tutorial";
-		return DriverManager.getConnection(url, "sa", "");
+		log.debug("Driver Loaded.");
+//		String url = "jdbc:hsqldb:data/tutorial";
+		return DriverManager.getConnection(url, username, password);
 	}
 	//20210118 MatsudairaSyuMe for vulnerability scanning sql injection defense
 	private Connection getMySqlConnection(String url, String username, String password) throws Exception {

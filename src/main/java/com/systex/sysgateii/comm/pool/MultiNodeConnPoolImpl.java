@@ -102,7 +102,9 @@ public class MultiNodeConnPoolImpl implements NonBlockingConnPool {
 		for (final String node : nodes) {
 			InetSocketAddress nodeAddr = null;
 			InetSocketAddress localnodeAddr = null;
-			LOG.debug("node-->[{}]", node);
+			//20210204 MatsudairaSyuMe
+			final String logStr = String.format("node-->[%s]", node);
+			LOG.debug(logStr);
 			nodePars.init();
 			try {
 				nodePars.CheckAddrT(node, "=", false);
