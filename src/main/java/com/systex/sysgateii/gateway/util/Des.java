@@ -21,7 +21,8 @@ public class Des {
 	private static String salt = "ssshhhhhhhhhhh!!!!";
 	public static final String ALGORITHM_AES256 = "PBKDF2WithHmacSHA256";
 	public static final String ALGORITHM_AES = "AES";
-	public static final String ALGORITHM_AESCBCPAD = "AES/CTR/PKCS5PADDING";
+	//public static final String ALGORITHM_AESCBCPAD = "AES/CTR/PKCS5PADDING";
+	public static final String ALGORITHM_AESCBCPAD = "AES/CBC/PKCS5PADDING";
 
 	/**
 	 * DES演算法，加密
