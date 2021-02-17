@@ -11,6 +11,11 @@ import io.netty.channel.pool.ChannelPoolHandler;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+//20210217 MatsidairaSyume
+import java.security.SecureRandom;
+//----
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -329,7 +334,19 @@ public class MultiNodeConnPoolImpl implements NonBlockingConnPool {
 	}
 
 	protected Channel poll() {
-		final int i = ThreadLocalRandom.current().nextInt(n);
+		//20210127 MatsidairaSyume
+//		final int i = ThreadLocalRandom.current().nextInt(n);
+		SecureRandom secureRandomGenerator = null;
+		int i = 0;
+		try {
+			secureRandomGenerator = SecureRandom.getInstance("SHA1PRNG");
+			i = secureRandomGenerator.nextInt(n);
+		} catch (NoSuchAlgorithmException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			LOG.error("SecureRandom error:NoSuchAlgorithmException");
+		}
+		//----
 		Queue<Channel> connQueue;
 		Channel conn = null;
 		for (int j = i; j < i + n; j++) {

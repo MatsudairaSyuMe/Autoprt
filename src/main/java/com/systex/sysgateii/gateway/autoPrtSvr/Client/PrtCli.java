@@ -8,6 +8,8 @@ import java.lang.management.RuntimeMXBean;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -337,10 +339,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 		responseTimeout = PrnSvr.setResponseTimeout;
 		//20210112 MatsudairaSyume always initialize sequence no. from 0
 		try {
-			// 20210202 MAtsydairaSyuMe checj brws for digit
-			Pattern FILTER_PATTERN = Pattern.compile("[0-9]+");
-			if (FILTER_PATTERN.matcher(this.brws).matches()) {
-				this.seqNoFile = new File("SEQNO", "SEQNO_" + this.brws);
+			// 20210217 MatsydairaSyuMe check brws for digit type and length > 0
+			if (isValidBrws(this.brws)) {
+				this.seqNoFile = new File("SEQNO", "SEQNO_" + (isValidBrws(this.brws) ? truncateBrws(this.brws): ""));
+				// 20210217 MatsydairaSyuMe
 				log.debug("seqNoFile local=" + this.seqNoFile.getAbsolutePath());
 				if (seqNoFile.exists() == false) {
 					File parent = seqNoFile.getParentFile();
@@ -448,7 +450,18 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 			log.debug("update status table {} error:", PrnSvr.statustbname, e.getMessage());
 		}
 	}
-	
+	//20210217 MatsudairaSyume for brws name check
+	boolean isValidBrws (String askbrws) {
+		boolean rtn = true;
+		Pattern FILTER_PATTERN = Pattern.compile("[0-9]+");
+		if (askbrws == null || askbrws.trim().length() < 1 || !FILTER_PATTERN.matcher(this.brws).matches())
+			rtn = false;
+		return rtn;
+	}
+	String truncateBrws(String origbrws) {
+		return origbrws.trim();
+	}
+	//----
 	public void sendBytes(byte[] msg) throws IOException {
 		if (channel_ != null && channel_.isActive()) {
 			//20200827 converto to UTF-8 message
@@ -621,7 +634,23 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 		MDC.put("WSNO", this.brws.substring(3));
 		MDC.put("PID", pid);
 		showStateMsg = false;
-		this.curSockNm = String.format("%04d", (int) ((Math.random() * ((9999 - 4) + 1)) + 4));
+		//20210217 MatsudairaSyuMe
+		SecureRandom secureRandomGenerator = null;
+		int tmpsockno = 0;
+		try {
+			secureRandomGenerator = SecureRandom.getInstance("SHA1PRNG");
+			tmpsockno = secureRandomGenerator.nextInt(9999);
+		} catch (NoSuchAlgorithmException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			log.error("SecureRandom error:NoSuchAlgorithmException");
+		} finally {
+			if (tmpsockno == 0)
+				tmpsockno = 1;
+		}
+//		this.curSockNm = String.format("%04d", (int) ((Math.random() * ((9999 - 4) + 1)) + 4));
+		//----
+		this.curSockNm = String.format("%04d", tmpsockno);
 		aslog.info(String.format("CON  %s[%04d]:", this.curSockNm, 0));
 //		String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
 //				this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDACT);

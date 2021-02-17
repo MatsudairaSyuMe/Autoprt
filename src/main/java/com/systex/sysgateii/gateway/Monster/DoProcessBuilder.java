@@ -61,7 +61,9 @@ public class DoProcessBuilder {
 					runArgs2, TrustedArg2,chkOk);
 			if (chkOk && runArgs0.trim().equals(TrustedCmd)
 					&& runArgs2.trim().equals(TrustedArg2)) {
-				ProcessBuilder pb = new ProcessBuilder(runArgs0, runArgs1, runArgs2, runArgs3);
+				//20210217 MatsudairaSyume for command injection
+				ProcessBuilder pb = new ProcessBuilder(TrustedCmd, runArgs1.trim().toLowerCase(), TrustedArg2, runArgs3.trim());
+				//----
 				String currentDir = System.getProperty("user.dir");
 				pb.directory(new File(currentDir));
 				Process process = pb.start();
