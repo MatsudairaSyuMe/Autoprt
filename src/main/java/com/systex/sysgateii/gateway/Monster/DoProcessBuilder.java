@@ -19,7 +19,9 @@ public class DoProcessBuilder {
 
 	private static Logger log = LoggerFactory.getLogger(DoProcessBuilder.class);
 	private String[] runArgs = null;
-	private static final String TrustedCmd = "bin/autosvr";
+	//20210217 MatsudairaSyuMe
+	private static final String TrustedCmd = "bin"+ java.io.File.separator + "autosvr";
+	//----
 	private static final String[] TrustedArg1 = {"start", "stop", "restart"};
 	private static final String TrustedArg2 = "--svrid";
 
@@ -62,7 +64,14 @@ public class DoProcessBuilder {
 			if (chkOk && runArgs0.trim().equals(TrustedCmd)
 					&& runArgs2.trim().equals(TrustedArg2)) {
 				//20210217 MatsudairaSyume for command injection
-				ProcessBuilder pb = new ProcessBuilder(TrustedCmd, runArgs1.trim().toLowerCase(), TrustedArg2, runArgs3.trim());
+				String inary[] = runArgs0.trim().split(java.io.File.separator);
+				String in2 = "";
+				for (String s : inary) {
+					if (in2.length() > 0)
+						in2 = in2.concat(java.io.File.separator);
+					in2 = in2.concat(s);
+				}
+				ProcessBuilder pb = new ProcessBuilder(in2, runArgs1.trim().toLowerCase(), TrustedArg2, runArgs3.trim());
 				//----
 				String currentDir = System.getProperty("user.dir");
 				pb.directory(new File(currentDir));
