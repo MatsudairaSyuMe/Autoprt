@@ -339,9 +339,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 		responseTimeout = PrnSvr.setResponseTimeout;
 		//20210112 MatsudairaSyume always initialize sequence no. from 0
 		try {
-			// 20210217 MatsydairaSyuMe check brws for digit type and length > 0
+			// 20210217,20210226 MatsydairaSyuMe check brws for digit type and length > 0
 			if (isValidBrws(this.brws)) {
-				this.seqNoFile = new File("SEQNO", "SEQNO_" + (isValidBrws(this.brws) ? truncateBrws(this.brws): ""));
+				String seqFname = "SEQNO_" + this.brws.trim();
+				this.seqNoFile = new File("SEQNO", seqFname);
 				// 20210217 MatsydairaSyuMe
 				log.debug("seqNoFile local=" + this.seqNoFile.getAbsolutePath());
 				if (seqNoFile.exists() == false) {
@@ -458,9 +459,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 			rtn = false;
 		return rtn;
 	}
-	String truncateBrws(String origbrws) {
-		return origbrws.trim();
-	}
+
+
 	//----
 	public void sendBytes(byte[] msg) throws IOException {
 		if (channel_ != null && channel_.isActive()) {

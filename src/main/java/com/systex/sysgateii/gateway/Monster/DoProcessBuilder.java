@@ -45,11 +45,12 @@ public class DoProcessBuilder {
 			System.exit(-1);			
 		}
 		try {
-			//20210111 for vulnerability scanning command injection defense
+			//20210226 for vulnerability scanning command injection defense
 			boolean chkOk = false;
-			for (String chkS : TrustedArg1) {
-				log.debug("runArgs1 running is {} chkOk={} chkS={}", runArgs1, chkOk, chkS);
-				if (chkS.equals(runArgs1.trim())) {
+			int arg1idx = -1;
+			for (arg1idx = 0; arg1idx <TrustedArg1.length; arg1idx++) {
+				log.debug("runArgs1 running is {} chkOk={} chkS={}", runArgs1, chkOk, TrustedArg1[arg1idx].trim());
+				if (runArgs1.equals(TrustedArg1[arg1idx].trim())) {
 					chkOk = true;
 					break;
 				}
@@ -63,15 +64,8 @@ public class DoProcessBuilder {
 					runArgs2, TrustedArg2,chkOk);
 			if (chkOk && runArgs0.trim().equals(TrustedCmd)
 					&& runArgs2.trim().equals(TrustedArg2)) {
-				//20210217 MatsudairaSyume for command injection
-				String inary[] = runArgs0.trim().split(java.io.File.separator);
-				String in2 = "";
-				for (String s : inary) {
-					if (in2.length() > 0)
-						in2 = in2.concat(java.io.File.separator);
-					in2 = in2.concat(s);
-				}
-				ProcessBuilder pb = new ProcessBuilder(in2, runArgs1.trim().toLowerCase(), TrustedArg2, runArgs3.trim());
+				//20210226 MatsudairaSyume for command injection
+				ProcessBuilder pb = new ProcessBuilder(TrustedCmd, TrustedArg1[arg1idx], TrustedArg2, runArgs3.trim());
 				//----
 				String currentDir = System.getProperty("user.dir");
 				pb.directory(new File(currentDir));
