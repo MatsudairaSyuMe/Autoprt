@@ -31,17 +31,51 @@ public class DoProcessBuilder {
 		runArgs = args;
 	}
 	*/
-	DoProcessBuilder() {
-		runArgs = null;
+	//20210302 MatsudairaSyuMe
+	DoProcessBuilder(String inArgs0, String inArgs1, String inArgs2, String inArgs3) {
+		if (inArgs0 == null || inArgs0.trim().length() == 0 || inArgs1 == null || inArgs1.trim().length() == 0
+				|| inArgs2 == null || inArgs2.trim().length() == 0 || inArgs3 == null || inArgs3.trim().length() == 0) {
+			log.error("initial command error");
+		} else {
+			boolean chkOk = false;
+			int arg1idx = -1;
+			for (arg1idx = 0; arg1idx < TrustedArg1.length; arg1idx++) {
+				log.debug("inArgs1 running is {} chkOk={} chkS={}", inArgs1, chkOk, TrustedArg1[arg1idx].trim());
+				if (inArgs1.equals(TrustedArg1[arg1idx].trim())) {
+					chkOk = true;
+					break;
+				}
+			}
+			if (chkOk == true) {
+				chkOk = false;
+				if (StrUtil.isNumeric(inArgs3.trim()))
+					chkOk = true;
+			}
+			log.debug("inArgs0={} {} inArgs2={} {} chkOk={}", inArgs0, TrustedCmd, inArgs2, TrustedArg2, chkOk);
+			if (chkOk && inArgs0.trim().equals(TrustedCmd) && inArgs2.trim().equals(TrustedArg2)) {
+				runArgs = new String[4];
+				runArgs[0] = TrustedCmd;
+				runArgs[1] = TrustedArg1[arg1idx];
+				runArgs[2] = TrustedArg2;
+				runArgs[3] = inArgs3;
+			} else {
+				runArgs = null;
+				log.error("initial command format error");
+			}
+		}
 	}
 	//----
-	public void Go(String runArgs0, String runArgs1, String runArgs2, String runArgs3) {
+/*	DoProcessBuilder() {
+		runArgs = null;
+	}*/
+	//----
+/*	public void Go(String runArgs0, String runArgs1, String runArgs2, String runArgs3) {
 		if (runArgs0 == null || runArgs0.trim().length() == 0
 				|| runArgs1 == null || runArgs1.trim().length() == 0
 				|| runArgs2 == null || runArgs2.trim().length() == 0
 				|| runArgs3 == null || runArgs3.trim().length() == 0
 			) {
-			log.info("Need command to run");
+			log.info("initial command error");
 			System.exit(-1);			
 		}
 		try {
@@ -87,6 +121,30 @@ public class DoProcessBuilder {
 		} catch (Exception e) {
 			e.printStackTrace();
 			log.error("fork process error [{}]", e.toString());
+		}
+	}*/
+	public void Go() {
+		if (runArgs == null || runArgs.length < 4) {
+			log.error("Need command to run");
+		} else {
+			try {
+				ProcessBuilder pb = new ProcessBuilder(runArgs);
+				String currentDir = System.getProperty("user.dir");
+				pb.directory(new File(currentDir));
+				Process process = pb.start();
+				InputStream is = process.getInputStream();
+				InputStreamReader isr = new InputStreamReader(is);
+				BufferedReader br = new BufferedReader(isr);
+				String line;
+
+				log.debug("Output of running {} is:", Arrays.toString(runArgs));
+				while ((line = br.readLine()) != null) {
+					log.debug(line);
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+				log.error("fork process error [{}]", e.toString());
+			}
 		}
 	}
 	/*
@@ -144,7 +202,7 @@ public class DoProcessBuilder {
 		}
 	}*/
 
-	public static void main(String args[]) throws IOException {
+/*	public static void main(String args[]) throws IOException {
 		// 20210202 MatsuDairasyume
 		DoProcessBuilder dp = null;
 		boolean chkOk = false;
@@ -176,5 +234,5 @@ public class DoProcessBuilder {
 				log.error("i=arg[{}]", i, args[i]);
 		}
 		// ----
-	}
+	}*/
 }

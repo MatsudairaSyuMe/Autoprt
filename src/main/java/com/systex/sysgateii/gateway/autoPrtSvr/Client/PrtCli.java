@@ -341,7 +341,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 		try {
 			// 20210217,20210226 MatsydairaSyuMe check brws for digit type and length > 0
 			if (isValidBrws(this.brws)) {
-				String seqFname = "SEQNO_" + this.brws.trim();
+				String seqFname = "SEQNO_" + (String) (map.get("brws"));  //20210302 MatsidairaSyuMe
 				this.seqNoFile = new File("SEQNO", seqFname);
 				// 20210217 MatsydairaSyuMe
 				log.debug("seqNoFile local=" + this.seqNoFile.getAbsolutePath());
