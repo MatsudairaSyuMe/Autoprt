@@ -337,33 +337,6 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 		MDC.put("WSNO", this.brws.substring(3));
 		MDC.put("PID", pid);
 		responseTimeout = PrnSvr.setResponseTimeout;
-		//20210112 MatsudairaSyume always initialize sequence no. from 0
-		try {
-			// 20210217,20210226 MatsydairaSyuMe check brws for digit type and length > 0
-			if (isValidBrws(this.brws)) {
-				String seqFname = "SEQNO_" + (String) (map.get("brws"));  //20210302 MatsidairaSyuMe
-				this.seqNoFile = new File("SEQNO", seqFname);
-				// 20210217 MatsydairaSyuMe
-				log.debug("seqNoFile local=" + this.seqNoFile.getAbsolutePath());
-				if (seqNoFile.exists() == false) {
-					File parent = seqNoFile.getParentFile();
-					if (parent.exists() == false) {
-						parent.mkdirs();
-					}
-					this.seqNoFile.createNewFile();
-				}
-				FileUtils.writeStringToFile(this.seqNoFile, "0", Charset.defaultCharset());
-			} else {
-				log.error("error!!! brws name is not digit type {} can ot create seqno file", this.brws);
-			}
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			//20210204 MatsuDairaSyuMe
-			final String logStr = String.format("error!!! create or open seqno file SEQNO_%s error %s", this.brws, e.getMessage());
-			log.error(logStr);
-		}
-		//----20210112
 		//20201115
 //		amlog = PrnSvr.amlog;
 		//20201214
@@ -655,9 +628,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 //		String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
 //				this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDACT);
 //20200910 change to use new UPSERT
-		//20210112 MatsudairaSyume always initialize sequence no. from 0
-/*		try {
-			this.seqNoFile = new File("SEQNO", "SEQNO_" + this.brws);
+		//20210319 MatsudairaSyume always initialize sequence no. from 0
+		try {
+			this.seqNoFile = new File("SEQNO", "SEQNO_" + cnvIPv4Addr2Str(this.rmtaddr.getAddress().getHostAddress(), this.rmtaddr.getPort()));
 			log.debug("seqNoFile local=" + this.seqNoFile.getAbsolutePath());
 			if (seqNoFile.exists() == false) {
 				File parent = seqNoFile.getParentFile();
@@ -671,7 +644,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 			log.warn("WARN!!! create or open seqno file {} error {}", "SEQNO_" + this.brws, e.getMessage());
-		}*/
+		}
 		//----20210112
 		String updValue = String.format(updValueptrn,this.rmtaddr.getAddress().getHostAddress(),
 				this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDACT);
@@ -1360,7 +1333,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					prt.Prt_Text(sndbary);
 				//----
 				//若印滿 24 筆且尚有補登資料，加印「請翻下頁繼續補登」
-				if ( (tl+i) == 24 && (total >= (i+1)) )
+				if ( (tl+i) == 24 && (total > (i+1)) ) //20210320 MatsudairaSyuMe change from "total >= (i+1)" to "total > (i+1)"
 				{
 					// 因為存摺會補到滿, PB 只有8頁, 如果是第8頁則不進行換頁流程
 					// 20180518 , add
@@ -1528,7 +1501,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 //							prt.Parsing(firstOpenConn, "SKIP=3".getBytes());
 //							prt.SkipnLine(3);
 							//20200915
-							prt.SkipnLineBuf(3);
+							prt.SkipnLineBuf(2);//20210320 MatsudairaSyuMe change from prt.SkipnLineBuf(3) to prt.SkipnLineBuf(2), 跨中頁只多跳一行
 							//----
 						}
 						else
@@ -1546,7 +1519,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 						// tl 起始行數 < 13
 //						prt.Parsing(firstOpenConn, "SKIP=2".getBytes());
 						//20200915
-						prt.SkipnLineBuf(2);
+						prt.SkipnLineBuf(2); //20210320 MatsudairaSyuMe change from prt.SkipnLineBuf(2) to prt.SkipnLineBuf(1), 跨中頁只多跳一行
 						//----
 					}
 					
@@ -1564,7 +1537,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				else
 					prt.Prt_Text(sndbary);
 				//若印滿 24 筆且尚有補登資料，加印「請翻下頁繼續補登」
-				if ( (tl+i) == 24 && (total >= (i+1)) )
+				if ( (tl+i) == 24 && (total > (i+1)) ) //20210320 MatsudairaSyuMe change from "total >= (i+1)" to "total > (i+1)"
 				{
 					// 因為存摺會補到滿, FC 只有5頁, 如果是第5頁則不進行換頁流程
 					// 20180518 , add
@@ -1813,7 +1786,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				else
 					prt.Prt_Text(sndbary);
 				//若印滿 24 筆且尚有補登資料，加印「請翻下頁繼續補登」
-				if ( (tl+i) == 24 && (total >= (i+1)) )
+				if ( (tl+i) == 24 && (total > (i+1)) )//20210320 MatsudairaSyuMe change from "total >= (i+1)" to "total > (i+1)"
 				{
 					// 因為存摺會補到滿, GL 只有9頁, 如果是第9頁則不進行換頁流程
 					// 20180518 , add
@@ -4342,6 +4315,25 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 	public void setTITA_TOTA_START(boolean tITA_TOTA_START) {
 		PRT_CLI_TITA_TOTA_START = tITA_TOTA_START;
 		log.info("setTITA_TOTA_START=[{}]", PRT_CLI_TITA_TOTA_START);
+	}
+	//----
+	//20210319 MAtsudairaSyuMe
+	// convert remote socket IPv4 address to string
+	private String cnvIPv4Addr2Str(String sIP, int sPort) {
+		String rtn = "";
+		if (sIP == null || sIP.trim().length() == 0)
+			rtn = "000000000000";
+		else {
+			String[] sIPary = sIP.split("\\.");
+			System.out.println(sIP + ":" + sIPary.length);
+			for (String s : sIPary)
+				rtn = rtn + String.format("%03d", Integer.parseInt(s));
+		}
+		if (sPort <= 0)
+			rtn = rtn + "00000";
+		else
+			rtn = rtn + String.format("%05d", sPort);
+		return rtn;
 	}
 	//----
 }

@@ -11,6 +11,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Arrays;
+import java.util.regex.Pattern;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.systex.sysgateii.gateway.util.StrUtil;
@@ -24,15 +26,16 @@ public class DoProcessBuilder {
 	//----
 	private static final String[] TrustedArg1 = {"start", "stop", "restart"};
 	private static final String TrustedArg2 = "--svrid";
+	private static final String[] TrustedPTRN = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
 
-	//20210202 MAtsudairaSyuMe
+	//20210202 MatsudairaSyuMe
 /*
 	DoProcessBuilder(String args[]) {
 		runArgs = args;
 	}
 	*/
 	//20210302 MatsudairaSyuMe
-	DoProcessBuilder(String inArgs0, String inArgs1, String inArgs2, String inArgs3) {
+/*	DoProcessBuilder(String inArgs0, String inArgs1, String inArgs2, String inArgs3) {
 		if (inArgs0 == null || inArgs0.trim().length() == 0 || inArgs1 == null || inArgs1.trim().length() == 0
 				|| inArgs2 == null || inArgs2.trim().length() == 0 || inArgs3 == null || inArgs3.trim().length() == 0) {
 			log.error("initial command error");
@@ -63,13 +66,13 @@ public class DoProcessBuilder {
 				log.error("initial command format error");
 			}
 		}
-	}
-	//----
-/*	DoProcessBuilder() {
-		runArgs = null;
 	}*/
 	//----
-/*	public void Go(String runArgs0, String runArgs1, String runArgs2, String runArgs3) {
+	DoProcessBuilder() {
+		runArgs = null;
+	}
+	//----
+	public void Go(String runArgs0, String runArgs1, String runArgs2, String runArgs3) {
 		if (runArgs0 == null || runArgs0.trim().length() == 0
 				|| runArgs1 == null || runArgs1.trim().length() == 0
 				|| runArgs2 == null || runArgs2.trim().length() == 0
@@ -96,10 +99,30 @@ public class DoProcessBuilder {
 			}
 			log.debug("runArgs0={} {} runArgs2={} {} chkOk={}", runArgs0, TrustedCmd,
 					runArgs2, TrustedArg2,chkOk);
+			// 20210320 MatsudairaSyuMe for command injection
+			runArgs3 = runArgs3.trim();
+			Pattern FILTER_PATTERN = Pattern.compile("[0-9]+");
+			if (!FILTER_PATTERN.matcher(runArgs3).matches()) {
+				log.debug("inpit:{} not match", runArgs3);
+				chkOk = false;
+			} else
+				log.debug("inpit:{} ok", runArgs3);
+			String[] origsary = runArgs3.split("");
+			String cnvs = "";
+			for (String s : origsary) {
+				for (int i = 0; i < TrustedPTRN.length; i++) {
+					if (TrustedPTRN[i].equals(s)) {
+						cnvs = cnvs + TrustedPTRN[i];
+						break;
+					}
+				}
+			}
+			if (chkOk && cnvs.length() == 0)
+				chkOk = false;
 			if (chkOk && runArgs0.trim().equals(TrustedCmd)
 					&& runArgs2.trim().equals(TrustedArg2)) {
-				//20210226 MatsudairaSyume for command injection
-				ProcessBuilder pb = new ProcessBuilder(TrustedCmd, TrustedArg1[arg1idx], TrustedArg2, runArgs3.trim());
+				//20210320 MatsudairaSyuMe for command injection
+				ProcessBuilder pb = new ProcessBuilder(TrustedCmd, TrustedArg1[arg1idx], TrustedArg2, cnvs);
 				//----
 				String currentDir = System.getProperty("user.dir");
 				pb.directory(new File(currentDir));
@@ -122,8 +145,8 @@ public class DoProcessBuilder {
 			e.printStackTrace();
 			log.error("fork process error [{}]", e.toString());
 		}
-	}*/
-	public void Go() {
+	}
+/*	public void Go() {
 		if (runArgs == null || runArgs.length < 4) {
 			log.error("Need command to run");
 		} else {
@@ -146,7 +169,7 @@ public class DoProcessBuilder {
 				log.error("fork process error [{}]", e.toString());
 			}
 		}
-	}
+	}*/
 	/*
 	public void Go() {
 		if (runArgs.length <= 0) {

@@ -73,11 +73,11 @@ public class Conductor implements Runnable {
 						//20210302 MatsudairsSyuMe
 //						String[] setArg = {"bin/autosvr", "start", "--svrid", s};
 //						DoProcessBuilder dp = new DoProcessBuilder(setArg);
-						DoProcessBuilder dp = new DoProcessBuilder("bin/autosvr", "start", "--svrid", s);
-						dp.Go();
+//						DoProcessBuilder dp = new DoProcessBuilder("bin/autosvr", "start", "--svrid", s);
+//						dp.Go();
 						//20210202 MatsudairsSyuMe
-//						DoProcessBuilder dp = new DoProcessBuilder();
-//						dp.Go("bin/autosvr", "start", "--svrid", s);
+						DoProcessBuilder dp = new DoProcessBuilder();
+						dp.Go("bin/autosvr", "start", "--svrid", s);
 						//----
 						//store new service
 						Conductor.svridnodeMap.put(s, getSvrip());
@@ -268,10 +268,10 @@ public class Conductor implements Runnable {
 //										String[] monSetArg = {"bin/autosvr", "start", "--svrid", cmdary[0]};
 										//20210202 MatsudairaSyuMe
 //										DoProcessBuilder monDp = new DoProcessBuilder(monSetArg);
-										DoProcessBuilder monDp = new DoProcessBuilder("bin/autosvr", "start", "--svrid", cmdary[0]);
-										monDp.Go();
-//										DoProcessBuilder monDp = new DoProcessBuilder();
-//										monDp.Go("bin/autosvr", "start", "--svrid", cmdary[0]);
+//										DoProcessBuilder monDp = new DoProcessBuilder("bin/autosvr", "start", "--svrid", cmdary[0]);
+//										monDp.Go();
+										DoProcessBuilder monDp = new DoProcessBuilder();
+										monDp.Go("bin/autosvr", "start", "--svrid", cmdary[0]);
 										//----
 										SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
 										String t = sdf.format(new java.util.Date());
@@ -301,10 +301,10 @@ public class Conductor implements Runnable {
 										//20210202 MatsudairSyuMe
 //										String[] monSetArg = {"bin/autosvr", "stop", "--svrid", cmdary[0]};
 //										DoProcessBuilder monDp = new DoProcessBuilder(monSetArg);
-										DoProcessBuilder monDp = new DoProcessBuilder("bin/autosvr", "stop", "--svrid", cmdary[0]);
-										monDp.Go();
-//										DoProcessBuilder monDp = new DoProcessBuilder();
-//										monDp.Go("bin/autosvr", "stop", "--svrid", cmdary[0]);
+//										DoProcessBuilder monDp = new DoProcessBuilder("bin/autosvr", "stop", "--svrid", cmdary[0]);
+//										monDp.Go();
+										DoProcessBuilder monDp = new DoProcessBuilder();
+										monDp.Go("bin/autosvr", "stop", "--svrid", cmdary[0]);
 										//----
 										SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
 										String t = sdf.format(new java.util.Date());
@@ -330,29 +330,29 @@ public class Conductor implements Runnable {
 									break;
 								case "RESTART":
 									//20210302 MatsudairaSyuMe
-//									String monSetArg[] = null;
+									String monSetArg[] = null;
 									//----
 									if (Conductor.svridnodeMap.containsKey(cmdary[0])) {
-										//String[] tmpsetArg = {"bin/autosvr", "restart", "--svrid", cmdary[0]};
-										//monSetArg = tmpsetArg;
+										String[] tmpsetArg = {"bin/autosvr", "restart", "--svrid", cmdary[0]};
+										monSetArg = tmpsetArg;
 										log.debug("cmd object node=[{}] try to restart process", cmdary[0]);
 									} else {
 										//start to create new node and start
 										Conductor.svridnodeMap.put(cmdary[0], getSvrip());
-										//String[] tmpsetArg = {"bin/autosvr", "start", "--svrid", cmdary[0]};
-										//monSetArg = tmpsetArg;
+										String[] tmpsetArg = {"bin/autosvr", "start", "--svrid", cmdary[0]};
+										monSetArg = tmpsetArg;
 										log.debug("start to create new node=[{}]", cmdary[0]);
 									}
 									//20210302 MAtsuDairaSyuMe
 									//20210202 MatsuDairaSyume
-									DoProcessBuilder monDp = null;
-									if (Conductor.svridnodeMap.containsKey(cmdary[0]))
-										monDp = new DoProcessBuilder("bin/autosvr", "restart", "--svrid", cmdary[0]);
-									else
-										monDp = new DoProcessBuilder("bin/autosvr", "start", "--svrid", cmdary[0]);
-									monDp.Go();
-//									DoProcessBuilder monDp = new DoProcessBuilder();
-//									monDp.Go(monSetArg[0], monSetArg[1], monSetArg[2], monSetArg[3]);
+//									DoProcessBuilder monDp = null;
+//									if (Conductor.svridnodeMap.containsKey(cmdary[0]))
+//										monDp = new DoProcessBuilder("bin/autosvr", "restart", "--svrid", cmdary[0]);
+//									else
+//										monDp = new DoProcessBuilder("bin/autosvr", "start", "--svrid", cmdary[0]);
+//									monDp.Go();
+									DoProcessBuilder monDp = new DoProcessBuilder();
+									monDp.Go(monSetArg[0], monSetArg[1], monSetArg[2], monSetArg[3]);
 									//----
 									SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
 									String t = sdf.format(new java.util.Date());
