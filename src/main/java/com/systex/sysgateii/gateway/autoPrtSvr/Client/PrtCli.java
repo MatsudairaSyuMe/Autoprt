@@ -1293,7 +1293,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 //							prt.Parsing(firstOpenConn, "SKIP=3".getBytes());
 //							prt.SkipnLine(3);
 							//20200915
-							prt.SkipnLineBuf(3);
+							prt.SkipnLineBuf(2);//20210320 MatsudairaSyuMe change from prt.SkipnLineBuf(3) to prt.SkipnLineBuf(2), 跨中頁只多跳一行
 							//----
 						}
 						else
@@ -1312,7 +1312,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 //						prt.Parsing(firstOpenConn, "SKIP=2".getBytes());
 //						prt.SkipnLine(2);
 						//20200915
-						prt.SkipnLineBuf(2);
+						prt.SkipnLineBuf(1);//20210320 MatsudairaSyuMe change from prt.SkipnLineBuf(2) to prt.SkipnLineBuf(1), 跨中頁只多跳一行
 						//----
 					}
 					
@@ -1519,7 +1519,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 						// tl 起始行數 < 13
 //						prt.Parsing(firstOpenConn, "SKIP=2".getBytes());
 						//20200915
-						prt.SkipnLineBuf(2); //20210320 MatsudairaSyuMe change from prt.SkipnLineBuf(2) to prt.SkipnLineBuf(1), 跨中頁只多跳一行
+						prt.SkipnLineBuf(1); //20210320 MatsudairaSyuMe change from prt.SkipnLineBuf(2) to prt.SkipnLineBuf(1), 跨中頁只多跳一行
 						//----
 					}
 					
@@ -1749,7 +1749,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 //							prt.Parsing(firstOpenConn, "SKIP=3".getBytes());
 //							prt.SkipnLine(3);
 							//20200915
-							prt.SkipnLineBuf(3);
+							prt.SkipnLineBuf(2);//20210320 MatsudairaSyuMe change from prt.SkipnLineBuf(3) to prt.SkipnLineBuf(2), 跨中頁只多跳一行
 							//----
 						}
 						else
@@ -1768,7 +1768,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 //						prt.Parsing(firstOpenConn, "SKIP=2".getBytes());
 //						prt.SkipnLine(2);
 						//20200915
-						prt.SkipnLineBuf(2);
+						prt.SkipnLineBuf(1);//20210320 MatsudairaSyuMe change from prt.SkipnLineBuf(2) to prt.SkipnLineBuf(1), 跨中頁只多跳一行
 						//----
 					}
 					
@@ -4092,6 +4092,13 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 	public void setResponseTimeout(int responseTimeout) {
 		this.responseTimeout = responseTimeout;
 	}
+    //20210322 adjust lastcheckTime
+	public void reStartCheck() {
+		this.stateStartTime = System.currentTimeMillis();
+		this.durationTime = 0l;		
+	}
+	//----
+	
     //20200718 status check
 	private void lastCheck(int before) {
 		long now = System.currentTimeMillis();

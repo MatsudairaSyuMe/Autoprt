@@ -1148,7 +1148,13 @@ public class CS5240Impl implements Printer {
 				return false;
 			} else {
 				log.debug("2 ===<><>{} chkChkState {} {}", this.curState, this.curChkState, data);
-				this.curState = Eject_FINISH;
+				//20210322 MatsudairaSyuMe check if pass book still in printer
+				if ((data.length == 3) && (data[2] == (byte)'P')) {
+					pc.reStartCheck();
+					log.debug("2.1 ===<><>{} chkChkState {} {}  passbook still in printer", this.curState, this.curChkState);
+				} else
+				//----
+					this.curState = Eject_FINISH;
 			}
 		}
 		log.debug("3 ===<><>{} chkChkState {}", this.curState, this.curChkState);
