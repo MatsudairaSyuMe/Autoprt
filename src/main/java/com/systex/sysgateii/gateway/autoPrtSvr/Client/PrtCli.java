@@ -337,6 +337,34 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 		MDC.put("WSNO", this.brws.substring(3));
 		MDC.put("PID", pid);
 		responseTimeout = PrnSvr.setResponseTimeout;
+		//20210324 MatsudairaSyume initialize sequence no. from 0 at first time build
+		try {
+			// 20210217,20210226,20210324 MatsudairaSyuMe check brws for digit type and length > 0
+			Pattern FILTER_PATTERN = Pattern.compile("[0-9]+");
+			if (!FILTER_PATTERN.matcher(this.brws).matches()) {
+				String seqFname = "SEQNO_" + (String) (map.get("brws"));  //20210302 MatsidairaSyuMe
+				this.seqNoFile = new File("SEQNO", seqFname);
+				// 20210217 MatsydairaSyuMe
+				log.debug("seqNoFile local=" + this.seqNoFile.getAbsolutePath());
+				if (seqNoFile.exists() == false) {
+					File parent = seqNoFile.getParentFile();
+					if (parent.exists() == false) {
+						parent.mkdirs();
+					}
+					this.seqNoFile.createNewFile();
+					FileUtils.writeStringToFile(this.seqNoFile, "0", Charset.defaultCharset());
+				}
+			} else {
+				log.error("fatal error!!! brws name is not digit type {} can ot create seqno file", this.brws);
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			//20210204 MatsuDairaSyuMe
+			final String logStr = String.format("error!!! create or open seqno file SEQNO_%s error %s", this.brws, e.getMessage());
+			log.error(logStr);
+		}
+		//----20210324
 		//20201115
 //		amlog = PrnSvr.amlog;
 		//20201214
@@ -628,24 +656,6 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 //		String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
 //				this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDACT);
 //20200910 change to use new UPSERT
-		//20210319 MatsudairaSyume always initialize sequence no. from 0
-		try {
-			this.seqNoFile = new File("SEQNO", "SEQNO_" + cnvIPv4Addr2Str(this.rmtaddr.getAddress().getHostAddress(), this.rmtaddr.getPort()));
-			log.debug("seqNoFile local=" + this.seqNoFile.getAbsolutePath());
-			if (seqNoFile.exists() == false) {
-				File parent = seqNoFile.getParentFile();
-				if (parent.exists() == false) {
-					parent.mkdirs();
-				}
-				this.seqNoFile.createNewFile();
-			}
-			FileUtils.writeStringToFile(this.seqNoFile, "0", Charset.defaultCharset());
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			log.warn("WARN!!! create or open seqno file {} error {}", "SEQNO_" + this.brws, e.getMessage());
-		}
-		//----20210112
 		String updValue = String.format(updValueptrn,this.rmtaddr.getAddress().getHostAddress(),
 				this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDACT);
 		if (jsel2ins == null)
@@ -1668,11 +1678,11 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					
 					pbpr_crdblog = pbpr_crdblog + " " + dataUtil.rfmtdbl(dTxamt, TXP.GRAM1) + "           ";
 					*/
-					pr_data = pr_data +  " " + dataUtil.rfmtdbl(dTxamt, TXP.GRAM1) + "          ";
+					pr_data = pr_data +  " " + dataUtil.rfmtdbl(dTxamt, TXP.GRAM1) + "         ";//20210324 MatsudairaSyume delete 1 space
 					
-					pbpr_crdbT = pbpr_crdbT + " " + dataUtil.rfmtdbl(dTxamt, TXP.GRAM1) + "          ";
+					pbpr_crdbT = pbpr_crdbT + " " + dataUtil.rfmtdbl(dTxamt, TXP.GRAM1) + "         ";//20210324 MatsudairaSyume delete 1 space
 					
-					pbpr_crdblog = pbpr_crdblog + " " + dataUtil.rfmtdbl(dTxamt, TXP.GRAM1) + "          ";
+					pbpr_crdblog = pbpr_crdblog + " " + dataUtil.rfmtdbl(dTxamt, TXP.GRAM1) + "         ";//20210324 MatsudairaSyume delete 1 space
 					//----
 				} else {
 					//收入
@@ -1684,11 +1694,11 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					
 					pbpr_crdblog = pbpr_crdblog + "            " + dataUtil.rfmtdbl(dTxamt, TXP.GRAM1);
 					*/
-					pr_data = pr_data +  "           " + dataUtil.rfmtdbl(dTxamt, TXP.GRAM1);
+					pr_data = pr_data +  "          " + dataUtil.rfmtdbl(dTxamt, TXP.GRAM1);//20210324 MatsudairaSyume delete 1 space
 					
-					pbpr_crdbT = pbpr_crdbT + "           " + dataUtil.rfmtdbl(dTxamt, TXP.GRAM1);
+					pbpr_crdbT = pbpr_crdbT + "          " + dataUtil.rfmtdbl(dTxamt, TXP.GRAM1);//20210324 MatsudairaSyume delete 1 space
 					
-					pbpr_crdblog = pbpr_crdblog + "           " + dataUtil.rfmtdbl(dTxamt, TXP.GRAM1);
+					pbpr_crdblog = pbpr_crdblog + "          " + dataUtil.rfmtdbl(dTxamt, TXP.GRAM1);//20210324 MatsudairaSyume delete 1 space
 					//----
 
 				}
@@ -4092,10 +4102,14 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 	public void setResponseTimeout(int responseTimeout) {
 		this.responseTimeout = responseTimeout;
 	}
-    //20210322 adjust lastcheckTime
-	public void reStartCheck() {
-		this.stateStartTime = System.currentTimeMillis();
-		this.durationTime = 0l;		
+    //20210324 adjust stateStartTime
+	public void adjustStart() {
+		if (this.durationTime > 0l)
+			this.stateStartTime = System.currentTimeMillis() - this.durationTime;
+		else {
+			this.stateStartTime = System.currentTimeMillis();
+			this.durationTime = 0l;
+		}
 	}
 	//----
 	
