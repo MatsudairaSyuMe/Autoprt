@@ -341,7 +341,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 		try {
 			// 20210217,20210226,20210324 MatsudairaSyuMe check brws for digit type and length > 0
 			Pattern FILTER_PATTERN = Pattern.compile("[0-9]+");
-			if (!FILTER_PATTERN.matcher(this.brws).matches()) {
+			if (FILTER_PATTERN.matcher(this.brws).matches()) {
 				String seqFname = "SEQNO_" + (String) (map.get("brws"));  //20210302 MatsidairaSyuMe
 				this.seqNoFile = new File("SEQNO", seqFname);
 				// 20210217 MatsydairaSyuMe
@@ -1327,7 +1327,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					}
 					
 				}
-				log.debug("after skip line------------tl+i=[{}] total=[{}] i + 1=[{}]", tl+i, total, i + 1);   //20200603 test
+				log.debug("after skip line------------tl+i=[{}] total=[{}] i + 1=[{}] pb_arr.size()=[{}]", tl+i, total, i + 1, pb_arr.size());   //20200603 test
 				//20200915
 				byte[] skipbytes =	prt.GetSkipLineBuf();
 				byte[] sndbary = new byte[pr_dataprev.getBytes().length + pbpr_crdbT.getBytes().length];
@@ -1343,7 +1343,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					prt.Prt_Text(sndbary);
 				//----
 				//若印滿 24 筆且尚有補登資料，加印「請翻下頁繼續補登」
-				if ( (tl+i) == 24 && (total > (i+1)) ) //20210320 MatsudairaSyuMe change from "total >= (i+1)" to "total > (i+1)"
+				if ( (tl+i) == 24 && (total >= (i+1)) )
 				{
 					// 因為存摺會補到滿, PB 只有8頁, 如果是第8頁則不進行換頁流程
 					// 20180518 , add
@@ -1534,7 +1534,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					}
 					
 				}
-				log.debug("after skip line------------tl+i=[{}] total=[{}] i+1=[{}]", tl+i, total, i+1);   //20200603 test
+				log.debug("after skip line------------tl+i=[{}] total=[{}] i+1=[{}] fc_arr.size()=[{}]", tl+i, total, i+1, fc_arr.size());   //20200603 test
 				//20200915
 				byte[] skipbytes =	prt.GetSkipLineBuf();
 				byte[] sndbary = new byte[pr_dataprev.getBytes().length + pbpr_crdbT.getBytes().length];
@@ -1547,7 +1547,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				else
 					prt.Prt_Text(sndbary);
 				//若印滿 24 筆且尚有補登資料，加印「請翻下頁繼續補登」
-				if ( (tl+i) == 24 && (total > (i+1)) ) //20210320 MatsudairaSyuMe change from "total >= (i+1)" to "total > (i+1)"
+				if ( (tl+i) == 24 && (total >= (i+1)) )
 				{
 					// 因為存摺會補到滿, FC 只有5頁, 如果是第5頁則不進行換頁流程
 					// 20180518 , add
@@ -1759,7 +1759,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 //							prt.Parsing(firstOpenConn, "SKIP=3".getBytes());
 //							prt.SkipnLine(3);
 							//20200915
-							prt.SkipnLineBuf(2);//20210320 MatsudairaSyuMe change from prt.SkipnLineBuf(3) to prt.SkipnLineBuf(2), 跨中頁只多跳一行
+							prt.SkipnLineBuf(3);
 							//----
 						}
 						else
@@ -1778,12 +1778,12 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 //						prt.Parsing(firstOpenConn, "SKIP=2".getBytes());
 //						prt.SkipnLine(2);
 						//20200915
-						prt.SkipnLineBuf(1);//20210320 MatsudairaSyuMe change from prt.SkipnLineBuf(2) to prt.SkipnLineBuf(1), 跨中頁只多跳一行
+						prt.SkipnLineBuf(2);
 						//----
 					}
 					
 				}
-				log.debug("after skip line------------tl+i=[{}] total=[{}] i+1=[{}]", tl+i, total, i+1);   //20200603 test
+				log.debug("after skip line------------tl+i=[{}] total=[{}] i+1=[{}] gl_arr.size()=[{}]", tl+i, total, i+1, gl_arr.size());   //20200603 test
 				//20200915
 				byte[] skipbytes =	prt.GetSkipLineBuf();
 				byte[] sndbary = new byte[pr_dataprev.getBytes().length + pbpr_crdbT.getBytes().length];
@@ -1796,7 +1796,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				else
 					prt.Prt_Text(sndbary);
 				//若印滿 24 筆且尚有補登資料，加印「請翻下頁繼續補登」
-				if ( (tl+i) == 24 && (total > (i+1)) )//20210320 MatsudairaSyuMe change from "total >= (i+1)" to "total > (i+1)"
+				if ( (tl+i) == 24 && (total >= (i+1)) )
 				{
 					// 因為存摺會補到滿, GL 只有9頁, 如果是第9頁則不進行換頁流程
 					// 20180518 , add
