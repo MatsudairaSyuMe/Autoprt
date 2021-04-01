@@ -1115,6 +1115,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 		int tl,total;
 		tl = this.iLine;
 		//20200603  test		total = this.iCon;
+		//20210401 MatsudairaSyuMe total count not data count
 		total = Integer.parseInt(this.dCount);
 		String pbpr_date = String.format("%9s", " ");    //日期 9
 		String pbpr_wsno = String.format("%7s", " ");    //櫃檯機編號 7
@@ -1343,7 +1344,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					prt.Prt_Text(sndbary);
 				//----
 				//若印滿 24 筆且尚有補登資料，加印「請翻下頁繼續補登」
-				if ( (tl+i) == 24 && (total >= (i+1)) )
+				if ( (tl+i) == 24 && (total > (i+1)) )   //20210401 change to total > (i+1))
 				{
 					// 因為存摺會補到滿, PB 只有8頁, 如果是第8頁則不進行換頁流程
 					// 20180518 , add
@@ -1383,7 +1384,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 		int tl, total;
 		tl = this.iLine;
 //20200603  test		total = this.iCon;
-		total = Integer.parseInt(this.dCount);
+		//20210401 MatsudairaSyuMe total count not data count
+//		total = Integer.parseInt(this.dCount);
+		total = Integer.parseInt(con);
+		//----
 		String pbpr_date = String.format("%9s", " "); // 日期 9
 		String pbpr_wsno = String.format("%5s", " "); // 櫃檯機編號 5
 		String pbpr_crdblog = String.format("%36s", " "); // 摘要+支出收入金額 36
@@ -1547,7 +1551,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				else
 					prt.Prt_Text(sndbary);
 				//若印滿 24 筆且尚有補登資料，加印「請翻下頁繼續補登」
-				if ( (tl+i) == 24 && (total >= (i+1)) )
+				if ( (tl+i) == 24 && (total > (i+1)) )  //20210401 change to total > (i+1))
 				{
 					// 因為存摺會補到滿, FC 只有5頁, 如果是第5頁則不進行換頁流程
 					// 20180518 , add
@@ -1796,7 +1800,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				else
 					prt.Prt_Text(sndbary);
 				//若印滿 24 筆且尚有補登資料，加印「請翻下頁繼續補登」
-				if ( (tl+i) == 24 && (total >= (i+1)) )
+				if ( (tl+i) == 24 && (total > (i+1)) )  //20210401 change to total > (i+1))
 				{
 					// 因為存摺會補到滿, GL 只有9頁, 如果是第9頁則不進行換頁流程
 					// 20180518 , add
