@@ -1115,7 +1115,6 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 		int tl,total;
 		tl = this.iLine;
 		//20200603  test		total = this.iCon;
-		//20210401 MatsudairaSyuMe total count not data count
 		total = Integer.parseInt(this.dCount);
 		String pbpr_date = String.format("%9s", " ");    //日期 9
 		String pbpr_wsno = String.format("%7s", " ");    //櫃檯機編號 7
@@ -1328,7 +1327,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					}
 					
 				}
-				log.debug("after skip line------------tl+i=[{}] total=[{}] i + 1=[{}] pb_arr.size()=[{}]", tl+i, total, i + 1, pb_arr.size());   //20200603 test
+				log.debug("after skip line------------tl+i=[{}] total=[{}] i + 1=[{}] pb_arr.size()=[{}] Integer.parseInt(con)=[{}]", tl+i, total, i + 1, pb_arr.size(), Integer.parseInt(con));   //20200603 test
 				//20200915
 				byte[] skipbytes =	prt.GetSkipLineBuf();
 				byte[] sndbary = new byte[pr_dataprev.getBytes().length + pbpr_crdbT.getBytes().length];
@@ -1344,7 +1343,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					prt.Prt_Text(sndbary);
 				//----
 				//若印滿 24 筆且尚有補登資料，加印「請翻下頁繼續補登」
-				if ( (tl+i) == 24 && (total > (i+1)) )   //20210401 change to total > (i+1))
+				if ( (tl+i) == 24 && (total > (i+1)) )   //20210401 total >= (i+1) change to total > (i+1))
 				{
 					// 因為存摺會補到滿, PB 只有8頁, 如果是第8頁則不進行換頁流程
 					// 20180518 , add
@@ -1362,6 +1361,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				}
 				else
 					this.iEnd = 0;
+				if ((tl+i) == 24) //20210401
+					break;
 			}
 		} catch (Exception e) {
 			log.debug("error--->p0080text convert error", e.getMessage());
@@ -1800,7 +1801,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				else
 					prt.Prt_Text(sndbary);
 				//若印滿 24 筆且尚有補登資料，加印「請翻下頁繼續補登」
-				if ( (tl+i) == 24 && (total > (i+1)) )  //20210401 change to total > (i+1))
+				if ( (tl+i) == 24 && (total > (i+1)) )  //20210401 total >= (i+1)  change to total > (i+1))
 				{
 					// 因為存摺會補到滿, GL 只有9頁, 如果是第9頁則不進行換頁流程
 					// 20180518 , add
@@ -1818,6 +1819,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				}
 				else
 					this.iEnd = 0;
+				if ((tl+i) == 24) //20210401
+					break;
 			}
 
 		} catch (Exception e) {
@@ -1869,7 +1872,13 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 			}
 			l = Integer.parseInt(new String(wline));
 			p = Integer.parseInt(new String(wpage));
-			if ((l - 1) + iCnt == 24) {
+			if ((l - 1) + iCnt >= 24) {  //20210401 if ((l - 1) + iCnt == 24) change to if ((l - 1) + iCnt >= 24)
+				if ((l - 1) + iCnt > 24) {
+					log.debug("WMSRFormat (l - 1) + iCnt > 24 before {}", iCnt);
+					iCnt = iCnt - ((l - 1) + iCnt - 24);
+					log.debug("WMSRFormat (l - 1) + iCnt > 24 after {}", iCnt);
+				}
+				//----
 				l = 1;
 				p = p + 1;
 			} else
