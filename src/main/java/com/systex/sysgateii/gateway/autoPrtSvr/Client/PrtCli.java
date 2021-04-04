@@ -114,6 +114,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 	// end for ChannelDuplexHandler function
 
 	private Bootstrap bootstrap = new Bootstrap();
+	//20210404 MatsudairaSyuMe
+	private NioEventLoopGroup group = null;
+	//----
 	private final static AtomicBoolean isConnected = new AtomicBoolean(false);
 
 	private InetSocketAddress rmtaddr = null;
@@ -483,18 +486,23 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 	}
 
 	public void close() {
-		try {
+//20210404		try {
 			if (channel_ != null) {
-				channel_.close().sync();
+				//20210404 MatsudairasyuMe
+				////channel_.close().sync();
+				channel_.close();
+				channel_.closeFuture().syncUninterruptibly();
+				group.shutdownGracefully();
+				//----
 				aslog.info(String.format("DIS  %s[%04d]:", this.curSockNm, 0));
 				this.curSockNm = "";
 				// 20201004
 				channel_ = null;
 			}
 			//----
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
+//20210404		} catch (InterruptedException e) {
+//20210404			e.printStackTrace();
+//20210404		}
 	}
 
 	public boolean connectStatus() {
@@ -527,11 +535,33 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 							atlog.info("Error , please check ... [{}:{}:{}]", rmtaddr.getAddress().toString(),
 									rmtaddr.getPort(), localaddr.getPort());
 							clientMessageBuf.clear();
-							if (!future.channel().isActive()) {
-								prtcliFSM(firstOpenConn);
-							}
+							//20210404  if (!future.channel().isActive()) {
+							//20210404      prtcliFSM(firstOpenConn);
+							//20210404    }
 							Sleep(_newwait);
 							iRetry += 1;
+							bootstrap = new Bootstrap();
+							group = new NioEventLoopGroup(1);
+							bootstrap.group(group);
+							bootstrap.channel(NioSocketChannel.class);
+							bootstrap.option(ChannelOption.SO_REUSEADDR, true);
+							bootstrap.option(ChannelOption.SO_KEEPALIVE, true);
+							bootstrap.option(ChannelOption.SO_LINGER, 0);
+							bootstrap.option(ChannelOption.SO_REUSEADDR, true);
+							bootstrap.option(ChannelOption.TCP_NODELAY, true);
+							bootstrap.option(ChannelOption.ALLOW_HALF_CLOSURE, false);
+							bootstrap.option(ChannelOption.SO_RCVBUF, bufferSize);
+							bootstrap.option(ChannelOption.SO_SNDBUF, bufferSize);
+							bootstrap.option(ChannelOption.RCVBUF_ALLOCATOR, new AdaptiveRecvByteBufAllocator(32768, 32768, 32768));
+							prtcliFSM(firstOpenConn);
+							bootstrap.handler(new ChannelInitializer<SocketChannel>() {
+								@Override
+								public void initChannel(SocketChannel ch) throws Exception {
+									ch.pipeline().addLast("log", new LoggingHandler(PrtCli.class, LogLevel.INFO));
+									ch.pipeline().addLast(new IdleStateHandler(200, 0, 0, TimeUnit.MILLISECONDS));
+									ch.pipeline().addLast(getHandler("PrtCli"));
+								}
+							});
 							bootstrap.connect(rmtaddr, localaddr).addListener(this);
 						} else {// good, the connection is ok
 							showStateMsg = false;
@@ -591,7 +621,11 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 
 	@Override
 	public void run() {
-		bootstrap.group(new NioEventLoopGroup());
+		//20210404
+		////bootstrap.group(new NioEventLoopGroup());
+		group = new NioEventLoopGroup(1);
+		bootstrap.group(group);
+		//----
 		bootstrap.channel(NioSocketChannel.class);
 		bootstrap.option(ChannelOption.SO_REUSEADDR, true);
 		bootstrap.option(ChannelOption.SO_KEEPALIVE, true);
