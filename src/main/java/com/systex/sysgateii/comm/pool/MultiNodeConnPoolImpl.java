@@ -248,7 +248,19 @@ public class MultiNodeConnPoolImpl implements NonBlockingConnPool {
 		String nextNodeAddr;
 		int minConnsCount = Integer.MAX_VALUE;
 		int nextConnsCount = 0;
-		final int i = ThreadLocalRandom.current().nextInt(n);
+		//20210406 MatsudairaSyuMe change for Insecure Randomness
+		//final int i = ThreadLocalRandom.current().nextInt(n);
+		SecureRandom secureRandomGenerator;
+		int i = n - 1;
+		try {
+			secureRandomGenerator = SecureRandom.getInstance("SHA1PRNG");
+			i = secureRandomGenerator.nextInt(n);
+		} catch (NoSuchAlgorithmException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+			LOG.error("get random number error use default [{}]", i);
+		}	
+		//----
 		for (int j = i; j < n; j++) {
 			nextNodeAddr = nodes[j % n];
 			nextConnsCount = connCounts.get(nextNodeAddr).intValue();
