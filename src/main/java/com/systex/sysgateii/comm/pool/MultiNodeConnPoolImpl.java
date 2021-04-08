@@ -387,29 +387,36 @@ public class MultiNodeConnPoolImpl implements NonBlockingConnPool {
 					conn = connFuture.sync().channel();
 				}
 			}
-			LOG.info("doConnect connection to {} created", nodeAddr);
-			conn.closeFuture().addListener(new CloseChannelListener(nodeAddr, conn));
-			conn.attr(ATTR_KEY_NODE).set(nodeAddr);
-			allConns.computeIfAbsent(nodeAddr, na -> new ConcurrentLinkedQueue<>()).add(conn);
-			synchronized (connCounts) {
-				connCounts.get(nodeAddr).incrementAndGet();
-			}
-			if (connAttemptsLimit > 0) {
-				// reset the connection failures counter if connected successfully
-				failedConnAttemptCounts.get(nodeAddr).set(0);
-			}
-			//20200621
-			LOG.info("doConnect New connection to {} successfully been created connAttemptsLimit={}", nodeAddr, connAttemptsLimit);
-			if (conn.isActive()) {
-				final Queue<Channel> connQueue = availableConns.get(nodeAddr);
-				if (connQueue != null) {
-					connQueue.add(conn);
-					LOG.info("add connQueue");
+			//20210407 MatsudairaSyuMe check Null Dereference
+			if (conn != null) {
+				LOG.info("doConnect connection to {} created", nodeAddr);
+				conn.closeFuture().addListener(new CloseChannelListener(nodeAddr, conn));
+				conn.attr(ATTR_KEY_NODE).set(nodeAddr);
+				allConns.computeIfAbsent(nodeAddr, na -> new ConcurrentLinkedQueue<>()).add(conn);
+				synchronized (connCounts) {
+					connCounts.get(nodeAddr).incrementAndGet();
 				}
-			} else {
-				conn.close();
-			}
-			//20200621
+				if (connAttemptsLimit > 0) {
+					// reset the connection failures counter if connected successfully
+					failedConnAttemptCounts.get(nodeAddr).set(0);
+				}
+				// 20200621
+				LOG.info("doConnect New connection to {} successfully been created connAttemptsLimit={}", nodeAddr,
+						connAttemptsLimit);
+				if (conn.isActive()) {
+					final Queue<Channel> connQueue = availableConns.get(nodeAddr);
+					if (connQueue != null) {
+						connQueue.add(conn);
+						LOG.info("add connQueue");
+					}
+				} else {
+					conn.close();
+				}
+				// 20200621
+			// 20210407 MatsudairaSyuMe check Null Dereference
+			} else
+				LOG.error("!!! doConnect fail !!!!");
+			//----
 		} catch (Exception ex) {
 			scheduleConnect(nodeAddr);
 		}

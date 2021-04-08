@@ -119,7 +119,7 @@ public class Server {
 					//conductor mode start the monitor module
 					Conductor.createServer(dcf.getConHashMap(), svrip);
 					Conductor.startServer();
-					//20210204 MAtsudairaSyuMe
+					//20210204 MatsudairaSyuMe
 					final String logStr = String.format("sysgateii server after start conductor svrip=[%s]", svrip);
 //					log.info("sysgateii server after start conductor svrip=[{}]", svrip);
 					log.info(logStr);
