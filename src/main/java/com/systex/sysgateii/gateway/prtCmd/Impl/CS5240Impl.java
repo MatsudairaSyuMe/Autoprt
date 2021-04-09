@@ -1352,6 +1352,10 @@ public class CS5240Impl implements Printer {
 					return false;
 				}
 			} else {
+				//20210409 MatsudairaSyuMe already gat response data reset detectStartTimeout
+				this.detectStartTimeout = System.currentTimeMillis();
+				log.debug("{} {} {} DetectPaper curState={} iCnt={}, reset detectStartTimeout", brws, "", "", this.curState, this.iCnt);
+				//----
 //20200710				atlog.info("first data is {}",Arrays.toString(data));
 				//20060714 V116 , In p201/p101/p80 case , if read msr but the pr2-(e) replies '1' --> paper jame
 				// and Driver send ESC '0' to reset printer , but in vain.

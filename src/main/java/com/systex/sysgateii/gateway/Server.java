@@ -55,6 +55,9 @@ public class Server {
 
 	public static void main(String[] args) {
 		System.setProperty(ContextInitializer.CONFIG_FILE_PROPERTY, "." + File.separator + "logback.xml");
+		//20210409 MatsudairaSyuMe
+		System.setProperty("log.name", ManagementFactory.getRuntimeMXBean().getName().split("@")[0]);
+		//----
 		log = LoggerFactory.getLogger(Server.class);
 		try {
 			//20201116 check if using given svrid
