@@ -50,8 +50,14 @@ public class LogTestMain {
 //		StatusPrinter.print(loggerContext);
 
 		// log something
-		Logger logbackLogger = LogUtil.getDailyLogger("/home/scotthong/tmp", "LogTestMain", "debug", "TIME     [0000]:%d{yyyy.MM.dd HH:mm:ss:SSS} %msg%n");
-		logbackLogger.debug("hello");
-		logbackLogger.debug("hello 1");
+		Logger logbackLogger = LogUtil.getDailyLogger("/home/scotthong/tmp", "LogTestMain", "info", "[%d{yyyy/MM/dd HH:mm:ss:SSS}]%msg%n");
+		Logger logbackLogger2 = LogUtil.getDailyLogger("/home/scotthong/tmp", "LogTestMain2", "info", "[%d{yyyy/MM/dd HH:mm:ss:SSS}]%msg%n");
+		for (int i = 0; i < 1000; i++) {
+			logbackLogger.info("hello");
+			logbackLogger.info("hello [{}]", i);
+			logbackLogger2.info("hello");
+			logbackLogger2.info("hello [{}]", i);
+		}
+
 	}
 }
