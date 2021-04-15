@@ -2,6 +2,7 @@ package com.systex.sysgateii.gateway.conf;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -89,6 +90,9 @@ public class DscptMappingTable {
 	}
 	public DscptMappingTable (String filename) {
 		BufferedReader reader;
+		//20210413 MatsudairaSyuMe prevent Unreleased Resource
+		InputStreamReader isr = null;
+		//----
 		int total = 0;
 		m_Dscpt.clear();
 		try{
@@ -96,7 +100,10 @@ public class DscptMappingTable {
 			byte[] bytesArray = new byte[(int) file.length()];
 			FileInputStream fis = new FileInputStream(file);
 			fis.read(bytesArray); //read file into bytes[]
-			fis.close();
+			//20210413 MatsudairaSyuMe prevent Unreleased Resource
+			//fis.close();
+			closeQuietly2(fis);
+			//----
 			boolean pstart = false;
 			int catchlen = 0;
 			byte[] tmph = new byte[80];
@@ -154,7 +161,9 @@ public class DscptMappingTable {
 				}
 			}
 			log.debug("total m_Dscpt2 {} records", m_Dscpt2.size());
-			InputStreamReader isr = new InputStreamReader(new FileInputStream(filename), "Big5");
+			//20210413 MatsudairaSyuMe prevent Unreleased Resource
+//			InputStreamReader isr = new InputStreamReader(new FileInputStream(filename), "Big5");
+			isr = new InputStreamReader(new FileInputStream(filename), "Big5");
 			reader = new BufferedReader(isr);
 			String line = reader.readLine();
 			while (line != null) {
@@ -169,13 +178,38 @@ public class DscptMappingTable {
 				line = reader.readLine();
 			// read next line
 			}
-			reader.close();
+			if (reader != null)//20210413 MatsudairaSyuMe prevent Unreleased Resource
+				reader.close();
 		} catch (Exception e) {
 			e.getStackTrace();
 			log.error("ERROR!! {}",e.getMessage());
 		}
+		//20210413 MatsudairaSyuMe prevent Unreleased Resource
+		 finally {
+			 closeQuietly(isr);
+		 }
       log.debug("total {} records", total);
 	}
+	//20210413 MatsudairaSyuMe prevent Unreleased Resource
+	public static void closeQuietly(InputStreamReader isr) {
+		try {
+			if (isr != null) {
+				isr.close();
+			}
+		} catch (IOException ioe) {
+			// ignore
+		}
+	}
+	public static void closeQuietly2(FileInputStream fis) {
+		try {
+			if (fis != null) {
+				fis.close();
+			}
+		} catch (IOException ioe) {
+			// ignore
+		}
+	}
+	//----
 	public static void main(String[] args) {
 		//pstmt.setObject(1, bserviceID, java.sql.Types.BINARY); 
 		DscptMappingTable d = new DscptMappingTable ("DMTABLE.INI");

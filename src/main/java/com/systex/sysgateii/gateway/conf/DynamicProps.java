@@ -326,7 +326,7 @@ public class DynamicProps {
 										} else
 											log.error("!!!!SERVICE parameters in service table [{}] error !!!", svrprmtb);
 									}
-								if (svrfldsary.length > 5) {
+								if (svrfldsary != null && svrfldsary.length > 5) { //20210413 MatsudairaSyuMe prevent Null Dereference
 									log.debug("current fasprmtb=[{}] fasprmtbkey=[{}] fasprmtbsearkey=[{}]", fasprmtb,
 											fasprmkey, svrfldsary[0]);
 									String[] fasflds = jsel2ins.SELMFLD(fasprmtb, fasprmfields, fasprmkey,
@@ -725,7 +725,7 @@ public class DynamicProps {
 								} else
 									log.error("!!!!SERVICE parameters in service table [{}] error !!!", svrprmtb);
 							}
-							if (svrfldsary.length > 5) {
+							if (svrfldsary != null && svrfldsary.length > 5) { //20210413 MatsudairaSyuMe prevent Null Dereference
 								log.debug("current fasprmtb=[{}] fasprmtbkey=[{}] fasprmtbsearkey=[{}]", fasprmtb,
 										fasprmkey, svrfldsary[0]);
 								String[] fasflds = jsel2ins.SELMFLD(fasprmtb, fasprmfields, fasprmkey, svrfldsary[0],
@@ -1015,7 +1015,7 @@ public class DynamicProps {
 							} else
 								log.error("!!!!SERVICE parameters in service table [{}] error !!!", svrprmtb);
 						}
-					if (svrfldsary.length > 5) {
+					if (svrfldsary != null && svrfldsary.length > 5) { //20210413 MatsudairaSyuMe prevent Null Dereference
 						log.debug("current fasprmtb=[{}] fasprmtbkey=[{}] fasprmtbsearkey=[{}]", fasprmtb, fasprmkey,
 								svrfldsary[0]);
 						String[] fasflds = jsel2ins.SELMFLD(fasprmtb, fasprmfields, fasprmkey, svrfldsary[0], false);

@@ -229,7 +229,8 @@ public class Cli {
 							System.out.println("total " + row + " records update");
 							jsel2ins.CloseConnect();
 							jsel2ins = null;
-							jselonefield.CloseConnect();
+							if (jselonefield != null)
+								jselonefield.CloseConnect(); //20210413 MatsudairaSyuMe prevent Null Dereference
 							jselonefield = null;
 						} else {//20201119 set command for svrid
 							String cmdtbname = dcf.getConHashMap().get("system.svrcmdtb[@name]");
@@ -258,7 +259,8 @@ public class Cli {
 							System.out.println("total " + row + " records update");
 							jsel2ins.CloseConnect();
 							jsel2ins = null;
-							jselonefield.CloseConnect();
+							if (jselonefield != null)
+								jselonefield.CloseConnect();//20210413 MatsudairaSyuMe prevent Null Dereference
 							jselonefield = null;
 						}
 					} else if (brwsS.length() > -1 || sidS.length() > -1) {

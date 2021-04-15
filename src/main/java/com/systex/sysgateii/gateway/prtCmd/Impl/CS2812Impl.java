@@ -492,7 +492,7 @@ public class CS2812Impl implements Printer {
 		}
 		if (this.curState == ResetPrinterInit_2) {
 			log.debug("2 ===<><>{} chkChkState {} {}", this.curState, this.curChkState, data);
-			if (data[0] == (byte) STX)
+			if (data != null && data[0] == (byte) STX) //20210413 MatsudairaSyuMe prevent Null Dereference
 				Send_hData(PACK);
 			if (Send_hData(PINIT) != 0)
 				return false;
@@ -786,7 +786,7 @@ public class CS2812Impl implements Printer {
 	@Override
 	public AtomicBoolean getIsShouldShutDown() {
 		// TODO Auto-generated method stub
-		return null;
+		return new AtomicBoolean(true); //20210413 MatsudairaSyuMe prevent Null Dereference
 	}
 	private void Sleep(int s) {
 		try {

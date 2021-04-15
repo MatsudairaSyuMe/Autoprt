@@ -210,7 +210,8 @@ public class Conductor implements Runnable {
 									if (chksno != null && chksno.length > 0 && Integer.parseInt(chksno[0].trim()) > -1) {
 										for (String sss: chksno)
 											log.debug("sno[{}] already exist",sss);
-										if (curcmd.equals("RESTART")) { // current command is RESTART check cmdsvrhis if already done STOP
+										//20210413 MatsudairaSyuMe prevent Portability Flaw: Locale Dependent Comparison change equals to 
+										if (curcmd.equalsIgnoreCase("RESTART")) { // current command is RESTART check cmdsvrhis if already done STOP
 											for (int i = 0; i < chksno.length; i++) {
 												String chkcmdresult = cmdhiscon.SELONEFLD(svrcmdhistbname, "CMDRESULT", "SNO", chksno[0], false);
 												log.debug("table sno=[{}] svrcmdhis cmd is RESTART and cmdresult=[{}]", chksno[i], chkcmdresult);
@@ -258,7 +259,13 @@ public class Conductor implements Runnable {
 								if (cmdhiscon == null)
 									cmdhiscon = new GwDao(dburl, dbuser, dbpass, false);
 								//----
-								switch (curcmd) {
+								//20210413 MatsudairaSyuMe prevent Null Dereference
+								if (sno == null) {
+									sno = new String[1];
+									sno[0] = "";
+								}
+								//----
+								switch (curcmd.toUpperCase()) { //20210413 MatsudairaSyuMe prevent Portability Flaw: Locale Dependent Comparison
 								case "START":
 									if (Conductor.svridnodeMap.containsKey(cmdary[0])) {
 										log.info("cmd object node=[{}] process already been initiated please STOP or Shutdown before START");

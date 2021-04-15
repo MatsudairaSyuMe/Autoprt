@@ -28,6 +28,7 @@ import ch.qos.logback.core.rolling.FixedWindowRollingPolicy;
 import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP;
 import ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy;
+import ch.qos.logback.core.rolling.TimeBasedFileNamingAndTriggeringPolicy;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import ch.qos.logback.core.spi.AppenderAttachable;
 import ch.qos.logback.core.util.FileSize;
@@ -208,7 +209,7 @@ public class LogUtil {
 			logbackLogger.setLevel(Level.ALL);												
 		}
 		rfAppender.setEncoder(encoder);
-		rfAppender.setRollingPolicy(rollingPolicy);
+		//rfAppender.setRollingPolicy(rollingPolicy);
 
 		// attach the rolling file appender to the logger of your choice
 		if (encoder.isStarted())
@@ -223,72 +224,7 @@ public class LogUtil {
 
 		return logbackLogger;
 	}
-	//20210409 MatsudairaSyuMe
-/*	public static Logger getDailyLogge3(String pathname, String logName, String level, String ptrn) {
- 		String fpn = "";
-		if (pathname != null && pathname.trim().length() > 0)
-			fpn = pathname + File.separator + logName + ".log";
-		else
-			fpn = "." + File.separator + logName + ".log";
-		ch.qos.logback.classic.Logger logger = ((ch.qos.logback.classic.Logger)
-                LoggerFactory.getLogger(logName));
-		LoggerContext context = logger.getLoggerContext();
-		
-		TimeBasedRollingPolicy<ILoggingEvent> policy = new TimeBasedRollingPolicy<>();
-		policy.setFileNamePattern(OptionHelper.substVars(
-				pathname + File.separator + "archive" + File.separator + logName + "%d{yyyy-MM-dd}.log.gz", context));
-//		policy.setFileNamePattern(pathname + File.separator + "archive" + File.separator + logName + "%d{yyyy-MM-dd}.log.gz");
-		policy.setMaxHistory(3);
-		policy.setContext(context);
 
-		SizeBasedTriggeringPolicy<ILoggingEvent> triggeringPolicy = new SizeBasedTriggeringPolicy<ILoggingEvent>();
-		triggeringPolicy.setContext(context);
-//		triggeringPolicy.setMaxFileSize(FileSize.valueOf("30MB"));
-		triggeringPolicy.setMaxFileSize(FileSize.valueOf("512"));
-
-		PatternLayoutEncoder encoder = new PatternLayoutEncoder();
-		encoder.setContext(context);
-		encoder.setPattern(ptrn);
-		
-		RollingFileAppender<ILoggingEvent> appender = new RollingFileAppender<>();
-		appender.setContext(context);
-//		appender.setName(logName);
-		appender.setFile(OptionHelper.substVars(fpn, context));
-		appender.setFile(fpn);
-		appender.setAppend(true);
-		// 
-		appender.setPrudent(false);
-		appender.setRollingPolicy(policy);
-		appender.setTriggeringPolicy(triggeringPolicy);
-		appender.setEncoder(encoder);
-		policy.setParent(appender);
-		
-		policy.start();
-		triggeringPolicy.start();
-		encoder.start();
-		appender.start();
-
-		if (level.equalsIgnoreCase("debug"))
-		{
-			logger.setLevel(Level.DEBUG);			
-		}
-		else if (level.equalsIgnoreCase("info"))
-		{
-			logger.setLevel(Level.INFO);						
-		}
-		else if (level.equalsIgnoreCase("error"))
-		{
-			logger.setLevel(Level.ERROR);						
-		}
-		else
-		{
-			logger.setLevel(Level.ALL);												
-		}
-		logger.setAdditive(true);
-		logger.addAppender(appender);
-
-		return logger;
-	}*/
 	public static void stopLog(Logger tarLog) {
 		LoggerContext loggerContext = (LoggerContext) tarLog.getLoggerContext();
 		loggerContext.stop();

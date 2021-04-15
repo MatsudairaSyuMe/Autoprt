@@ -337,7 +337,8 @@ public class PrnSvr implements MessageListener<byte[]> {
 														if (chksno != null && chksno.length > 0 && Integer.parseInt(chksno[0].trim()) > -1) {
 															for (String sss: chksno)
 																log.debug("sno[{}] already exist",sss);
-															if (curcmd.equals("RESTART")) { // current command is RESTART check cmdhis if already done STOP
+															//20210413 MatsudairaSyuMe prevent Portability Flaw: Locale Dependent Comparison change equals to 
+															if (curcmd.equalsIgnoreCase("RESTART")) { // current command is RESTART check cmdhis if already done STOP
 																for (int i = 0; i < chksno.length; i++) {
 																	String chkcmdresult = cmdhiscon.SELONEFLD(PrnSvr.devcmdhistbname, "CMDRESULT", "SNO", chksno[0], false);
 																	log.debug("table sno=[{}] cmdhis cmd is RESTART and cmdresult=[{}]", chksno[i], chkcmdresult);
@@ -375,7 +376,13 @@ public class PrnSvr implements MessageListener<byte[]> {
 													}
 													//----
 													log.debug("table sno=[{}] createNode=[{}] restartAlreadyStop=[{}]", (sno == null ? 0: sno[0]), createNode, restartAlreadyStop);
-													switch (curcmd) {
+													//20210413 MatsudairaSyuMe prevent Null Dereference
+													if (sno == null) {
+														sno = new String[1];
+														sno[0] = "";
+													}
+													//----
+													switch (curcmd.toUpperCase()) {//20210413 MatsudairaSyuMe prevent Portability Flaw: Locale Dependent Comparison
 													case "START":
 														//20201006, 20201026 cmdhis
 														createNode(cmdary[0]);

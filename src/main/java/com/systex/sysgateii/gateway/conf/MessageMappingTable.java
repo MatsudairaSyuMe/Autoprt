@@ -2,8 +2,10 @@ package com.systex.sysgateii.gateway.conf;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
+//20210413 MatsudairaSyuMe prevent Unreleased Resource
+import java.io.IOException;
+//----
 import java.io.InputStreamReader;
-import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
@@ -17,13 +19,26 @@ public class MessageMappingTable {
 	public MessageMappingTable() {
 		new MessageMappingTable(this.defname);
 	}
-
+	//20210413 MatsudairaSyuMe prevent Unreleased Resource
+	public static void closeQuietly(InputStreamReader isr) {
+		try {
+			if (isr != null) {
+				isr.close();
+			}
+		} catch (IOException ioe) {
+			// ignore
+		}
+	}
+	//----
 	public MessageMappingTable(String filename) {
 		BufferedReader reader;
+		//20210413 MatsudairaSyuMe prevent Unreleased Resource
+		InputStreamReader isr = null;
 		int total = 0;
 		m_Message.clear();
 		try {
-			InputStreamReader isr = new InputStreamReader(new FileInputStream(filename));
+			//20210413 MatsudairaSyuMe prevent Unreleased Resource
+			isr = new InputStreamReader(new FileInputStream(filename));
 			reader = new BufferedReader(isr);
 			String line = reader.readLine();
 			while (line != null) {
@@ -42,11 +57,18 @@ public class MessageMappingTable {
 				line = reader.readLine();
 				// read next line
 			}
-			reader.close();
+			//20210413 MatsudairaSyuMe prevent Unreleased Resource
+			if (reader != null)
+				reader.close();
+			//----
 		} catch (Exception e) {
 			e.getStackTrace();
 			log.error("ERROR!! {}", e.getMessage());
 		}
+		//20210413 MatsudairaSyuMe prevent Unreleased Resource
+		 finally {
+			 closeQuietly(isr);
+		 }
 		log.debug("total {} records", total);
 	}
 

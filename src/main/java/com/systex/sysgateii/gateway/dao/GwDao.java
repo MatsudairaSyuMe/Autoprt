@@ -747,13 +747,15 @@ public class GwDao {
 				while (rs.next()) {
 					if (idx <= 0)
 						rtnVal = new String[1];
-					else {
-						String[] tmpv = rtnVal;
-						rtnVal = new String[idx + 1];
-						int j = 0;
-						for (String s: tmpv) {
-							rtnVal[j] = s;
-							j++;
+					else { //20210413 MatsudairaSyuMe prevent Null Dereference
+						if (rtnVal != null) {
+							String[] tmpv = rtnVal;
+							rtnVal = new String[idx + 1];
+							int j = 0;
+							for (String s : tmpv) {
+								rtnVal[j] = s;
+								j++;
+							}
 						}
 					}
 					for (int i = 0; i < keynameary.length; i++) {

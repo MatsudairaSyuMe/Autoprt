@@ -309,7 +309,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 	//----
 
 	//----
-
+	//20210414 MatsudairaSyuMe
+	private final long connectTimeOut = 3l;
+	private final TimeUnit connectTimeUnit = TimeUnit.SECONDS;
+	//----
 	public List<ActorStatusListener> getActorStatusListeners() {
 		return actorStatusListeners;
 	}
@@ -498,6 +501,30 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				this.curSockNm = "";
 				// 20201004
 				channel_ = null;
+				//20210415 MatsudairaSyuMe
+				bootstrap = new Bootstrap();
+				group = new NioEventLoopGroup(1);
+				bootstrap.group(group);
+				bootstrap.channel(NioSocketChannel.class);
+				bootstrap.option(ChannelOption.SO_REUSEADDR, true);
+				bootstrap.option(ChannelOption.SO_KEEPALIVE, true);
+				bootstrap.option(ChannelOption.SO_LINGER, 0);
+				bootstrap.option(ChannelOption.SO_REUSEADDR, true);
+				bootstrap.option(ChannelOption.TCP_NODELAY, true);
+				bootstrap.option(ChannelOption.ALLOW_HALF_CLOSURE, false);
+				bootstrap.option(ChannelOption.SO_RCVBUF, bufferSize);
+				bootstrap.option(ChannelOption.SO_SNDBUF, bufferSize);
+				bootstrap.option(ChannelOption.RCVBUF_ALLOCATOR, new AdaptiveRecvByteBufAllocator(32768, 32768, 32768));
+				prtcliFSM(firstOpenConn);
+				bootstrap.handler(new ChannelInitializer<SocketChannel>() {
+					@Override
+					public void initChannel(SocketChannel ch) throws Exception {
+						ch.pipeline().addLast("log", new LoggingHandler(PrtCli.class, LogLevel.INFO));
+						ch.pipeline().addLast(new IdleStateHandler(200, 0, 0, TimeUnit.MILLISECONDS));
+						ch.pipeline().addLast(getHandler("PrtCli"));
+					}
+				});
+				//----
 			}
 			//----
 //20210404		} catch (InterruptedException e) {
@@ -535,11 +562,13 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 							atlog.info("Error , please check ... [{}:{}:{}]", rmtaddr.getAddress().toString(),
 									rmtaddr.getPort(), localaddr.getPort());
 							clientMessageBuf.clear();
-							//20210404  if (!future.channel().isActive()) {
-							//20210404      prtcliFSM(firstOpenConn);
-							//20210404    }
+//							if (!future.channel().isActive()) {
+//							      prtcliFSM(firstOpenConn);
+//							}
 							Sleep(_newwait);
+//							Sleep(10000);
 							iRetry += 1;
+							/*
 							bootstrap = new Bootstrap();
 							group = new NioEventLoopGroup(1);
 							bootstrap.group(group);
@@ -562,7 +591,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 									ch.pipeline().addLast(getHandler("PrtCli"));
 								}
 							});
+							*/
+							log.debug("try reconnect");
 							bootstrap.connect(rmtaddr, localaddr).addListener(this);
+							log.debug("reconnect");
 						} else {// good, the connection is ok
 							showStateMsg = false;
 							channel_ = future.channel();
@@ -621,9 +653,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 
 	@Override
 	public void run() {
-		//20210404
+		//20210414
 		////bootstrap.group(new NioEventLoopGroup());
-		group = new NioEventLoopGroup(1);
+		this.group = new NioEventLoopGroup(1);
 		bootstrap.group(group);
 		//----
 		bootstrap.channel(NioSocketChannel.class);
@@ -1337,7 +1369,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 //							prt.Parsing(firstOpenConn, "SKIP=3".getBytes());
 //							prt.SkipnLine(3);
 							//20200915
-							prt.SkipnLineBuf(2);//20210320 MatsudairaSyuMe change from prt.SkipnLineBuf(3) to prt.SkipnLineBuf(2), 跨中頁只多跳一行
+							prt.SkipnLineBuf(3);
 							//----
 						}
 						else
@@ -1356,7 +1388,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 //						prt.Parsing(firstOpenConn, "SKIP=2".getBytes());
 //						prt.SkipnLine(2);
 						//20200915
-						prt.SkipnLineBuf(1);//20210320 MatsudairaSyuMe change from prt.SkipnLineBuf(2) to prt.SkipnLineBuf(1), 跨中頁只多跳一行
+						prt.SkipnLineBuf(2);
 						//----
 					}
 					
@@ -1550,7 +1582,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 //							prt.Parsing(firstOpenConn, "SKIP=3".getBytes());
 //							prt.SkipnLine(3);
 							//20200915
-							prt.SkipnLineBuf(2);//20210320 MatsudairaSyuMe change from prt.SkipnLineBuf(3) to prt.SkipnLineBuf(2), 跨中頁只多跳一行
+							prt.SkipnLineBuf(3);
 							//----
 						}
 						else
@@ -1568,7 +1600,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 						// tl 起始行數 < 13
 //						prt.Parsing(firstOpenConn, "SKIP=2".getBytes());
 						//20200915
-						prt.SkipnLineBuf(1); //20210320 MatsudairaSyuMe change from prt.SkipnLineBuf(2) to prt.SkipnLineBuf(1), 跨中頁只多跳一行
+						prt.SkipnLineBuf(2);
 						//----
 					}
 					
@@ -3964,6 +3996,17 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				this.curState = SNDANDRCVDELTLM;
 			}
 			//20200718
+			//20210414 MatsuDairaSyuMe
+			else {
+				amlog.info("[{}][{}][{}]:61存摺資料補登失敗！", brws, pasname, account);
+				SetSignal(firstOpenConn, firstOpenConn, "0000000000","0000000001");
+				prt.Eject(firstOpenConn);
+				Sleep(2 * 1000);
+				this.iEnd = 0;
+				this.iFirst = 0;
+				this.curState = OPENPRINTER;
+			}
+			//20210414 ----
 			lastCheck(before);
 			log.debug("after {}=>{}=====check prtcliFSM", before, this.curState);
 			break;

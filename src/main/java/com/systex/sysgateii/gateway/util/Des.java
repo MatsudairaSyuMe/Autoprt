@@ -1,5 +1,7 @@
 package com.systex.sysgateii.gateway.util;
 
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.security.spec.KeySpec;
 import javax.crypto.SecretKey;
 import javax.crypto.Cipher;
@@ -23,6 +25,8 @@ public class Des {
 	public static final String ALGORITHM_AES = "AES";
 	//public static final String ALGORITHM_AESCBCPAD = "AES/CTR/PKCS5PADDING";
 	public static final String ALGORITHM_AESCBCPAD = "AES/CBC/PKCS5PADDING";
+	public static byte[] iv = new SecureRandom().generateSeed(16);
+
 
 	/**
 	 * DES演算法，加密
@@ -34,7 +38,18 @@ public class Des {
 	 */
 	public static String encode(String secret, String strToEncrypt) throws Exception {
 		try {
-			byte[] iv = { 0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x7, 0x6, 0x5, 0x4, 0x3, 0x2, 0x1, 0 };
+			//20210413 MatsudairaSyuMe Weak Encryption: Insecure Initialization Vector
+//			byte[] iv = { 0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x7, 0x6, 0x5, 0x4, 0x3, 0x2, 0x1, 0 };
+/*			SecureRandom random = null;
+			try {
+				random = SecureRandom.getInstanceStrong();
+			} catch (NoSuchAlgorithmException e) {
+				random = new SecureRandom();
+			}
+			byte[] iv = new byte[16];
+			random.nextBytes(iv);
+			*/
+			//----
 			IvParameterSpec ivspec = new IvParameterSpec(iv);
 
 			SecretKeyFactory factory = SecretKeyFactory.getInstance(ALGORITHM_AES256);
@@ -63,7 +78,18 @@ public class Des {
 	 */
 	public static String decodeValue(String secret, String strToDecrypt) throws Exception {
 		try {
-			byte[] iv = { 0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x7, 0x6, 0x5, 0x4, 0x3, 0x2, 0x1, 0 };
+			//20210413 MatsudairaSyuMe Weak Encryption: Insecure Initialization Vector
+//			byte[] iv = { 0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x7, 0x6, 0x5, 0x4, 0x3, 0x2, 0x1, 0 };
+/*			SecureRandom random = null;
+			try {
+				random = SecureRandom.getInstanceStrong();
+			} catch (NoSuchAlgorithmException e) {
+				random = new SecureRandom();
+			}
+			byte[] iv = new byte[16];
+			random.nextBytes(iv);
+			*/
+			//----
 			IvParameterSpec ivspec = new IvParameterSpec(iv);
 
 			SecretKeyFactory factory = SecretKeyFactory.getInstance(ALGORITHM_AES256);

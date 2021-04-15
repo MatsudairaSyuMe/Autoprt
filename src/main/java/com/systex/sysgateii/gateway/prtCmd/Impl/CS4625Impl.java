@@ -1293,7 +1293,7 @@ public class CS4625Impl implements Printer {
 			}
 		}
 
-		log.debug("{} {} {} {} final data.length={}", iCnt, brws, "", "", data.length);
+		log.debug("{} {} {} {} final data.length={}", iCnt, brws, "", "", (data == null? 0: data.length));//20210413 MatsudairaSyuMe prevent Null Dereference
 		return curmsdata;
 	}
 
@@ -1881,7 +1881,9 @@ public class CS4625Impl implements Printer {
 						pc.InsertAMStatus(brws, pasname, account, "94補摺機指令錯誤！(MSW)");
 						//----
 						this.curState = ResetPrinterInit_START;
-						ResetPrinterInit();
+						//20210414 MatsudairaSyuMe
+						//ResetPrinterInit();
+						//----
 						return false;
 					//20200618  for get paper overload process
 					case (byte) 'X':
