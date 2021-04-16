@@ -3998,17 +3998,6 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				this.curState = SNDANDRCVDELTLM;
 			}
 			//20200718
-			//20210414 MatsuDairaSyuMe
-			else {
-				amlog.info("[{}][{}][{}]:61存摺資料補登失敗！", brws, pasname, account);
-				SetSignal(firstOpenConn, firstOpenConn, "0000000000","0000000001");
-				prt.Eject(firstOpenConn);
-				Sleep(2 * 1000);
-				this.iEnd = 0;
-				this.iFirst = 0;
-				this.curState = OPENPRINTER;
-			}
-			//20210414 ----
 			lastCheck(before);
 			log.debug("after {}=>{}=====check prtcliFSM", before, this.curState);
 			break;

@@ -1900,7 +1900,8 @@ public class CS5240Impl implements Printer {
 						//----
 						this.curState = ResetPrinterInit_START;
 						//20210414 MatsudairaSyuMe
-						//ResetPrinterInit();
+						ResetPrinterInit();
+						pc.close();
 						//----
 						return false;
 					//20200618  for get paper overload process
