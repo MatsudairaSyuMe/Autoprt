@@ -501,30 +501,33 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				this.curSockNm = "";
 				// 20201004
 				channel_ = null;
-				//20210415 MatsudairaSyuMe
-				bootstrap = new Bootstrap();
-				group = new NioEventLoopGroup(1);
-				bootstrap.group(group);
-				bootstrap.channel(NioSocketChannel.class);
-				bootstrap.option(ChannelOption.SO_REUSEADDR, true);
-				bootstrap.option(ChannelOption.SO_KEEPALIVE, true);
-				bootstrap.option(ChannelOption.SO_LINGER, 0);
-				bootstrap.option(ChannelOption.SO_REUSEADDR, true);
-				bootstrap.option(ChannelOption.TCP_NODELAY, true);
-				bootstrap.option(ChannelOption.ALLOW_HALF_CLOSURE, false);
-				bootstrap.option(ChannelOption.SO_RCVBUF, bufferSize);
-				bootstrap.option(ChannelOption.SO_SNDBUF, bufferSize);
-				bootstrap.option(ChannelOption.RCVBUF_ALLOCATOR, new AdaptiveRecvByteBufAllocator(32768, 32768, 32768));
-				prtcliFSM(firstOpenConn);
-				bootstrap.handler(new ChannelInitializer<SocketChannel>() {
-					@Override
-					public void initChannel(SocketChannel ch) throws Exception {
-						ch.pipeline().addLast("log", new LoggingHandler(PrtCli.class, LogLevel.INFO));
-						ch.pipeline().addLast(new IdleStateHandler(200, 0, 0, TimeUnit.MILLISECONDS));
-						ch.pipeline().addLast(getHandler("PrtCli"));
-					}
-				});
-				//----
+				// 20210415 MatsudairaSyuMe
+				if (getCurMode() != EventType.SHUTDOWN && getCurMode() != EventType.RESTART) {
+					bootstrap = new Bootstrap();
+					group = new NioEventLoopGroup(1);
+					bootstrap.group(group);
+					bootstrap.channel(NioSocketChannel.class);
+					bootstrap.option(ChannelOption.SO_REUSEADDR, true);
+					bootstrap.option(ChannelOption.SO_KEEPALIVE, true);
+					bootstrap.option(ChannelOption.SO_LINGER, 0);
+					bootstrap.option(ChannelOption.SO_REUSEADDR, true);
+					bootstrap.option(ChannelOption.TCP_NODELAY, true);
+					bootstrap.option(ChannelOption.ALLOW_HALF_CLOSURE, false);
+					bootstrap.option(ChannelOption.SO_RCVBUF, bufferSize);
+					bootstrap.option(ChannelOption.SO_SNDBUF, bufferSize);
+					bootstrap.option(ChannelOption.RCVBUF_ALLOCATOR,
+							new AdaptiveRecvByteBufAllocator(32768, 32768, 32768));
+					prtcliFSM(firstOpenConn);
+					bootstrap.handler(new ChannelInitializer<SocketChannel>() {
+						@Override
+						public void initChannel(SocketChannel ch) throws Exception {
+							ch.pipeline().addLast("log", new LoggingHandler(PrtCli.class, LogLevel.INFO));
+							ch.pipeline().addLast(new IdleStateHandler(200, 0, 0, TimeUnit.MILLISECONDS));
+							ch.pipeline().addLast(getHandler("PrtCli"));
+						}
+					});
+					// ----
+				}
 			}
 			//----
 //20210404		} catch (InterruptedException e) {
@@ -592,9 +595,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 								}
 							});
 							*/
-							log.debug("try reconnect");
+//							log.debug("try reconnect");
 							bootstrap.connect(rmtaddr, localaddr).addListener(this);
-							log.debug("reconnect");
+//							log.debug("reconnect");
 						} else {// good, the connection is ok
 							showStateMsg = false;
 							channel_ = future.channel();
@@ -2759,7 +2762,6 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 	*   return_code : = 0 - NORMAL                    *
 	*                 < 0 - ERROR                     *
 	********************************************************************/
-//	private int Send_Recv(int iflg, int ifun, String con, String mbal)
 	private int Send_Recv(int iflg, int ifun, String _con, String mbal)
 	{
 		//20200724
