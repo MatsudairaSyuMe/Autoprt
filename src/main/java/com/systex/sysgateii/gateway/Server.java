@@ -55,10 +55,11 @@ public class Server {
 
 	public static void main(String[] args) {
 		System.setProperty(ContextInitializer.CONFIG_FILE_PROPERTY, "." + File.separator + "logback.xml");
+		//20210419 MatsudairaSyuMe mark
 		//20210409 MatsudairaSyuMe
-		System.setProperty("log.name", ManagementFactory.getRuntimeMXBean().getName().split("@")[0]);
+		//System.setProperty("log.name", ManagementFactory.getRuntimeMXBean().getName().split("@")[0]);
 		//----
-		log = LoggerFactory.getLogger(Server.class);
+		//log = LoggerFactory.getLogger(Server.class);
 		try {
 			//20201116 check if using given svrid
 			if (args.length > 0) {
@@ -73,10 +74,20 @@ public class Server {
 					} //20201119 conductor mode
 					else if (args[j].equalsIgnoreCase("--conduct")) {
 						setIsConductor(true);
-						log.info("sysgateii server conductor mode");
+						//20210419 MatsudairaSyuMe mark
+//						log.info("sysgateii server conductor mode");
+						System.out.println("sysgateii server conductor mode");
 					}
 				}
 			}
+			//20210419 MatsudairaSyuMe set get logger
+			if (isConductor.get())
+				System.setProperty("log.name", "conduct");
+			else
+				System.setProperty("log.name", Integer.toString(getSvrId()));
+			//----
+			log = LoggerFactory.getLogger(Server.class);
+
 			if (getSvrId() > 0)
 				log.info("sysgateii server given id [{}] start...", getSvrId());
 			else

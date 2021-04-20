@@ -1183,8 +1183,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 		boolean rtn = true;
 		int tl,total;
 		tl = this.iLine;
-		//20200603  test		total = this.iCon;
-		total = Integer.parseInt(this.dCount);
+		//20210419 MatsudairaSyuMe total change to this.iCon
+		//total = Integer.parseInt(this.dCount);
+		total = this.iCon;
 		String pbpr_date = String.format("%9s", " ");    //日期 9
 		String pbpr_wsno = String.format("%7s", " ");    //櫃檯機編號 7
 		String pbpr_crdblog = String.format("%36s", " ");   //摘要+支出收入金額 36
@@ -1289,11 +1290,14 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					
 					pbpr_crdblog = pbpr_crdblog + String.format("%18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "       ");
 					*/
-					pbpr_crdb = pbpr_crdb + String.format("%18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "        ");
+					//20210419 MatsudairaSyume reduce one space
+					//pbpr_crdb = pbpr_crdb + String.format("%18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "        ");
+					pbpr_crdb = pbpr_crdb + String.format("%18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "       ");
 					
-					pbpr_crdbT = String.format("%18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "        ");
+					pbpr_crdbT = String.format("%18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "       ");
 					
-					pbpr_crdblog = pbpr_crdblog + String.format("%18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "        ");
+					pbpr_crdblog = pbpr_crdblog + String.format("%18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "       ");
+					//----
 					//----
 				} else {
 					//收入
@@ -1312,25 +1316,28 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 
 					pbpr_crdblog = pbpr_crdblog + String.format("%18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "  ");
 					*/
-					pbpr_crdb = pbpr_crdb + String.format("                 %18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT));
+					//20210419 MatsudairaSyume reduce one space
+					//pbpr_crdb = pbpr_crdb + String.format("                 %18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT));
+					pbpr_crdb = pbpr_crdb + String.format("                %18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT));
 
-					pbpr_crdbT = String.format("                 %18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT));
+					pbpr_crdbT = String.format("                %18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT));
 
-					pbpr_crdblog = pbpr_crdblog + String.format("                 %18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT));
+					pbpr_crdblog = pbpr_crdblog + String.format("                %18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT));
 					//----
 				}
 				pr_datalog = pr_data;
-				pbpr_crdb = String.format("%35s", pbpr_crdb);
-
-				pbpr_crdbT = String.format("%35s", pbpr_crdbT);
+				//20210419 MatsudairaSyume reduce one space change from %35s to %34s
+				pbpr_crdb = String.format("%34s", pbpr_crdb);
+				//20210419 MatsudairaSyume reduce one space change from %35s to %34s
+				pbpr_crdbT = String.format("%34s", pbpr_crdbT);
 
 				log.debug("pbpr_crdb len={} pbpr_crdbT [{}] len={}", pbpr_crdb.length(), pbpr_crdbT, pbpr_crdbT.length());
 
 				String pr_dataprev = pr_data;
 
 				pr_data = pr_data + pbpr_crdb;
-				
-				pr_datalog = pr_datalog + String.format("%35s", pbpr_crdblog);
+				//20210419 MatsudairaSyume reduce one space change from %35s to %34s
+				pr_datalog = pr_datalog + String.format("%34s", pbpr_crdblog);
 				//處理結存
 				String sbalbuff = "";
 				sbalbuff = new String(p0080DataFormat.getTotaTextValueSrc("spbbal", pb_arr.get(i)));
@@ -1662,7 +1669,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 		int tl, total;
 		tl = this.iLine;
 		//20200603  test		total = this.iCon;
-		total = Integer.parseInt(this.dCount);
+		//20210401 MatsudairaSyuMe total count not data count
+//		total = Integer.parseInt(this.dCount);
+		total = Integer.parseInt(con);
+		//----
 		String pbpr_date = String.format("%8s", " "); // 日期 8
 		String pbpr_wsno = String.format("%5s", " "); // 櫃檯機編號 5
 		String pbpr_crdblog = String.format("%36s", " "); // 摘要+支出收入金額 36
