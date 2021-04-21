@@ -51,7 +51,7 @@ public class HeadLog implements Runnable {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}*/
-		System.setProperty(ContextInitializer.CONFIG_FILE_PROPERTY, "." + File.separator + "shift.xml");
+		System.setProperty(ContextInitializer.CONFIG_FILE_PROPERTY, "/home/scotthong/botworkbts/BF20118030008/autoprt/sift.xml");
 		logger = LoggerFactory.getLogger("HeadLog");
 		int count = 1;
 		ExecutorService threadPools = Executors.newFixedThreadPool(5);// creating a pool of 5 threads

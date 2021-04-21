@@ -1,17 +1,20 @@
 package com.systex.sysgateii.gateway.util;
 
+import java.io.File;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
+import ch.qos.logback.classic.util.ContextInitializer;
 import ch.qos.logback.core.joran.spi.JoranException;
 
 public class SiftExample {
-
+	static Logger logger = null;
 	public static void main(String[] args) throws JoranException {
-		if (args.length != 1) {
+/*		if (args.length != 1) {
 			usage("Wrong number of arguments.");
 		}
 
@@ -21,14 +24,15 @@ public class SiftExample {
 		JoranConfigurator configurator = new JoranConfigurator();
 		lc.reset();
 		configurator.setContext(lc);
-		configurator.doConfigure(configFile);
+		configurator.doConfigure(configFile);*/
+		System.setProperty(ContextInitializer.CONFIG_FILE_PROPERTY, "/home/scotthong/botworkbts/BF20118030008/autoprt/sift2.xml");
 
-		Logger logger = LoggerFactory.getLogger(SiftExample.class);
+		logger = LoggerFactory.getLogger(SiftExample.class);
 		logger.debug("Application started");
 
 		MDC.put("userid", "Alice");
 		for (int i = 0; i < 10; i++)
-		logger.debug("Alice says hello");
+			logger.debug("Alice says hello");
 		// StatusPrinter.print(lc);
 	}
 
