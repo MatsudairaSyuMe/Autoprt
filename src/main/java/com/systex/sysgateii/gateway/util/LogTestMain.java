@@ -3,6 +3,7 @@ package com.systex.sysgateii.gateway.util;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.classic.util.ContextInitializer;
 import ch.qos.logback.core.FileAppender;
 import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.RollingPolicyBase;
@@ -121,9 +122,10 @@ public class LogTestMain {
 			logger.info("hello [{}]", i);
 		}
 		*/
+		System.setProperty(ContextInitializer.CONFIG_FILE_PROPERTY, "." + File.separator + "logback.xml");
 	    LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
 
-	    FileAppender fileAppender = new FileAppender();
+	    FileAppender<ILoggingEvent> fileAppender = new FileAppender<ILoggingEvent>();
 	    fileAppender.setContext(loggerContext);
 	    fileAppender.setName("timestamp");
 	    // set the file name

@@ -1207,7 +1207,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 			for (int i = 0; i < pb_arr.size(); i++) {
 				//處理日期格式
 				//20201216 add one space
-				pr_data = " ";
+				//20210420 MatsudairaSymMe reduse one space
+//				pr_data = " ";
+				pr_data = "";
 				pbpr_date = new String (p0080DataFormat.getTotaTextValueSrc("date", pb_arr.get(i))).trim();
 				if (Integer.parseInt(pbpr_date) > 1000000)
 					pbpr_date = String.format("%9s", Integer.parseInt(pbpr_date));  //20200731 adjust local's Date format

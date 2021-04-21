@@ -1149,13 +1149,13 @@ public class CS5240Impl implements Printer {
 			} else {
 				log.debug("2 ===<><>{} chkChkState {} {}", this.curState, this.curChkState, data);
 				//20210419 MatsudairaSyuMe check if pass book still in printer
-				if ((data.length > 2) && (data[2] == (byte)'P')) {
+/*				if ((data.length > 2) && (data[2] == (byte)'P')) {
 					this.curChkState = CheckStatus_START;
 					this.curState = Eject;
 					log.debug("2.1 ===<><>{} 退摺中！chkChkState {} pass book still in printer", this.curState, this.curChkState);
-					Send_hData(S5240_PEJT);
+					//20210420 MAtsudairaSyuMe waiting
 					Sleep(500);
-				} else
+				} else*/
 //				}
 				//----
 					this.curState = Eject_FINISH;
@@ -2066,7 +2066,7 @@ public class CS5240Impl implements Printer {
 				String s = "95硬體錯誤代碼" + new String(data, 1, data.length - 1);
 				pc.InsertAMStatus(brws, "", "", s);
 				amlog.info("[{}][{}][{}]:95硬體錯誤代碼3[{}]", brws, "        ", "            ", new String(data, 1, data.length - 1));
-				Send_hData(S5240_CANCEL);  //special for S5020
+//				Send_hData(S5240_CANCEL);  //special for S5020
 				//----
 				return false;
 			}
