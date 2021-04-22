@@ -347,19 +347,26 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 		try {
 			// 20210217,20210226,20210324 MatsudairaSyuMe check brws for digit type and length > 0
 			Pattern FILTER_PATTERN = Pattern.compile("[0-9]+");
-			if (FILTER_PATTERN.matcher(this.brws).matches()) {
-				String seqFname = "SEQNO_" + (String) (map.get("brws"));  //20210302 MatsidairaSyuMe
-				this.seqNoFile = new File("SEQNO", seqFname);
-				// 20210217 MatsydairaSyuMe
-				log.debug("seqNoFile local=" + this.seqNoFile.getAbsolutePath());
-				if (seqNoFile.exists() == false) {
-					File parent = seqNoFile.getParentFile();
-					if (parent.exists() == false) {
-						parent.mkdirs();
+			//20210422 MatsudairaSyuMe
+			String chkbrws = this.brws.trim();
+			if (FILTER_PATTERN.matcher(chkbrws ).matches()) {
+				if (chkbrws.length() > 0 && chkbrws.length() <= 7) {
+//					String seqFname = "SEQNO_" + (String) (map.get("brws"));  //20210302 MatsidairaSyuMe
+					String seqFname = "SEQNO_" + chkbrws; // 20210422 MatsidairaSyuMe
+					this.seqNoFile = new File("SEQNO", seqFname);
+					// 20210217 MatsydairaSyuMe
+					log.debug("seqNoFile local=" + this.seqNoFile.getAbsolutePath());
+					if (seqNoFile.exists() == false) {
+						File parent = seqNoFile.getParentFile();
+						if (parent.exists() == false) {
+							parent.mkdirs();
+						}
+						this.seqNoFile.createNewFile();
+						FileUtils.writeStringToFile(this.seqNoFile, "0", Charset.defaultCharset());
 					}
-					this.seqNoFile.createNewFile();
-					FileUtils.writeStringToFile(this.seqNoFile, "0", Charset.defaultCharset());
-				}
+				} else
+					log.error("brws error [{}]", this.brws);
+				//----
 			} else {
 				log.error("fatal error!!! brws name is not digit type {} can ot create seqno file", this.brws);
 			}

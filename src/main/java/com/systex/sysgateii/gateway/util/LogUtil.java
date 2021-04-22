@@ -33,6 +33,7 @@ import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import ch.qos.logback.core.spi.AppenderAttachable;
 import ch.qos.logback.core.util.FileSize;
 import ch.qos.logback.core.util.OptionHelper;
+import ch.qos.logback.core.util.StatusPrinter;
 
 
 public class LogUtil {
@@ -155,6 +156,7 @@ public class LogUtil {
 			return logbackLogger;
 		}		
 		LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
+
 		String fpn = "";
 		if (pathname != null && pathname.trim().length() > 0)
 			fpn = pathname + File.separator + logName + ".log";

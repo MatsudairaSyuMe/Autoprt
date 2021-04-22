@@ -1,16 +1,12 @@
 package com.systex.sysgateii.gateway.util;
 
-import java.io.File;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.classic.util.ContextInitializer;
-import ch.qos.logback.core.joran.spi.JoranException;
 
 public class HeadLog implements Runnable {
 
@@ -24,7 +20,7 @@ public class HeadLog implements Runnable {
 
 		MDC.put("logFileName", getName());
 		//System.out.println(getName());
-		logger.debug("hello");
+		logger.info("hello");
 
 		// remember remove this
 		MDC.remove("logFileName");
@@ -55,12 +51,20 @@ public class HeadLog implements Runnable {
 		logger = LoggerFactory.getLogger("HeadLog");
 		int count = 1;
 		ExecutorService threadPools = Executors.newFixedThreadPool(5);// creating a pool of 5 threads
+		while (count <= 20) {
+			HeadLog head = new HeadLog();
+			head.setName("head-" + count);
+			threadPools.execute(head);
+			count++;
+		}
+		count = 1;
 		while (count <= 10) {
 			HeadLog head = new HeadLog();
 			head.setName("head-" + count);
 			threadPools.execute(head);
 			count++;
 		}
+
 		threadPools.shutdown();
 		while (!threadPools.isTerminated()) {
 		}
