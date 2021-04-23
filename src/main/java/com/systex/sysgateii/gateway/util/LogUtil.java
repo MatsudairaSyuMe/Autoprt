@@ -154,7 +154,7 @@ public class LogUtil {
 		{
 			System.out.println("Log Appender already exist");
 			return logbackLogger;
-		}		
+		}
 		LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
 
 		String fpn = "";
@@ -228,7 +228,6 @@ public class LogUtil {
 	}
 
 	public static void stopLog(Logger tarLog) {
-		LoggerContext loggerContext = (LoggerContext) tarLog.getLoggerContext();
-		loggerContext.stop();
+		tarLog.detachAndStopAllAppenders();
 	}
 }
