@@ -75,4 +75,10 @@ public class Constants {
 	//20210122 MatsudairaSyume default sync. key
 	public static final String DEFKNOCKING = "9588028820109132570743325311898426347857298773549468758875018579537757772163084478873699447306034466200616411960574122434059469100235892702736860872901247123456";
 	//----
+	//20210426 MatsudairaSyuMe Conduct command state
+	public static final int START = 1;  //command "START"
+	public static final int STOP = 2;   //command "STOP"
+	public static final int RESTART = 3;  //command "RESTART"
+	public static final int UNKNOWN = 0;  //command "UNKNOWN"
+	//----
 }

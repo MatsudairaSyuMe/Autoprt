@@ -3,6 +3,7 @@ package com.systex.sysgateii.gateway.Monster;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 /******************
  * MatsudairaSyume
@@ -13,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.systex.sysgateii.gateway.comm.Constants;
 import com.systex.sysgateii.gateway.dao.GwDao;
 import com.systex.sysgateii.gateway.util.DateTimeUtil;
 
@@ -253,7 +255,7 @@ public class Conductor implements Runnable {
 								//----
 								//log.debug("table sno=[{}] createNode=[{}] restartAlreadyStop=[{}]", (sno == null ? 0: sno[0]), createNode, restartAlreadyStop);
 								//20210204 MatsudairaSyume
-								final String logStr = String.format("table sno=[{}] createNode=[%s] restartAlreadyStop=[%s]", (sno == null ? 0: sno[0]), createNode, restartAlreadyStop);
+								final String logStr = String.format("table sno=[%s] createNode=[%s] restartAlreadyStop=[%s]", (sno == null ? 0: sno[0]), createNode, restartAlreadyStop);
 								log.debug(logStr);
 								//20210302 MatsudairaSyuMe
 								if (cmdhiscon == null)
@@ -265,8 +267,16 @@ public class Conductor implements Runnable {
 									sno[0] = "";
 								}
 								//----
-								switch (curcmd.toUpperCase()) { //20210413 MatsudairaSyuMe prevent Portability Flaw: Locale Dependent Comparison
-								case "START":
+								//20210426 MatsudairaSyuMe prevent Portability Flaw: Locale Dependent Comparison
+								int selCmd = Constants.UNKNOWN;
+								if (curcmd.toUpperCase(Locale.ENGLISH).equals("START"))
+									selCmd = Constants.START;
+								else if(curcmd.toUpperCase(Locale.ENGLISH).equals("STOP"))
+									selCmd = Constants.STOP;
+								else if(curcmd.toUpperCase(Locale.ENGLISH).equals("RESTART"))
+									selCmd = Constants.RESTART;
+								switch (selCmd) { //20210426 MatsudairaSyuMe prevent Portability Flaw: Locale Dependent Comparison
+								case Constants.START://20210426 MatsudairaSyuMe prevent Portability Flaw: Locale Dependent Comparison
 									if (Conductor.svridnodeMap.containsKey(cmdary[0])) {
 										log.info("cmd object node=[{}] process already been initiated please STOP or Shutdown before START");
 									} else {
@@ -298,7 +308,7 @@ public class Conductor implements Runnable {
 										//----
 									}
 									break;
-								case "STOP":
+								case Constants.STOP://20210426 MatsudairaSyuMe prevent Portability Flaw: Locale Dependent Comparison
 									if (!Conductor.svridnodeMap.containsKey(cmdary[0])) {
 										//20210204 MatsudairaSyuMe
 										final String logStr2 = String.format("cmd object node=[%s] current is not running in this server no need to STOP!!", cmdary[0]);
@@ -335,7 +345,7 @@ public class Conductor implements Runnable {
 
 									}
 									break;
-								case "RESTART":
+								case Constants.RESTART://20210426 MatsudairaSyuMe prevent Portability Flaw: Locale Dependent Comparison
 									//20210302 MatsudairaSyuMe
 									String monSetArg[] = null;
 									//----

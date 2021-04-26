@@ -90,47 +90,46 @@ public class DscptMappingTable {
 	}
 	public DscptMappingTable (String filename) {
 		BufferedReader reader;
-		//20210413 MatsudairaSyuMe prevent Unreleased Resource
+		// 20210413 MatsudairaSyuMe prevent Unreleased Resource
 		InputStreamReader isr = null;
-		//----
+		// ----
+		// 20210426 MatsudairaSyuMe prevent Unreleased Resource
+		FileInputStream fis = null;
 		int total = 0;
 		m_Dscpt.clear();
-		try{
+		try {
 			File file = new File(filename);
 			byte[] bytesArray = new byte[(int) file.length()];
-			FileInputStream fis = new FileInputStream(file);
-			fis.read(bytesArray); //read file into bytes[]
-			//20210413 MatsudairaSyuMe prevent Unreleased Resource
-			//fis.close();
-			closeQuietly2(fis);
-			//----
+			fis = new FileInputStream(file); // 20210426 MatsudairaSyuMe prevent Unreleased Resource
+			fis.read(bytesArray); // read file into bytes[]
 			boolean pstart = false;
 			int catchlen = 0;
 			byte[] tmph = new byte[80];
-			Arrays.fill(tmph, (byte)0x0);
+			Arrays.fill(tmph, (byte) 0x0);
 			for (int i = 0; i < bytesArray.length; i++) {
 //				System.out.print(String.format("%c %x ", (char)(bytesArray[i] & 0xff), bytesArray[i]));
-				if (bytesArray[i] == (byte)'#')
+				if (bytesArray[i] == (byte) '#')
 					pstart = true;
-				if (bytesArray[i] == (byte)0x0d && (i < (bytesArray.length - 1) && (bytesArray[i + 1] == (byte)0x0a))) {
+				if (bytesArray[i] == (byte) 0x0d
+						&& (i < (bytesArray.length - 1) && (bytesArray[i + 1] == (byte) 0x0a))) {
 					if (!pstart) {
 						for (int j = 0; j < catchlen; j++) {
-							if (tmph[j] == (byte)'=') {
+							if (tmph[j] == (byte) '=') {
 								byte[] tmpb = new byte[catchlen - j - 1];
 								System.arraycopy(tmph, j + 1, tmpb, 0, catchlen - j - 1);
-								int start = -1;    //fill header space bytes
+								int start = -1; // fill header space bytes
 								for (int k = 0; k < tmpb.length; k++)
-									if ((int)(tmpb[k] & 0xff) > (int)' ') {
+									if ((int) (tmpb[k] & 0xff) > (int) ' ') {
 										start = k;
 										break;
 									}
-								int mark = -1;   //fill tail space bytes
+								int mark = -1; // fill tail space bytes
 								if ((start + 1) < tmpb.length) {
 									for (int k = start + 1; k < tmpb.length; k++) {
-										if ((int)(tmpb[k] & 0xff) > (int)0x7f && ((k + 1) < tmpb.length)) {
+										if ((int) (tmpb[k] & 0xff) > (int) 0x7f && ((k + 1) < tmpb.length)) {
 											k += 1;
 											mark = -1;
-										} else if ((int)(tmpb[k] & 0xff) == (int)' ') {
+										} else if ((int) (tmpb[k] & 0xff) == (int) ' ') {
 											if ((mark == -1) || ((mark + 1) != k))
 												mark = k;
 										} else
@@ -151,7 +150,7 @@ public class DscptMappingTable {
 						catchlen = 0;
 					}
 					pstart = false;
-					Arrays.fill(tmph, (byte)0x0);
+					Arrays.fill(tmph, (byte) 0x0);
 					i += 1;
 				} else {
 					if (!pstart) {
@@ -161,7 +160,7 @@ public class DscptMappingTable {
 				}
 			}
 			log.debug("total m_Dscpt2 {} records", m_Dscpt2.size());
-			//20210413 MatsudairaSyuMe prevent Unreleased Resource
+			// 20210413 MatsudairaSyuMe prevent Unreleased Resource
 //			InputStreamReader isr = new InputStreamReader(new FileInputStream(filename), "Big5");
 			isr = new InputStreamReader(new FileInputStream(filename), "Big5");
 			reader = new BufferedReader(isr);
@@ -176,19 +175,22 @@ public class DscptMappingTable {
 				}
 				line = "";
 				line = reader.readLine();
-			// read next line
+				// read next line
 			}
-			if (reader != null)//20210413 MatsudairaSyuMe prevent Unreleased Resource
+			if (reader != null)// 20210413 MatsudairaSyuMe prevent Unreleased Resource
 				reader.close();
 		} catch (Exception e) {
 			e.getStackTrace();
-			log.error("ERROR!! {}",e.getMessage());
+			log.error("ERROR!! {}", e.getMessage());
 		}
-		//20210413 MatsudairaSyuMe prevent Unreleased Resource
-		 finally {
-			 closeQuietly(isr);
-		 }
-      log.debug("total {} records", total);
+		// 20210413 MatsudairaSyuMe prevent Unreleased Resource
+		finally {
+			closeQuietly(isr);
+			// 20210426 MatsudairaSyuMe prevent Unreleased Resource
+			closeQuietly2(fis);
+			// ----
+		}
+		log.debug("total {} records", total);
 	}
 	//20210413 MatsudairaSyuMe prevent Unreleased Resource
 	public static void closeQuietly(InputStreamReader isr) {

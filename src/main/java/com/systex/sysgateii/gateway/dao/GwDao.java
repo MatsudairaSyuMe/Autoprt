@@ -744,18 +744,18 @@ public class GwDao {
 				rs = ((java.sql.Statement) stmt2).executeQuery(Des.decodeValue(Constants.DEFKNOCKING, wowstr1));//20210202 MatsudairaSyuMe
 				log.debug("executeUpdate()");
 				int idx = 0;
+				
+				//20210426 MatsudairaSyuMe prevent Null Dereference
+				rtnVal = new String[1];
+				//----
 				while (rs.next()) {
-					if (idx <= 0)
-						rtnVal = new String[1];
-					else { //20210413 MatsudairaSyuMe prevent Null Dereference
-						if (rtnVal != null) {
-							String[] tmpv = rtnVal;
-							rtnVal = new String[idx + 1];
-							int j = 0;
-							for (String s : tmpv) {
-								rtnVal[j] = s;
-								j++;
-							}
+					if (rtnVal != null) {
+						String[] tmpv = rtnVal;
+						rtnVal = new String[idx + 1];
+						int j = 0;
+						for (String s : tmpv) {
+							rtnVal[j] = s;
+							j++;
 						}
 					}
 					for (int i = 0; i < keynameary.length; i++) {

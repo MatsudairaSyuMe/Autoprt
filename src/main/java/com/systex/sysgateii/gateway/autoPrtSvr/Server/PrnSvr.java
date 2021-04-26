@@ -29,6 +29,7 @@ import java.util.LinkedHashMap;
  */
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Timer;
 import java.util.concurrent.ConcurrentHashMap;
@@ -382,8 +383,16 @@ public class PrnSvr implements MessageListener<byte[]> {
 														sno[0] = "";
 													}
 													//----
-													switch (curcmd.toUpperCase()) {//20210413 MatsudairaSyuMe prevent Portability Flaw: Locale Dependent Comparison
-													case "START":
+													//20210426 MatsudairaSyuMe prevent Portability Flaw: Locale Dependent Comparison
+													int selCmd = Constants.UNKNOWN;
+													if (curcmd.toUpperCase(Locale.ENGLISH).equals("START"))
+														selCmd = Constants.START;
+													else if(curcmd.toUpperCase(Locale.ENGLISH).equals("STOP"))
+														selCmd = Constants.STOP;
+													else if(curcmd.toUpperCase(Locale.ENGLISH).equals("RESTART"))
+														selCmd = Constants.RESTART;
+													switch (selCmd) {//20210426 MatsudairaSyuMe prevent Portability Flaw: Locale Dependent Comparison
+													case Constants.START://20210426 MatsudairaSyuMe prevent Portability Flaw: Locale Dependent Comparison
 														//20201006, 20201026 cmdhis
 														createNode(cmdary[0]);
 														//----
@@ -419,7 +428,7 @@ public class PrnSvr implements MessageListener<byte[]> {
 															//----
 														}
 														break;
-													case "STOP":
+													case Constants.STOP://20210426 MatsudairaSyuMe prevent Portability Flaw: Locale Dependent Comparison
 														if (getMe().nodeList.get(cmdary[0]).getCurState() != -1) {
 															//20201026 for cmdhis
 															getMe().nodeList.get(cmdary[0]).onEvent(getMe().nodeList.get(cmdary[0]).getId(), EventType.SHUTDOWN, sno[0]);
@@ -447,7 +456,7 @@ public class PrnSvr implements MessageListener<byte[]> {
 
 														}
 														break;
-													case "RESTART":
+													case Constants.RESTART://20210426 MatsudairaSyuMe prevent Portability Flaw: Locale Dependent Comparison
 														//20201221 1st time RESTART mode node already STOP
 														if (!restartAlreadyStop && createNode)
 															restartAlreadyStop = true;

@@ -347,13 +347,13 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 		try {
 			// 20210217,20210226,20210324 MatsudairaSyuMe check brws for digit type and length > 0
 			Pattern FILTER_PATTERN = Pattern.compile("[0-9]+");
-			//20210422 MatsudairaSyuMe
-			String chkbrws = this.brws.trim();
-			if (FILTER_PATTERN.matcher(chkbrws ).matches()) {
-				if (chkbrws.length() > 0 && chkbrws.length() <= 7) {
-//					String seqFname = "SEQNO_" + (String) (map.get("brws"));  //20210302 MatsidairaSyuMe
-					String seqFname = "SEQNO_" + chkbrws; // 20210422 MatsidairaSyuMe
-					this.seqNoFile = new File("SEQNO", seqFname);
+			//20210422, 20210426 MatsudairaSyuMe for path manipulation
+			if (FILTER_PATTERN.matcher(this.brws.trim()).matches()) {
+				// 20210426 MatsidairaSyuMe
+				int brws2int = Integer.parseInt(this.brws.trim());
+				if (brws2int > -1 && brws2int <= 9999999) {
+					String chkbrws = String.valueOf(brws2int); 
+					this.seqNoFile = new File("SEQNO", "SEQNO_" + chkbrws);
 					// 20210217 MatsydairaSyuMe
 					log.debug("seqNoFile local=" + this.seqNoFile.getAbsolutePath());
 					if (seqNoFile.exists() == false) {

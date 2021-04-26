@@ -124,8 +124,8 @@ public class DoProcessBuilder {
 				//20210320 MatsudairaSyuMe for command injection
 				ProcessBuilder pb = new ProcessBuilder(TrustedCmd, TrustedArg1[arg1idx], TrustedArg2, cnvs);
 				//----
-				String currentDir = System.getProperty("user.dir");
-				pb.directory(new File(currentDir));
+//				String currentDir = System.getProperty("user.dir");  20210426 MatsudairaSyuMe mark for path manipulation
+				pb.directory(new File("." + File.separator)); //20210426 MatsudairaSyuMe use current directory
 				Process process = pb.start();
 				InputStream is = process.getInputStream();
 				InputStreamReader isr = new InputStreamReader(is);
