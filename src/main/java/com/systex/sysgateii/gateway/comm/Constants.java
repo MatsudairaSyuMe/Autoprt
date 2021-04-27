@@ -1,6 +1,7 @@
 package com.systex.sysgateii.gateway.comm;
 //20210116 MatsudairaSyume
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 //----
 public class Constants {
 	public static String LABEL_KEY_SYNC = "syncCheck";
@@ -81,4 +82,7 @@ public class Constants {
 	public static final int RESTART = 3;  //command "RESTART"
 	public static final int UNKNOWN = 0;  //command "UNKNOWN"
 	//----
+	//20210427 MatsudairaSyuMe Log Forging
+	public static Pattern FilterNewlinePattern = Pattern.compile("\n");
+
 }

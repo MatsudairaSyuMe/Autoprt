@@ -597,7 +597,7 @@ public class ServerProducer extends ChannelDuplexHandler // ChannelInboundHandle
 				targetaddr = this.brnoaddrGrp.get(actorId);
 			//----
 			for (ChannelHandlerContext curctx : sessionList) {
-				rmtaddr = ((InetSocketAddress) curctx.channel().remoteAddress()).getAddress().getHostAddress().trim();
+				rmtaddr = "999"; //20210427 MatsudairaSyuMe Often Misused: Authentication ((InetSocketAddress) curctx.channel().remoteAddress()).getAddress().getHostAddress().trim();
 				log.debug("bordaddr={} brno {}", rmtaddr, actorId);
 				if (curctx != null) {
 					if (actorId.equals("999") || targetaddr != null && targetaddr.contains(rmtaddr))

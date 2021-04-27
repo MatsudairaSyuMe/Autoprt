@@ -413,8 +413,8 @@ public class PrnSvr implements MessageListener<byte[]> {
 															PrtCli conn = getMe().nodeList.get(cmdary[0]);
 															//20201119 add EMPNO
 															//20201218 add original cmd to devcmdhis
-															String fldvals3 = String.format(hisfldvalssptrn3, cmdary[1], cmdary[1], t, conn.getRmtaddr().getAddress().getHostAddress(),
-																	conn.getRmtaddr().getPort(),conn.getLocaladdr().getAddress().getHostAddress(), conn.getLocaladdr().getPort(),sts,cmdary[4]);
+															String fldvals3 = String.format(hisfldvalssptrn3, cmdary[1], cmdary[1], t, conn.getRemoteHostAddr(),//20210427 MatsudairaSyuMe Often Misused: Authentication
+																	conn.getRmtaddr().getPort(),conn.getLocalHostAddr(), conn.getLocaladdr().getPort(),sts,cmdary[4]);
 															//----
 															//---
 //															sno = cmdhiscon.INSSELChoiceKey(PrnSvr.devcmdhistbname, "SVRID,AUID,BRWS,CMD,CMDCREATETIME,CMDRESULT,CMDRESULTTIME,CURSTUS", "1,1,'9838901','','2020-10-21 09:46:38.368000','START','2020-10-21 09:46:38.368000','0','2'", "SNO", "31", false, true);
@@ -483,8 +483,8 @@ public class PrnSvr implements MessageListener<byte[]> {
 																PrtCli conn = getMe().nodeList.get(cmdary[0]);
 																//20201119 add EMPNO
 																//20201218 add original cmd to devcmdhis
-																String fldvals3 = String.format(hisfldvalssptrn3, cmdary[1], cmdary[1], t, conn.getRmtaddr().getAddress().getHostAddress(),
-																		conn.getRmtaddr().getPort(),conn.getLocaladdr().getAddress().getHostAddress(), conn.getLocaladdr().getPort(),sts,cmdary[4]);
+																String fldvals3 = String.format(hisfldvalssptrn3, cmdary[1], cmdary[1], t, conn.getRemoteHostAddr(),//20210427 MatsudairaSyuMe Often Misused: Authentication
+																		conn.getRmtaddr().getPort(),conn.getLocalHostAddr(), conn.getLocaladdr().getPort(),sts,cmdary[4]);
 																//----
 																sno = cmdhiscon.INSSELChoiceKey(PrnSvr.devcmdhistbname, "CMD,CMDRESULT,CMDRESULTTIME,DEVIP,DEVPORT,SVRIP,SVRPORT,RESULTSTUS,EMPNO", fldvals3, PrnSvr.devcmdhistbsearkey, sno[0], false, true);
 																//----

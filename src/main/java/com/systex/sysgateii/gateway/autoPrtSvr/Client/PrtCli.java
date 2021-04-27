@@ -3,7 +3,6 @@ package com.systex.sysgateii.gateway.autoPrtSvr.Client;
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
-import java.lang.management.RuntimeMXBean;
 //import java.io.UnsupportedEncodingException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
@@ -11,14 +10,11 @@ import java.nio.charset.Charset;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
@@ -121,6 +117,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 
 	private InetSocketAddress rmtaddr = null;
 	private InetSocketAddress localaddr = null;
+	//20210427 MatsudairaSyuMe
+	private String remoteHostAddr = "";
+	private String localHostAddr = "";
+	//----
 	private Channel channel_;
 	private Timer timer_;
 	private String brws = null;      // BRNO + WSNO from set up XML file
@@ -275,10 +275,6 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 	//----
 	//20200513
 	private String statusfields = "";
-	//"'9838901',10.24.1.230,'4002','10.24.1.230','3301','0','3','0','1','SYSTEM',''"
-	//                                        printer type,status
-//change to use new UPSERT
-	//	private String updValueptrn = "'%s',%s,'%s','%s','%s','0','%s','%s','1','SYSTEM',''";
 	//20201222 add 'SYSTEM' to TB_AUDEVSTS.MODIFIER
 	private String updValueptrn = "'%s','%s','%s','%s','0','%s','%s','1','SYSTEM','SYSTEM'";
 	//分行設備分類0: 匯率顯示版 1:利率顯示版 2: AUTO46 自動補褶機 3: AUTO52 自動補褶機
@@ -430,6 +426,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					}
 				}
 			}
+			//20210427 MatsudairaSyuMe
+			this.remoteHostAddr = nodePars.getCurrentRemoteHostAddress();
+			this.localHostAddr = nodePars.getCurrentLocalHostAddress();
+			//----
 			if (PrnSvr.dburl != null && PrnSvr.dburl.trim().length() > 0) {
 				jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
 				//20201119 add for make reset the status table
@@ -450,8 +450,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 //20200910 change to used new UPSERT
 //		String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
 //				this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDINACT);
-		String updValue = String.format(updValueptrn,this.rmtaddr.getAddress().getHostAddress(),
-				this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDINACT);
+		String updValue = String.format(updValueptrn,this.remoteHostAddr,//20210427 MatsudairaSyuMe Often Misused: Authentication
+				this.rmtaddr.getPort(),this.localHostAddr, this.localaddr.getPort(), this.typeid, Constants.STSUSEDINACT);
 		try {
 			if (jsel2ins == null)
 				jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
@@ -732,8 +732,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 //		String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
 //				this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDACT);
 //20200910 change to use new UPSERT
-		String updValue = String.format(updValueptrn,this.rmtaddr.getAddress().getHostAddress(),
-				this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDACT);
+		String updValue = String.format(updValueptrn,this.remoteHostAddr,//20210427 MatsudairaSyuMe Often Misused: Authentication
+				this.rmtaddr.getPort(),this.localHostAddr, this.localaddr.getPort(), this.typeid, Constants.STSUSEDACT);
 		if (jsel2ins == null)
 			jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
 		int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, this.brws + "," + PrnSvr.svrid);
@@ -756,8 +756,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 //20200910 change to use new UPSERT
 //		String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
 //				this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDINACT);
-		String updValue = String.format(updValueptrn,this.rmtaddr.getAddress().getHostAddress(),
-				this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDINACT);
+		String updValue = String.format(updValueptrn,this.remoteHostAddr,  //20210427 MatsudairaSyuMe Often Misused: Authentication
+				this.rmtaddr.getPort(),this.localHostAddr, this.localaddr.getPort(), this.typeid, Constants.STSUSEDINACT);
 		if (jsel2ins == null)
 			jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
 		int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, this.brws + "," + PrnSvr.svrid);
@@ -832,8 +832,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 		//20200910 change to use new UPSERT
 //		String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
 //				this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDINACT);
-		String updValue = String.format(updValueptrn,this.rmtaddr.getAddress().getHostAddress(),
-				this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDINACT);
+		String updValue = String.format(updValueptrn,this.remoteHostAddr, //20210427 MatsudairaSyuMe Often Misused: Authentication
+				this.rmtaddr.getPort(),this.localHostAddr, this.localaddr.getPort(), this.typeid, Constants.STSUSEDINACT);
 		try {
 			if (jsel2ins == null)
 				jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
@@ -4342,8 +4342,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				//20201026
 				cmdhiscon = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
 				//20201218 add original cmd to devcmdhis
-				String fldvals2 = String.format(hisfldvalssptrn2, "START", "START", t, this.rmtaddr.getAddress().getHostAddress(),
-						this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(),"2");
+				String fldvals2 = String.format(hisfldvalssptrn2, "START", "START", t, this.remoteHostAddr,//20210427 MatsudairaSyuMe Often Misused: Authentication
+						this.rmtaddr.getPort(),this.localHostAddr, this.localaddr.getPort(),"2");
 //				sno = cmdhiscon.INSSELChoiceKey(PrnSvr.devcmdhistbname, "SVRID,AUID,BRWS,CMD,CMDCREATETIME,CMDRESULT,CMDRESULTTIME,CURSTUS", "1,1,'9838901','','2020-10-21 09:46:38.368000','START','2020-10-21 09:46:38.368000','0','2'", "SNO", "31", false, true);
 				String[] rsno = cmdhiscon.INSSELChoiceKey(PrnSvr.devcmdhistbname, "CMD,CMDRESULT,CMDRESULTTIME,DEVIP,DEVPORT,SVRIP,SVRPORT,RESULTSTUS", fldvals2, PrnSvr.devcmdhistbsearkey, sno, false, true);
 				if (rsno != null) {
@@ -4464,4 +4464,18 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 		return rtn;
 	}
 	//----
+	//20210427 MatsudairaSyuMe
+	/**
+	 * @return the remoteHostAddr
+	 */
+	public String getRemoteHostAddr() {
+		return this.remoteHostAddr;
+	}
+	/**
+	 * @return the localHostAddr
+	 */
+	public String getLocalHostAddr() {
+		return this.localHostAddr;
+	}
+
 }

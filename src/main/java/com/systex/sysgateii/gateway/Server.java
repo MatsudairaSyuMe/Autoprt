@@ -12,6 +12,7 @@ import java.text.SimpleDateFormat;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +53,6 @@ public class Server {
 	//20201119 conduct mode
 	private static AtomicBoolean isConductor = new AtomicBoolean(false);
 	//----
-
 	public static void main(String[] args) {
 		System.setProperty(ContextInitializer.CONFIG_FILE_PROPERTY, "." + File.separator + "logback.xml");
 		//20210419 MatsudairaSyuMe mark
@@ -133,9 +133,10 @@ public class Server {
 					//conductor mode start the monitor module
 					Conductor.createServer(dcf.getConHashMap(), svrip);
 					Conductor.startServer();
-					//20210204 MatsudairaSyuMe
-					final String logStr = String.format("sysgateii server after start conductor svrip=[%s]", svrip);
-//					log.info("sysgateii server after start conductor svrip=[{}]", svrip);
+					//20210204, 0210427 MatsudairaSyuMe Log Forging change remove final
+					String logStr = String.format("sysgateii server after start conductor svrip=[%s]", svrip);
+					if (Constants.FilterNewlinePattern.matcher(logStr).find())
+						logStr = "sysgateii server after start conductor";
 					log.info(logStr);
 				}
 				//----
@@ -159,9 +160,10 @@ public class Server {
 				//AUID,BRNO,IP,CURSTUS,PID,CREATOR,MODIFIER,LASTUPDATE
 //				auid = dcf.getAuid();
 //				svrip = dcf.getSvrip();
-				//20201116 change to use given svrid, 20210204 MatsudairaSyuME
-//				log.info("sysgateii server start complete! auid=[{}] svrip=[{}]", auid, svrip);
-				final String logStr = String.format("sysgateii server start complete! auid=[%s] svrip=[%s]", auid, svrip);
+				//20201116 change to use given svrid, 20210204 MatsudairaSyuMe, 20210427 MatsudairaSyuMe Log Forging remove final
+				String logStr = String.format("sysgateii server start complete! auid=[%s] svrip=[%s]", auid, svrip);
+				if (Constants.FilterNewlinePattern.matcher(logStr).find())
+					logStr = "sysgateii server start complete! auid svrip check dashbord";
 				log.info(logStr);
 				if (auid.trim().length() == 0 || auid.trim().length() == 0) {
 					auid = "0";

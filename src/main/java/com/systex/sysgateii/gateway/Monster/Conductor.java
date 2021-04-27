@@ -193,9 +193,10 @@ public class Conductor implements Runnable {
 									cmdhiscon = new GwDao(dburl, dbuser, dbpass, false);
 									if (Conductor.svridnodeMap != null && Conductor.svridnodeMap.size() > 0) {
 										if (Conductor.svridnodeMap.containsKey(cmdary[0])) {
-											//20210204 MatsudairaSyuMe
-											final String logStr = String.format("!!! cmd object node=[%s] already in nodeMap please STOP this node before START !!!", cmdary[0]);
-//											log.error("!!! cmd object node=[{}] already in nodeMap please STOP this node before START !!!", cmdary[0]);
+											//20210204,20210427 MatsudairaSyuMe Log Forging remove final
+											String logStr = String.format("!!! cmd object node=[%s] already in nodeMap please STOP this node before START !!!", cmdary[0]);
+											if (Constants.FilterNewlinePattern.matcher(logStr).find())
+												logStr = "!!! cmd object already in nodeMap please STOP this node before START !!! check dashbord";
 											log.error(logStr);
 											createNode = false;
 										} else {
@@ -310,8 +311,10 @@ public class Conductor implements Runnable {
 									break;
 								case Constants.STOP://20210426 MatsudairaSyuMe prevent Portability Flaw: Locale Dependent Comparison
 									if (!Conductor.svridnodeMap.containsKey(cmdary[0])) {
-										//20210204 MatsudairaSyuMe
-										final String logStr2 = String.format("cmd object node=[%s] current is not running in this server no need to STOP!!", cmdary[0]);
+										//20210204,20210427 MatsudairaSyuMe Log Forging remove final
+										String logStr2 = String.format("cmd object node=[%s] current is not running in this server no need to STOP!!", cmdary[0]);
+										if (Constants.FilterNewlinePattern.matcher(logStr2).find())
+											logStr2 = "cmd object node current is not running in this server no need to STOP!! check dashbord";
 										log.info(logStr2);
 									} else {
 										//20210302 MatsudairaSyuMe
@@ -403,12 +406,19 @@ public class Conductor implements Runnable {
 								log.debug(logStr);	
 							}
 						} else {
-							//20210204 MatsudairaSyuMe
+							//20210204 ,20210427 MatsudairaSyuMe Log Forging
 							final String logStr = String.format("!!!current row cmd error [%s]", s);
-							log.error(logStr);
+							if (Constants.FilterNewlinePattern.matcher(logStr).find())
+								log.error("!!!current row cmd error check dashboard");
+							else
+								log.error(logStr);
 						}
 					} else {
-						log.warn("select raw command data [{}] error drop it", s);
+						//20210427 MatsudairaSyuMe Log Forging
+						if (Constants.FilterNewlinePattern.matcher(s).find())
+							log.warn("select raw command error drop it");
+						else
+							log.warn("select raw command data [{}] error drop it", s);
 					}
 				}
 				//20210302----

@@ -235,6 +235,12 @@ public class ipAddrPars {
 		return this.localHostAddr;
 	}
 
+	//20210427 MatsudairaSyuMe
+	public String getCurrentRemoteHostAddress() {
+		return this.remoteHostAddr;
+	}
+	//----
+
 	public Map<Integer, InetSocketAddress> getCurrentLocalNodeAddressMap() {
 		if (!this.checkAddrPeer)
 			this.localnodeAddrMap.clear();
