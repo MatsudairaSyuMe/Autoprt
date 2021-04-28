@@ -9,6 +9,8 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.systex.sysgateii.gateway.comm.Constants;
+
 public class ipAddrPars {
 	private String remoteHostAddr = "";
 	private String localHostAddr = "*";
@@ -144,9 +146,12 @@ public class ipAddrPars {
 					try {
 						remotePort = Integer.parseInt(sParts[1]);
 					} catch (NumberFormatException e) {
-						//20210204 MatsudairaSyuMe
+						//20210204,20210428 MatsudairaSyuMe Log Forging
 						final String logStr = String.format("port format error!! :%s", sParts[1]);
-						log.error(logStr);
+						if (Constants.FilterNewlinePattern.matcher(logStr).find())
+							log.error("port format error!! check dashboard");
+						else
+							log.error(logStr);
 						this.formatError = true;
 						return formatCorrect;
 					}
@@ -166,9 +171,12 @@ public class ipAddrPars {
 						remoteHostAddr = sParts[0];
 //                log.debug("2===>add remoteHostAddr: {}", remoteHostAddr);
 					} else {
-						//20210204 MatsudairaSyuMe
+						//20210204,20210428 MatsudairaSyuMe Log Forging
 						final String logStr = String.format("port format error!! :%s", sParts[0]);
-						log.error(logStr);
+						if (Constants.FilterNewlinePattern.matcher(logStr).find())
+							log.error("port format error!! :check dashboard");
+						else
+							log.error(logStr);
 						this.formatError = true;
 						return formatCorrect;
 					}
@@ -191,9 +199,12 @@ public class ipAddrPars {
 							remotePort = Integer.parseInt(s);
 //                   log.debug("remotePort ={}",s);
 						} catch (NumberFormatException e) {
-							//20210204 MatsudairaSyuMe
+							//20210204,20210428 MatsudairaSyuMe Log Forging
 							final String logStr = String.format("remotePort format error!! >%s", s);
-							log.error(logStr);
+							if (Constants.FilterNewlinePattern.matcher(logStr).find())
+								log.error("remotePort format error!! check dash board");
+							else
+								log.error(logStr);
 							this.formatError = true;
 							return formatCorrect;
 						}

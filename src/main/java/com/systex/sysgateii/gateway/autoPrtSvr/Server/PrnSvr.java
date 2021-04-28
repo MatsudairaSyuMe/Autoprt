@@ -319,9 +319,12 @@ public class PrnSvr implements MessageListener<byte[]> {
 														cmdhiscon = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
 														if (getMe().nodeList != null && getMe().nodeList.size() > 0) {
 															if (getMe().nodeList.containsKey(cmdary[0])) {
-																//20210204 MatsudairaSyuMe
+																//20210204, 20210428 MatsudairaSyuMe Log Forging
 																final String logStr = String.format("!!! cmd object node=[%s] already in nodeList please STOP this node before START !!!", cmdary[0]);
-																log.error(logStr);
+																if (Constants.FilterNewlinePattern.matcher(logStr).find())
+																	log.error("!!! cmd object node already in nodeList please STOP this node before START !!! check dashboard");
+																else
+																	log.error(logStr);
 																if (getMe().nodeList.get(cmdary[0]).getCurState() >= 0)
 																	sts = "2";
 																createNode = false;
@@ -503,9 +506,12 @@ public class PrnSvr implements MessageListener<byte[]> {
 												} else
 													log.debug("!!! cmd object node=[{}] format error !!!", cmdary[0]);													
 											} else {
-												//20210204 MatsuDairaSyuMe
+												//20210204,20210428 MatsudairaSyuMe Log Forging
 												final String logStr = String.format("!!!current row cmd error [%s]", s);
-												log.error(logStr);
+												if (Constants.FilterNewlinePattern.matcher(logStr).find())
+													log.error("!!!current row cmd error [%s...] check dashboard");
+												else
+													log.error(logStr);
 											}
 										}
 									jdawcon.CloseConnect();
@@ -564,9 +570,12 @@ public class PrnSvr implements MessageListener<byte[]> {
 		int ret = 0;
 		if (getMe().nodeList != null && getMe().nodeList.size() > 0) {
 			if (getMe().nodeList.containsKey(nid)) {
-				//20210204 MatsudairaSyuMe
+				//20210204,20210428 MatsudairaSyuMe Log Forging
 				final String logStr = String.format("!!! cmd object node=[%s] already in nodeList please STOP this node before START !!!", nid);
-				log.error(logStr);
+				if (Constants.FilterNewlinePattern.matcher(logStr).find())
+					log.error("!!! cmd object node=[%s...] already in nodeList please STOP this node before START !!! check dashboard");
+				else
+					log.error(logStr);
 				return ret;
 			} else
 				log.debug("!!! cmd object node=[{}] not in nodeList will be created", nid);

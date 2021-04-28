@@ -361,17 +361,17 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 						FileUtils.writeStringToFile(this.seqNoFile, "0", Charset.defaultCharset());
 					}
 				} else
-					log.error("brws error [{}]", this.brws);
+					log.error("brws error check dashboard!!"); //20210428 MatsudairaSyuMe Log Forging
 				//----
-			} else {
-				log.error("fatal error!!! brws name is not digit type {} can ot create seqno file", this.brws);
+			} else {//20210428 MatsudairaSyuMe Log Forging
+				log.error("fatal error!!! brws name is not digit type can ot create seqno file plese check dashboard!");
 			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-			//20210204 MatsuDairaSyuMe
-			final String logStr = String.format("error!!! create or open seqno file SEQNO_%s error %s", this.brws, e.getMessage());
-			log.error(logStr);
+			//20210204,20210428 MatsudairaSyuMe Log Forging
+//			final String logStr = String.format("error!!! create or open seqno file SEQNO_%s error %s", this.brws, e.getMessage());
+			log.error("error!!! create or open seqno file SEQNO_ error");
 		}
 		//----20210324
 		//20201115
@@ -406,9 +406,12 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 			atlog.info("Auto Printer type define error!");
 			return;
 		}
-		//MatsudairaSyuMe
-		final String logStr = String.format("==================%s %s",this.brws.substring(0, 5), this.brws.substring(3));
-		log.info(logStr);
+		//20210428 MatsudairaSyuMe Log Forging
+		final String logStr = String.format("==================%s %s",this.brws.substring(0, 3), this.brws.substring(3));
+		if (Constants.FilterNewlinePattern.matcher(logStr).find())
+			log.info("==================");
+		else
+			log.info(logStr);
 		this.statusfields = PrnSvr.statustbfields;
 		
 		ipAddrPars nodePars = new ipAddrPars();
@@ -434,9 +437,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
 				//20201119 add for make reset the status table
 				jsel2ins.DELETETB(PrnSvr.statustbname, "BRWS",this.brws);
-				//20210204 MatsudairaSyuMe
-				final String logStr2 = String.format("reset %s on %s", this.brws, PrnSvr.statustbname);
-				log.info(logStr2);
+				//20210204,20210428 MatsudairaSyuMe Log Forging
+				//final String logStr2 = String.format("reset %s on %s", this.brws, PrnSvr.statustbname);
+				log.info("reset brws on status table");
 				//----
 			}
 			//20210112 MatsudairaSyume
@@ -483,7 +486,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 			try {
 				//20210204 MatsudairaSyuMe
 				final String logStr = String.format("SEND %s[%04d]:%s", this.curSockNm, msg.length, charcnv.BIG5bytesUTF8str(msg));
-				aslog.info(logStr);
+				if (Constants.FilterNewlinePattern.matcher(logStr).find())//20210428 MatsudairaSyuMe Log Forging
+					aslog.info(String.format("SEND %s[%04d]:%s",this.curSockNm,msg.length,""));
+				else
+					aslog.info(logStr);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -1370,9 +1376,12 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				log.debug("pbpr_date=[{}] pbpr_wsno=[{}] pbpr_dscpt=[{}] pbpr_crdb=[{}] pbpr_balance=[{}] pr_data=[{}] pbpr_crdbT=[{}]", pbpr_date, pbpr_wsno, pbpr_dscpt, pbpr_crdb, pbpr_balance, pr_data, pbpr_crdbT);
 				log.debug("pr_datalog=[{}]", pr_datalog);
 				//20200826
-				//20210204 MatsudairaSyuMe
+				//20210204,20210428 MatsudairaSyuMe Log Forging
 				final String logStr = String.format(": PbDataFormat() -- All Data=[%s]", pr_datalog);
-				atlog.info(logStr);
+				if (Constants.FilterNewlinePattern.matcher(logStr).find())
+					atlog.info(": PbDataFormat() -- All Data=[%s..]");
+				else
+					atlog.info(logStr);
 				//----
 				//Print Data
 				//20200915
