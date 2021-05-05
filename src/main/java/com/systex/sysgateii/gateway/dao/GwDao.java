@@ -926,6 +926,7 @@ public class GwDao {
 	        }
 	    }
 	}
+	/*
 	//----
 	private PreparedStatement setValueps(PreparedStatement ps, String[] updvalary, boolean fromOne) throws Exception {
 		//20201119
@@ -1009,6 +1010,7 @@ public class GwDao {
 			System.out.println();
 		return ps;
 	}
+	*/
 	private String getValueps(int j, String[] updvalary) throws Exception {
 		// updinsert true for update, false for insert
 		String rtn = "";
@@ -1078,6 +1080,7 @@ public class GwDao {
 		}
 		return rtn;
 	}
+	/*
 	private String gettbsdytblValue(ResultSet rs, String obj, boolean verbose) throws Exception {
 		int type;
 		String rtn = "";
@@ -1152,7 +1155,7 @@ public class GwDao {
 		}
 		return rtn;
 	}
-
+	*/
 	public void CloseConnect() throws Exception {
 		try {
 			if (selconn != null)
