@@ -9,6 +9,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.text.SimpleDateFormat;
@@ -72,35 +73,39 @@ public class GwDao {
 		String keyset = "";
 		String[] keynameary = keyname.split(",");
 		String[] keyvalueary = selkeyval.split(",");
-		String[] keyvaluearynocomm = selkeyval.split(",");
+//		String[] keyvaluearynocomm = selkeyval.split(",");20210505 MatsudairaSyuMe Access Control: Database
 		if (keynameary.length != keyvalueary.length)
 			throw new Exception("given fields keyname can't correspond to keyvfield =>keynames [" + keyname + "] selkeyval [" + selkeyval + "]");
 		else {
 			for (int i = 0; i < keynameary.length; i++)
-				keyset = keyset + keynameary[i] + " = " + "?" + (i == (keynameary.length - 1) ? "" : " and ");
-			for (int i = 0; i < keyvaluearynocomm.length; i++) {
+//				keyset = keyset + keynameary[i] + " = " + "?" + (i == (keynameary.length - 1) ? "" : " and ");//20210505 MatsudairaSyuMe Access Control: Database
+				keyset = keyset + keynameary[i] + " = " + keyvalueary[i] + (i == (keynameary.length - 1) ? "" : " and ");
+/*20210505 MatsudairaSyuMe Access Control: Database
+  			for (int i = 0; i < keyvaluearynocomm.length; i++) {
 				int s = keyvalueary[i].indexOf('\'');
 				int l = keyvalueary[i].lastIndexOf('\'');
 				if (s != l && s >= 0 && l >= 0 && s < l)
 					keyvaluearynocomm[i] = keyvalueary[i].substring(s + 1, l);
 			}
+			*/
 		}
 		String selstr = "SELECT " + keyname + "," + field + " FROM " + fromTblName + " where " + keyset;
 		//20210122 MatsudairaSyuMe
 		String wowstr = Des.encode(Constants.DEFKNOCKING, selstr);
-		log.debug("UPSERT selstr []-->[{}]", wowstr);
+		log.debug("UPSERT selstr [{}]-->[{}]", selstr, wowstr);
 		//----
 		log.debug("update value [{}]", updval);
-		String[] valary = updval.split(",");
+/*		String[] valary = updval.split(",");
 		for (int i = 0; i < valary.length; i++) {
 			int s = valary[i].indexOf('\'');
 			int l = valary[i].lastIndexOf('\'');
 			if (s != l && s >= 0 && l >= 0 && s < l)
 				valary[i] = valary[i].substring(s + 1, l);
 		}
-
+*/
 		//20210122 MatsudairaSyuMe
-		PreparedStatement stmt = selconn.prepareStatement(Des.decodeValue(Constants.DEFKNOCKING, wowstr));
+		/*20210505 MatsudairaSyuMe Access Control: Database
+//		PreparedStatement stmt = selconn.prepareStatement(Des.decodeValue(Constants.DEFKNOCKING, wowstr));
 		//----
 		for (int i = 0; i < keyvalueary.length; i++) {
 			if (keyvalueary[i].indexOf('\'') > -1 )
@@ -109,6 +114,9 @@ public class GwDao {
 				stmt.setInt(i + 1, Integer.valueOf(keyvaluearynocomm[i]));
 		}
 		ResultSet tblrs = stmt.executeQuery();
+		*/
+		Statement stmt = selconn.createStatement();
+		ResultSet tblrs = stmt.executeQuery(Des.decodeValue(Constants.DEFKNOCKING, wowstr));
 		int type = -1;
 		int row = 0;
 		//verbose=true;
@@ -138,26 +146,28 @@ public class GwDao {
 				}
 			}
 			String colNames = "";
-			String vals = "";
+			//String vals = "";20210505 MAtsudairaSyuMe Access Control: Database
+			String vals = selkeyval + "," + updval;
 			String updcolNames = "";
-			String updvals = "";
-			log.debug("given vals {} keyvaluearynocomm {}", Arrays.toString(valary), Arrays.toString(keyvaluearynocomm));
+			//String updvals = ""; 20210505 MatsudairaSyuMe Access Control: Database
+			String updvals = updval;
+//			log.debug("given vals {} keyvaluearynocomm {}", Arrays.toString(valary), Arrays.toString(keyvaluearynocomm));20210505 MatsudairaSyuMe Access Control: Database
 
 			for (columnCount = 0; columnCount < columnNames.size(); columnCount++) {
 				if (colNames.trim().length() > 0) {
 					colNames = colNames + "," + columnNames.get(columnCount);
-					vals = vals + ",?";
+					//vals = vals + ",?";20210505 MatsudairaSyuMe Access Control: Database
 				} else {
 					colNames = columnNames.get(columnCount);
-					vals = "?";
+					//vals = "?";20210505 MatsudairaSyuMe Access Control: Database
 				}
 				if (updateMode) {
 					if (updcolNames.trim().length() > 0) {
 						updcolNames = updcolNames + "," + columnNames.get(columnCount);
-						updvals = updvals + ",?";
+						//updvals = updvals + ",?";20210505 MatsudairaSyuMe Access Control: Database
 					} else {
 						updcolNames = columnNames.get(columnCount);
-						updvals = "?";
+						//updvals = "?";20210505 MatsudairaSyuMe Access Control: Database
 					}
 				}
 			}
@@ -168,8 +178,9 @@ public class GwDao {
 			wowstr = Des.encode(Constants.DEFKNOCKING, SQL_UPDATE);
 			String wowstr1 = Des.encode(Constants.DEFKNOCKING, SQL_INSERT);
 			//----
-			String[] insvalary = null;
+			//String[] insvalary = null;MatsudairaSyuMe Access Control: Database
 			if (updateMode) {
+				/*20210505 MatsudairaSyuMe Access Control: Database
 				for (int i = 0; i < keynameary.length; i++) {
 					columnCount++;
 					if (verbose)
@@ -182,19 +193,24 @@ public class GwDao {
 				}
 				insvalary = com.systex.sysgateii.gateway.util.dataUtil.concatArray(valary, keyvaluearynocomm);
 				//20210122 MatsudairaSyuMe
+				 */
 				preparedStatement = selconn.prepareStatement(Des.decodeValue(Constants.DEFKNOCKING, wowstr));
 				log.debug("record exist using update:{}", Des.decodeValue(Constants.DEFKNOCKING, wowstr));
 				//----
+				/*20210505 MatsudairaSyuMe Access Control: Database
 				log.debug("record exist using valary:{} len={}", insvalary, insvalary.length);
 				setValueps(preparedStatement, insvalary, false);
+				 */
 
 			} else {
 				//20210122 MatsudairaSyuMe
 				preparedStatement = selconn.prepareStatement(Des.decodeValue(Constants.DEFKNOCKING, wowstr1));
 				log.debug("record not exist using insert:{}", Des.decodeValue(Constants.DEFKNOCKING, wowstr1));
 				//----
+				/*20210505 MatsudairaSyuMe Access Control: Database
 				insvalary = com.systex.sysgateii.gateway.util.dataUtil.concatArray(keyvaluearynocomm, valary);
 				setValueps(preparedStatement, insvalary, false);
+				*/
 			}
 			row = preparedStatement.executeUpdate();
 			tblrs.close();
@@ -216,34 +232,39 @@ public class GwDao {
 		String keyset = "";
 		String[] keynameary = keyname.split(",");
 		String[] keyvalueary = selkeyval.split(",");
-		String[] keyvaluearynocomm = selkeyval.split(",");
+//		String[] keyvaluearynocomm = selkeyval.split(",");
 		log.debug("update value [{}]", updval);
-		String[] valary = updval.split(",");
+/*		String[] valary = updval.split(",");
 		for (int i = 0; i < valary.length; i++) {
 			int s = valary[i].indexOf('\'');
 			int l = valary[i].lastIndexOf('\'');
 			if (s != l && s >= 0 && l >= 0 && s < l)
 				valary[i] = valary[i].substring(s + 1, l);
 		}
+		*/
 		
 		if (keynameary.length != keyvalueary.length)
 			throw new Exception("given fields keyname can't correspond to keyvfield =>keynames [" + keyname + "] selkeyval [" + selkeyval + "]");
 		else {
 			for (int i = 0; i < keynameary.length; i++)
-				keyset = keyset + keynameary[i] + " = " + "?" + (i == (keynameary.length - 1) ? "" : " and ");
+				//keyset = keyset + keynameary[i] + " = " + "?" + (i == (keynameary.length - 1) ? "" : " and ");//20210505 MatsudairaSyuMe Access Control: Database
+				keyset = keyset + keynameary[i] + " = " + keyvalueary[i] + (i == (keynameary.length - 1) ? "" : " and ");
+			/*20210505 MatsudairaSyuMe Access Control: Database
 			for (int i = 0; i < keyvaluearynocomm.length; i++) {
 				int s = keyvalueary[i].indexOf('\'');
 				int l = keyvalueary[i].lastIndexOf('\'');
 				if (s != l && s >= 0 && l >= 0 && s < l)
 					keyvaluearynocomm[i] = keyvalueary[i].substring(s + 1, l);
 			}
+			*/
 		}
+	
 		String selstr = "SELECT " + field + " FROM " + fromTblName + " where " + keyset;
 		//20210122 MatsudairaSyuMe
 		String wowstr = Des.encode(Constants.DEFKNOCKING, selstr);
 		log.debug("UPDT selstr []-->[{}]", wowstr);
 		//----
-
+		/*20210505 MatsudairaSyuMe Access Control: Database
 		//20210122 MatsudairaSyuMe
 		PreparedStatement stmt = selconn.prepareStatement(Des.decodeValue(Constants.DEFKNOCKING, wowstr));
 		//----
@@ -255,6 +276,10 @@ public class GwDao {
 				stmt.setInt(i + 1, Integer.valueOf(keyvaluearynocomm[i]));
 		}
 		ResultSet tblrs = stmt.executeQuery();
+		*/
+		Statement stmt = selconn.createStatement();
+		ResultSet tblrs = stmt.executeQuery(Des.decodeValue(Constants.DEFKNOCKING, wowstr));
+
 		int type = -1;
 		int row = 0;
 
@@ -270,27 +295,29 @@ public class GwDao {
 				columnTypes.add(type);
 			}
 			String colNames = "";
-			String vals = "";
+//			String vals = "";20210505 MatsudairaSyuMe Access Control: Database
+			String vals  = selkeyval + "," + updval;
 			String updcolNames = "";
-			String updvals = "";
+//			String updvals = "";20210505 MatsudairaSyuMe Access Control: Database
+			String updvals = updval;
 			log.debug("table fields {}", Arrays.toString(columnNames.toArray()));
-			log.debug("given keyvaluearynocomm {}", Arrays.toString(keyvaluearynocomm));
+//			log.debug("given keyvaluearynocomm {}", Arrays.toString(keyvaluearynocomm));20210505 MatsudairaSyuMe Access Control: Database
 
 			for (columnCount = 0; columnCount < columnNames.size(); columnCount++) {
 				if (colNames.trim().length() > 0) {
 					colNames = colNames + "," + columnNames.get(columnCount);
-					vals = vals + ",?";
+					//vals = vals + ",?";20210505 MatsudairaSyuMe Access Control: Database
 				} else {
 					colNames = columnNames.get(columnCount);
-					vals = "?";
+					//vals = "?";20210505 MatsudairaSyuMe Access Control: Database
 				}
 				if (!columnNames.get(columnCount).equalsIgnoreCase(keyname)) {
 					if (updcolNames.trim().length() > 0) {
 						updcolNames = updcolNames + "," + columnNames.get(columnCount);
-						updvals = updvals + ",?";
+						//updvals = updvals + ",?";20210505 MatsudairaSyuMe Access Control: Database
 					} else {
 						updcolNames = columnNames.get(columnCount);
-						updvals = "?";
+						//updvals = "?";20210505 MatsudairaSyuMe Access Control: Database
 					}
 				}
 			}
@@ -303,8 +330,9 @@ public class GwDao {
 			String wowstr1 = Des.encode(Constants.DEFKNOCKING, SQL_INSERT);
 			//----
 
-			String[] insvalary = com.systex.sysgateii.gateway.util.dataUtil.concatArray(valary, keyvaluearynocomm);
+			//String[] insvalary = com.systex.sysgateii.gateway.util.dataUtil.concatArray(valary, keyvaluearynocomm);MatsudairaSyuMe Access Control: Database
 			if (tblrs.next()) {
+				/*20210505 MatsudairaSyuMe Access Control: Database
 				for (int i = 0; i < keynameary.length; i++) {
 					columnCount++;
 					if (verbose)
@@ -315,17 +343,23 @@ public class GwDao {
 					else
 						columnTypes.add(Types.INTEGER);
 				}
+				 */
 				//20210122 MatsudairaSyuMe
 				preparedStatement = selconn.prepareStatement(Des.decodeValue(Constants.DEFKNOCKING, wowstr));
-				setValueps(preparedStatement, insvalary, false);
 				log.debug("record exist using update:{}", Des.decodeValue(Constants.DEFKNOCKING, wowstr));
+				/*20210505 MatsudairaSyuMe Access Control: Database
+				setValueps(preparedStatement, insvalary, false);
+				
 				//----
 				log.debug("record exist using valary:{} len={}", insvalary, insvalary.length);
+				*/
 			} else {
 				//20210122 MatsudairaSyuMe
 				preparedStatement = selconn.prepareStatement(Des.decodeValue(Constants.DEFKNOCKING, wowstr1));
-				setValueps(preparedStatement, insvalary, false);
 				log.debug("record not exist using insert:{}", Des.decodeValue(Constants.DEFKNOCKING, wowstr1));
+				/*20210505 MatsudairaSyuMe Access Control: Database
+				setValueps(preparedStatement, insvalary, false);
+				*/
 				//----
 			}
 			row = preparedStatement.executeUpdate();
@@ -348,18 +382,21 @@ public class GwDao {
 			String keyset = "";
 			String[] keynameary = keyname.split(",");
 			String[] keyvalueary = keyvalue.split(",");
-			String[] keyvaluearynocomm = keyvalue.split(",");
+			// String[] keyvaluearynocomm = keyvalue.split(",");20210505 MatsudairaSyuMe Access Control: Database
 			if (keynameary.length != keyvalueary.length)
 				throw new Exception("given fields keyname can't correspond to keyvfield =>keynames [" + keyname + "] keyvalues [" + keyvalue + "]");
 			else {
 				for (int i = 0; i < keynameary.length; i++)
-					keyset = keyset + keynameary[i] + " = " + "?" + (i == (keynameary.length - 1) ? "" : " and ");
+					//keyset = keyset + keynameary[i] + " = " + "?" + (i == (keynameary.length - 1) ? "" : " and ");20210505 MatsudairaSyuMe Access Control: Database
+					keyset = keyset + keynameary[i] + " = " + keyvalueary[i] + (i == (keynameary.length - 1) ? "" : " and ");
+				/*20210505 MatsudairaSyuMe Access Control: Database
 				for (int i = 0; i < keyvaluearynocomm.length; i++) {
 					int s = keyvalueary[i].indexOf('\'');
 					int l = keyvalueary[i].lastIndexOf('\'');
 					if (s != l && s >= 0 && l >= 0 && s < l)
 						keyvaluearynocomm[i] = keyvalueary[i].substring(s + 1, l);
 				}
+				*/
 			}
 
 			if ((keyname.indexOf(',') > -1) && (keyvalue.indexOf(',') > -1)
@@ -368,7 +405,8 @@ public class GwDao {
 			String selstr = "SELECT " + fieldn + " FROM " + fromTblName + " where " + keyset;
 			//20210122 MatsudairaSyuMe
 			String wowstr = Des.encode(Constants.DEFKNOCKING, selstr);
-			log.debug("SELONEFLD selstr []-->[{}]", wowstr);
+			log.debug("SELONEFLD selstr [{}]-->[{}]",selstr, wowstr);
+			/*20210505 MatsudairaSyuMe Access Control: Database
 			PreparedStatement stmt = selconn.prepareStatement(Des.decodeValue(Constants.DEFKNOCKING, wowstr));
 			//----
 
@@ -379,6 +417,9 @@ public class GwDao {
 					stmt.setInt(i + 1, Integer.valueOf(keyvaluearynocomm[i]));
 			}
 			ResultSet tblrs = stmt.executeQuery();
+			*/
+			Statement stmt = selconn.createStatement();
+			ResultSet tblrs = stmt.executeQuery(Des.decodeValue(Constants.DEFKNOCKING, wowstr));
 			
 			int type = -1;
 			if (tblrs != null) {
@@ -431,18 +472,21 @@ public class GwDao {
 			String keyset = "";
 			String[] keynameary = keyname.split(",");
 			String[] keyvalueary = keyvalue.split(",");
-			String[] keyvaluearynocomm = keyvalue.split(",");
+			// String[] keyvaluearynocomm = keyvalue.split(",");20210505 MatsudairaSyuMe Access Control: Database
 			if (keynameary.length != keyvalueary.length)
 				throw new Exception("given fields keyname can't correspond to keyvfield =>keynames [" + keyname + "] keyvalues [" + keyvalue + "]");
 			else {
 				for (int i = 0; i < keynameary.length; i++)
-					keyset = keyset + keynameary[i] + " = " + "?" + (i == (keynameary.length - 1) ? "" : " and ");
+//					keyset = keyset + keynameary[i] + " = " + "?" + (i == (keynameary.length - 1) ? "" : " and ");20210505 MatsudairaSyuMe Access Control: Database
+					keyset = keyset + keynameary[i] + " = " + keyvalueary[i] + (i == (keynameary.length - 1) ? "" : " and ");
+				/*20210505 MatsudairaSyuMe Access Control: Database
 				for (int i = 0; i < keyvaluearynocomm.length; i++) {
 					int s = keyvalueary[i].indexOf('\'');
 					int l = keyvalueary[i].lastIndexOf('\'');
 					if (s != l && s >= 0 && l >= 0 && s < l)
 						keyvaluearynocomm[i] = keyvalueary[i].substring(s + 1, l);
 				}
+				*/
 			}
 
 			if ((keyname.indexOf(',') > -1) && (keyvalue.indexOf(',') > -1)
@@ -452,7 +496,8 @@ public class GwDao {
 			String selstr = "SELECT " + fieldsn + " FROM " + fromTblName + " where " + keyset;
 			//20210122 MatsudairaSyuMe
 			String wowstr = Des.encode(Constants.DEFKNOCKING, selstr);
-			log.debug("SELMFLD selstr []-->[{}]", wowstr);
+			log.debug("SELMFLD selstr [{}]-->[{}]", selstr, wowstr);
+			/*20210505 MatsudairaSyuMe Access Control: Database
 			PreparedStatement stmt = selconn.prepareStatement(Des.decodeValue(Constants.DEFKNOCKING, wowstr));
 			//----
 			for (int i = 0; i < keyvalueary.length; i++) {
@@ -462,6 +507,9 @@ public class GwDao {
 					stmt.setInt(i + 1, Integer.valueOf(keyvaluearynocomm[i]));
 			}
 			ResultSet tblrs = stmt.executeQuery();
+			*/
+			Statement stmt = selconn.createStatement();
+			ResultSet tblrs = stmt.executeQuery(Des.decodeValue(Constants.DEFKNOCKING, wowstr));
 			
 			int type = -1;
 
@@ -594,7 +642,9 @@ public class GwDao {
 			throw new Exception("given fields keyname can't correspond to keyvfield =>keynames [" + keyname + "] selkayvals [" + selkeyval + "]");
 		else {
 			for (int i = 0; i < keynameary.length; i++)
-				keyset = keyset + keynameary[i] + " = " + "?" + (i == (keynameary.length - 1) ? "" : " and ");			for (int i = 0; i < keyvaluearynocomm.length; i++) {
+//				keyset = keyset + keynameary[i] + " = " + "?" + (i == (keynameary.length - 1) ? "" : " and ");20210505 MatsudairaSyuMe Access Control: Database
+				keyset = keyset + keynameary[i] + " = " + keyvalueary[i] + (i == (keynameary.length - 1) ? "" : " and ");
+			for (int i = 0; i < keyvaluearynocomm.length; i++) {
 				int s = keyvaluearynocomm[i].indexOf('\'');
 				int l = keyvaluearynocomm[i].lastIndexOf('\'');
 				if (s != l && s >= 0 && l >= 0 && s < l)
@@ -609,7 +659,7 @@ public class GwDao {
 		}
 		//20210122 MatsudairaSyuMe
 		String wowstr = Des.encode(Constants.DEFKNOCKING, selstr);
-		log.debug("sqlstr=[]-->[{}] selupdval value [{}] selkeyval [{}]", wowstr, selupdval, selkeyval);
+		log.debug("sqlstr=[{}]-->[{}] selupdval value [{}] selkeyval [{}]", selstr, wowstr, selupdval, selkeyval);
 		//----
 
 		String[] valary = selupdval.split(",");
@@ -622,6 +672,7 @@ public class GwDao {
 		}
 		int type = -1;
 		int row = 0;
+		/*20210505 MatsudairaSyuMe Access Control: Database
 
 		//20210122 MatsudairaSyuMe
 		PreparedStatement stmt = selconn.prepareStatement(Des.decodeValue(Constants.DEFKNOCKING, wowstr));
@@ -633,6 +684,9 @@ public class GwDao {
 				stmt.setInt(i + 1, Integer.valueOf(keyvaluearynocomm[i]));
 		}
 		ResultSet tblrs = stmt.executeQuery();
+		*/
+		Statement stmt = selconn.createStatement();
+		ResultSet tblrs = stmt.executeQuery(Des.decodeValue(Constants.DEFKNOCKING, wowstr));
 
 		if (tblrs != null) {
 			ResultSetMetaData rsmd = tblrs.getMetaData();
@@ -662,8 +716,8 @@ public class GwDao {
 			String colNames = "";
 			String vals = "";
 			String updcolNames = "";
-			String updvals = "";
-			log.debug("given vals {} selkeyvalary {}", Arrays.toString(valary), Arrays.toString(keyvaluearynocomm));
+			//String updvals = ""; 20210505 MatsudairaSyuMe Access Control: Database
+//			log.debug("given vals {} keyvaluearynocomm {}", Arrays.toString(valary), Arrays.toString(keyvaluearynocomm));20210505 MatsudairaSyuMe Access Control: Database
 
 			for (columnCount = 0; columnCount < columnNames.size(); columnCount++) {
 				if (colNames.trim().length() > 0) {
@@ -676,15 +730,19 @@ public class GwDao {
 				if (updateMode) {
 					if (updcolNames.trim().length() > 0) {
 						updcolNames = updcolNames + "," + columnNames.get(columnCount);
-						updvals = updvals + ",?";
+						//updvals = updvals + ",?";20210505 MatsudairaSyuMe Access Control: Database
 					} else {
 						updcolNames = columnNames.get(columnCount);
-						updvals = "?";
+						//updvals = "?";20210505 MatsudairaSyuMe Access Control: Database
 					}
 				}
 			}
 			String SQL_INSERT = "SELECT " + keyname + " FROM NEW TABLE (INSERT INTO " + fromTblName + " (" + colNames + ") VALUES (" + vals + "))";
+			/*20210505 MatsudairaSyuMe Access Control: Database
 			String SQL_UPDATE = "UPDATE " + fromTblName + " SET (" + updcolNames + ") = (" + updvals + ") WHERE "
+					+ keyset;
+			*/
+			String SQL_UPDATE = "UPDATE " + fromTblName + " SET (" + updcolNames + ") = (" + selupdval + ") WHERE "
 					+ keyset;
 			//20210122 MatsudairaSyuMe
 			wowstr = Des.encode(Constants.DEFKNOCKING, SQL_UPDATE);
@@ -694,6 +752,7 @@ public class GwDao {
 			String cnvInsertStr = "";
 			String[] insvalary = null;
 			if (updateMode) {
+				/*20210505 MatsudairaSyuMe Access Control: Database
 				for (int i = 0; i < keynameary.length; i++) {
 					columnCount++;
 					if (verbose)
@@ -706,24 +765,27 @@ public class GwDao {
 				}
 
 				insvalary = com.systex.sysgateii.gateway.util.dataUtil.concatArray(valarynocomm, keyvaluearynocomm);
+				*/
 				//20210122 MatsudairaSyuMe
 				preparedStatement = selconn.prepareStatement(Des.decodeValue(Constants.DEFKNOCKING, wowstr));
 				log.debug("record exist using update:{}", Des.decodeValue(Constants.DEFKNOCKING, wowstr));
 				//----
+				/*20210505 MatsudairaSyuMe Access Control: Database
 				log.debug("record exist using valary:{} len={}", insvalary, insvalary.length);
 				setValueps(preparedStatement, insvalary, usekey);
+				*/
 			} else {
 				try {
-				if (usekey)
-					insvalary = com.systex.sysgateii.gateway.util.dataUtil.concatArray(keyvaluearynocomm, valarynocomm);
-				else
-					insvalary = valarynocomm;
+					if (usekey)
+						insvalary = com.systex.sysgateii.gateway.util.dataUtil.concatArray(keyvaluearynocomm, valarynocomm);
+					else
+						insvalary = valarynocomm;
 				//20201116
-				cnvInsertStr = generateActualSql(SQL_INSERT, (Object[])insvalary);
+					cnvInsertStr = generateActualSql(SQL_INSERT, (Object[])insvalary);
 				//20210202 MatsudairaSyuMe
-				wowstr1 = Des.encode(Constants.DEFKNOCKING, cnvInsertStr);
+					wowstr1 = Des.encode(Constants.DEFKNOCKING, cnvInsertStr);
 				//----
-				log.debug("record not exist using select insert:{} toString=[{}]", Des.decodeValue(Constants.DEFKNOCKING, wowstr1), cnvInsertStr);
+					log.debug("record not exist using select insert:[{}] toString=[{}]", Des.decodeValue(Constants.DEFKNOCKING, wowstr1), cnvInsertStr);
 				//----
 				} catch(Exception e) {
 					e.printStackTrace();
@@ -794,13 +856,19 @@ public class GwDao {
 				throw new Exception("given fields keyname can't correspond to keyvfield =>keynames [" + keyname + "] selkayvals [" + selkeyval + "]");
 			else {
 				for (int i = 0; i < keynameary.length; i++)
+					/*20210505 MatsudairaSyuMe Access Control: Database
 					deletesql = deletesql + keynameary[i] + " = " + "?" + (i == (keynameary.length - 1) ? "" : " and ");
+					*/
+					deletesql = deletesql + keynameary[i] + " = " + keyvalueary[i] + (i == (keynameary.length - 1) ? "" : " and ");
 			}
 		} else
+			/*20210505 MatsudairaSyuMe Access Control: Database
 			deletesql = deletesql + keyname + " = ?";
+			*/
+			deletesql = deletesql + keyname + " = " + selkeyval;
 		//20210122 MatsudairaSyuMe
 		String wowstr = Des.encode(Constants.DEFKNOCKING, deletesql);
-		log.debug("DELETETB deletesql=[]-->[{}] ", wowstr);
+		log.debug("DELETETB deletesql=[{}]-->[{}] ", deletesql, wowstr);
 		//----
 
 		for (int i = 0; i < keyvalueary.length; i++) {
@@ -814,12 +882,14 @@ public class GwDao {
 		PreparedStatement stmt = selconn.prepareStatement(Des.decodeValue(Constants.DEFKNOCKING, wowstr));
 		//----
 
+		/*20210505 MatsudairaSyuMe Access Control: Database
 		for (int i = 0; i < keyvalueary.length; i++) {
 			if (keyvalueary[i].indexOf('\'') > -1 )
 				stmt.setString(i + 1, valary[i]);
 			else
 				stmt.setInt(i + 1, Integer.valueOf(valary[i]));
 		}
+		*/
 		return stmt.execute();
 	}
 	private String generateActualSql(String sqlQuery, Object... parameters) throws Exception {
