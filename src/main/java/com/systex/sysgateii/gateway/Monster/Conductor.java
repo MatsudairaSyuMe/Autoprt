@@ -194,9 +194,13 @@ public class Conductor implements Runnable {
 									if (Conductor.svridnodeMap != null && Conductor.svridnodeMap.size() > 0) {
 										if (Conductor.svridnodeMap.containsKey(cmdary[0])) {
 											//20210204,20210427 MatsudairaSyuMe Log Forging remove final
-											String logStr = String.format("!!! cmd object node=[%s] already in nodeMap please STOP this node before START !!!", cmdary[0]);
-											if (Constants.FilterNewlinePattern.matcher(logStr).find())
+											// 20210628 MatsudairaSyuMe Log Forging
+											String logStr = "";
+											String chkcmd = Constants.SingleWordPattern.matcher(cmdary[0]).matches() ? cmdary[0] : "";
+											if (chkcmd.length() == 0)
 												logStr = "!!! cmd object already in nodeMap please STOP this node before START !!! check dashbord";
+											else
+												logStr = String.format("!!! cmd object node=[%s] already in nodeMap please STOP this node before START !!!", chkcmd);
 											log.error(logStr);
 											createNode = false;
 										} else {
@@ -312,10 +316,15 @@ public class Conductor implements Runnable {
 								case Constants.STOP://20210426 MatsudairaSyuMe prevent Portability Flaw: Locale Dependent Comparison
 									if (!Conductor.svridnodeMap.containsKey(cmdary[0])) {
 										//20210204,20210427 MatsudairaSyuMe Log Forging remove final
-										String logStr2 = String.format("cmd object node=[%s] current is not running in this server no need to STOP!!", cmdary[0]);
-										if (Constants.FilterNewlinePattern.matcher(logStr2).find())
+										// 20210628 MatsudairaSyuMe Log Forging
+										String logStr2 = "";
+										String chkcmd = Constants.SingleWordPattern.matcher(cmdary[0]).matches() ? cmdary[0] : "";
+										if (chkcmd.length() == 0)
 											logStr2 = "cmd object node current is not running in this server no need to STOP!! check dashbord";
+										else
+											logStr2 = String.format("cmd object node=[%s] current is not running in this server no need to STOP!!", chkcmd);
 										log.info(logStr2);
+										//---
 									} else {
 										//20210302 MatsudairaSyuMe
 										//20210202 MatsudairSyuMe
@@ -407,18 +416,24 @@ public class Conductor implements Runnable {
 							}
 						} else {
 							//20210204 ,20210427 MatsudairaSyuMe Log Forging
-							final String logStr = String.format("!!!current row cmd error [%s]", s);
-							if (Constants.FilterNewlinePattern.matcher(logStr).find())
-								log.error("!!!current row cmd error check dashboard");
+							// 20210628 MatsudairaSyuMe Log Forging
+							String logStr = "";
+							String chks = Constants.SingleWordPattern.matcher(s).matches() ? s : "";
+							if (chks.length() == 0)
+								logStr = "!!!current row cmd error check dashboard";
 							else
-								log.error(logStr);
+								logStr = String.format("!!!current row cmd error [%s]", chks);							
+							log.error(logStr);
+							//---
 						}
 					} else {
 						//20210427 MatsudairaSyuMe Log Forging
-						if (Constants.FilterNewlinePattern.matcher(s).find())
+						// 20210628 MatsudairaSyuMe Log Forging
+						String chks = Constants.SingleWordPattern.matcher(s).matches() ? s : "";
+						if (chks.length() == 0)
 							log.warn("select raw command error drop it");
 						else
-							log.warn("select raw command data [{}] error drop it", s);
+							log.warn("select raw command data [{}] error drop it", chks);
 					}
 				}
 				//20210302----

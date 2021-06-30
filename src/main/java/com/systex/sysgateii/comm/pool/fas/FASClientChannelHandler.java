@@ -216,7 +216,8 @@ public class FASClientChannelHandler extends ChannelInboundHandlerAdapter {
 												//write S004 TITA to HOST
 												int seqno = Integer.parseInt(
 														FileUtils.readFileToString(seqNoFile, Charset.defaultCharset())) + 1;
-												if (seqno > 999) {
+												//20210630 MatsudairaSyuMe make sure seqno Exceed the maximum 
+												if (seqno >= 999) {
 													seqno = 0;
 												}
 												HostS004SndHost(ctx, seqno, verhbrno, verhwsno, curMrkttm);

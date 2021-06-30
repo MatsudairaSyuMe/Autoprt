@@ -234,7 +234,8 @@ public class FASSvr implements MessageListener<byte[]>, Runnable {
 					 */
 					seqno = Integer.parseInt(FileUtils.readFileToString(this.currSeqF, Charset.defaultCharset()))
 							+ 1;
-					if (seqno > 999) {
+					//20210630 MatsudairaSyuMe make sure seqno Exceed the maximum
+					if (seqno >= 999) {
 						seqno = 0;
 					}
 					FileUtils.writeStringToFile(this.currSeqF, Integer.toString(seqno), Charset.defaultCharset());

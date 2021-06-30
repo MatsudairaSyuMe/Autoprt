@@ -317,6 +317,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 		this.actorStatusListeners = actorStatusListeners;
 	}
 
+	//----
 	public PrtCli(ConcurrentHashMap<String, Object> map, FASSvr dispatcher, Timer timer) {
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
 		this.setByDate(sdf.format(new Date()));
@@ -339,41 +340,36 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 		MDC.put("WSNO", this.brws.substring(3));
 		MDC.put("PID", pid);
 		responseTimeout = PrnSvr.setResponseTimeout;
+		/*
 		//20210324 MatsudairaSyume initialize sequence no. from 0 at first time build
 		try {
-			// 20210217,20210226,20210324 MatsudairaSyuMe check brws for digit type and length > 0
-			Pattern FILTER_PATTERN = Pattern.compile("[0-9]+");
-			//20210422, 20210426 MatsudairaSyuMe for path manipulation
-			if (FILTER_PATTERN.matcher(this.brws.trim()).matches()) {
-				// 20210426 MatsidairaSyuMe
-				int brws2int = Integer.parseInt(this.brws.trim());
-				if (brws2int > -1 && brws2int <= 9999999) {
-					String chkbrws = String.valueOf(brws2int); 
-					this.seqNoFile = new File("SEQNO", "SEQNO_" + chkbrws);
-					// 20210217 MatsydairaSyuMe
-					log.debug("seqNoFile local=" + this.seqNoFile.getAbsolutePath());
-					if (seqNoFile.exists() == false) {
-						File parent = seqNoFile.getParentFile();
-						if (parent.exists() == false) {
-							parent.mkdirs();
-						}
-						this.seqNoFile.createNewFile();
-						FileUtils.writeStringToFile(this.seqNoFile, "0", Charset.defaultCharset());
-					}
-				} else
-					log.error("brws error check dashboard!!"); //20210428 MatsudairaSyuMe Log Forging
-				//----
-			} else {//20210428 MatsudairaSyuMe Log Forging
-				log.error("fatal error!!! brws name is not digit type can ot create seqno file plese check dashboard!");
+			// 20210628 MatsudairaSyuMe check for digit character
+	        String chkbrws = this.brws.trim();
+			if (!Constants.SingleWordPattern.matcher(chkbrws).matches()) {
+				chkbrws = "12345678";
+				log.error("warning !!! brws name is not digit type can not create seqno file please check dashboard!");
+			}
+			this.seqNoFile = new File("SEQNO", "SEQNO_" + chkbrws);
+			//----
+			// 20210217 MatsydairaSyuMe
+			log.debug("seqNoFile local=" + this.seqNoFile.getAbsolutePath());
+			if (seqNoFile.exists() == false) {
+				File parent = seqNoFile.getParentFile();
+				if (parent.exists() == false) {
+					parent.mkdirs();
+				}
+				this.seqNoFile.createNewFile();
+				FileUtils.writeStringToFile(this.seqNoFile, "0", Charset.defaultCharset());
 			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-			//20210204,20210428 MatsudairaSyuMe Log Forging
+			// 20210204,20210428 MatsudairaSyuMe Log Forging
 //			final String logStr = String.format("error!!! create or open seqno file SEQNO_%s error %s", this.brws, e.getMessage());
 			log.error("error!!! create or open seqno file SEQNO_ error");
 		}
 		//----20210324
+		*/
 		//20201115
 //		amlog = PrnSvr.amlog;
 		//20201214
@@ -406,12 +402,15 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 			atlog.info("Auto Printer type define error!");
 			return;
 		}
-		//20210428 MatsudairaSyuMe Log Forging
-		final String logStr = String.format("==================%s %s",this.brws.substring(0, 3), this.brws.substring(3));
-		if (Constants.FilterNewlinePattern.matcher(logStr).find())
-			log.info("==================");
+		//20210628 MatsudairaSyuMe Log Forging
+		String logStr = "";
+		String s1 = Constants.SingleWordPattern.matcher(this.brws.substring(0, 3)).matches() ? this.brws.substring(0, 3): "";
+		String s2 = Constants.SingleWordPattern.matcher(this.brws.substring(3)).matches() ? this.brws.substring(3): "";
+		if (s1.length() > 0 && s2.length() > 0)
+			logStr = String.format("==================%s %s",s1, s2);
 		else
-			log.info(logStr);
+			logStr = "==================";
+		log.info(logStr);
 		this.statusfields = PrnSvr.statustbfields;
 		
 		ipAddrPars nodePars = new ipAddrPars();
@@ -449,6 +448,31 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 		} catch (Exception e) {
 			log.error("Address format error!!! {}", e.getMessage());
 		}
+		//20210630 MatsudairaSyuME for Path Manipulation
+        String[] saddr = this.rmtaddr.getAddress().getHostAddress().split("\\.");
+        String result = "";
+        for (int i = 0; i < saddr.length; i++)
+            result = result + String.format("%03d",Integer.parseInt(saddr[i]));
+        result = result + String.format("%05d",this.rmtaddr.getPort());
+		log.debug("==>remote seqno result=[{}]", result);
+		//20210324 MatsudairaSyume initialize sequence no. from 0 at first time build
+		try {
+			this.seqNoFile = new File("SEQNO", "SEQNO_" + result);
+			log.debug("seqNoFile local=" + this.seqNoFile.getAbsolutePath());
+			if (seqNoFile.exists() == false) {
+				File parent = seqNoFile.getParentFile();
+				if (parent.exists() == false) {
+					parent.mkdirs();
+				}
+				this.seqNoFile.createNewFile();
+				FileUtils.writeStringToFile(this.seqNoFile, "0", Charset.defaultCharset());
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+			log.error("error!!! create or open seqno file SEQNO_ error");
+		}
+		//----20210324
+
 //		log.info("rmt addr {} port {} local addr {} port {}",this.rmtaddr.getAddress().getHostAddress(), this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort());
 //20200910 change to used new UPSERT
 //		String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
@@ -486,10 +510,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 			try {
 				//20210204 MatsudairaSyuMe
 				final String logStr = String.format("SEND %s[%04d]:%s", this.curSockNm, msg.length, charcnv.BIG5bytesUTF8str(msg));
-				if (Constants.FilterNewlinePattern.matcher(logStr).find())//20210428 MatsudairaSyuMe Log Forging
-					aslog.info(String.format("SEND %s[%04d]:%s",this.curSockNm,msg.length,""));
-				else
-					aslog.info(logStr);
+				aslog.info(logStr);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -1377,11 +1398,14 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				log.debug("pr_datalog=[{}]", pr_datalog);
 				//20200826
 				//20210204,20210428 MatsudairaSyuMe Log Forging
-				final String logStr = String.format(": PbDataFormat() -- All Data=[%s]", pr_datalog);
-				if (Constants.FilterNewlinePattern.matcher(logStr).find())
-					atlog.info(": PbDataFormat() -- All Data=[%s..]");
+				//20210628 MatsudairaSyuMe Log Forging
+				String logStr = "";
+				String chkpr_datalog = Constants.SingleWordPattern.matcher(pr_datalog).matches() ? pr_datalog: "";
+				if (pr_datalog.length() > 0)
+					logStr = String.format(": PbDataFormat() -- All Data=[%s]", chkpr_datalog);
 				else
-					atlog.info(logStr);
+					logStr = String.format(": PbDataFormat() -- All Data=[...]");
+				atlog.info(logStr);
 				//----
 				//Print Data
 				//20200915
@@ -2825,7 +2849,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					try {
 						this.setSeqNo = Integer
 								.parseInt(FileUtils.readFileToString(this.seqNoFile, Charset.defaultCharset())) + 1;
-						if (this.setSeqNo > 99999)
+						//20210630 MatsudairaSyuMe make sure seqno Exceed the maximum
+						if (this.setSeqNo >= 99999)
 							this.setSeqNo = 0;
 						FileUtils.writeStringToFile(this.seqNoFile, Integer.toString(this.setSeqNo),
 								Charset.defaultCharset());

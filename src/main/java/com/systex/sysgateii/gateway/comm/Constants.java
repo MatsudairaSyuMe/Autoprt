@@ -84,5 +84,7 @@ public class Constants {
 	//----
 	//20210427 MatsudairaSyuMe Log Forging
 	public static Pattern FilterNewlinePattern = Pattern.compile("\n");
+	//20210628 MatsudairaSyuMe Log Forging
+	public static Pattern SingleWordPattern = Pattern.compile("([\\w\\:\\\\w ./-]+\\w+(\\.)?\\w+)");
 
 }

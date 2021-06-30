@@ -133,10 +133,10 @@ public class Server {
 					//conductor mode start the monitor module
 					Conductor.createServer(dcf.getConHashMap(), svrip);
 					Conductor.startServer();
-					//20210204, 0210427 MatsudairaSyuMe Log Forging change remove final
+					//20210204, 0210427 20210625 MatsudairaSyuMe Log Forging change remove final
 					String logStr = String.format("sysgateii server after start conductor svrip=[%s]", svrip);
-					if (Constants.FilterNewlinePattern.matcher(logStr).find())
-						logStr = "sysgateii server after start conductor";
+			//		if (Constants.FilterNewlinePattern.matcher(logStr).find())
+					logStr = "sysgateii server after start conductor";
 					log.info(logStr);
 				}
 				//----
@@ -160,9 +160,14 @@ public class Server {
 				//AUID,BRNO,IP,CURSTUS,PID,CREATOR,MODIFIER,LASTUPDATE
 //				auid = dcf.getAuid();
 //				svrip = dcf.getSvrip();
-				//20201116 change to use given svrid, 20210204 MatsudairaSyuMe, 20210427 MatsudairaSyuMe Log Forging remove final
-				String logStr = String.format("sysgateii server start complete! auid=[%s] svrip=[%s]", auid, svrip);
-				if (Constants.FilterNewlinePattern.matcher(logStr).find())
+				//20201116 change to use given svrid, 20210204 MatsudairaSyuMe
+				// 20210628 MatsudairaSyuMe Log Forging
+				String logStr = "";
+				String chkauid = Constants.SingleWordPattern.matcher(auid).matches() ? auid : "";
+				String chksvrip = Constants.SingleWordPattern.matcher(svrip).matches() ? svrip : "";
+				if (chkauid.length() > 0 && chksvrip.length() > 0)
+					logStr = String.format("sysgateii server start complete! auid=[%s] svrip=[%s]", chkauid, chksvrip);
+				else
 					logStr = "sysgateii server start complete! auid svrip check dashbord";
 				log.info(logStr);
 				if (auid.trim().length() == 0 || auid.trim().length() == 0) {
