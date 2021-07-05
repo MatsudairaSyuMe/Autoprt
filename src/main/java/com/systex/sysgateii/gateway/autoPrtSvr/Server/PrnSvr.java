@@ -51,6 +51,7 @@ import com.systex.sysgateii.gateway.listener.MessageListener;
 import com.systex.sysgateii.gateway.util.Big5FontImg;
 import com.systex.sysgateii.gateway.util.DateTimeUtil;
 import com.systex.sysgateii.gateway.util.LogUtil;
+import com.systex.sysgateii.gateway.util.StrUtil;
 import com.systex.sysgateii.gateway.util.ipAddrPars;
 
 public class PrnSvr implements MessageListener<byte[]> {
@@ -506,12 +507,9 @@ public class PrnSvr implements MessageListener<byte[]> {
 												} else
 													log.debug("!!! cmd object node=[{}] format error !!!", cmdary[0]);													
 											} else {
-												//20210204,20210428 MatsudairaSyuMe Log Forging
-												final String logStr = String.format("!!!current row cmd error [%s]", s);
-												if (Constants.FilterNewlinePattern.matcher(logStr).find())
-													log.error("!!!current row cmd error [%s...] check dashboard");
-												else
-													log.error(logStr);
+												// 20210702 MatsudairaSyuMe Log Forging
+												final String chks = StrUtil.convertValidLog(s);
+												log.error("!!!current row cmd error [{}]", chks);
 											}
 										}
 									jdawcon.CloseConnect();
@@ -570,12 +568,9 @@ public class PrnSvr implements MessageListener<byte[]> {
 		int ret = 0;
 		if (getMe().nodeList != null && getMe().nodeList.size() > 0) {
 			if (getMe().nodeList.containsKey(nid)) {
-				//20210204,20210428 MatsudairaSyuMe Log Forging
-				final String logStr = String.format("!!! cmd object node=[%s] already in nodeList please STOP this node before START !!!", nid);
-				if (Constants.FilterNewlinePattern.matcher(logStr).find())
-					log.error("!!! cmd object node=[%s...] already in nodeList please STOP this node before START !!! check dashboard");
-				else
-					log.error(logStr);
+				// 20210702 MatsudairaSyuMe Log Forging
+				final String chknid = StrUtil.convertValidLog(nid);
+				log.error("!!! cmd object node=[{}] already in nodeList please STOP this node before START !!!", chknid);
 				return ret;
 			} else
 				log.debug("!!! cmd object node=[{}] not in nodeList will be created", nid);

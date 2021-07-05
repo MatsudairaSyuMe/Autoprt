@@ -55,6 +55,7 @@ import com.systex.sysgateii.gateway.telegram.TITATel;
 import com.systex.sysgateii.gateway.telegram.TOTATel;
 import com.systex.sysgateii.gateway.util.CharsetCnv;
 import com.systex.sysgateii.gateway.util.LogUtil;
+import com.systex.sysgateii.gateway.util.StrUtil;
 import com.systex.sysgateii.gateway.util.dataUtil;
 import com.systex.sysgateii.gateway.util.ipAddrPars;
 
@@ -402,15 +403,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 			atlog.info("Auto Printer type define error!");
 			return;
 		}
-		//20210628 MatsudairaSyuMe Log Forging
-		String logStr = "";
-		String s1 = Constants.SingleWordPattern.matcher(this.brws.substring(0, 3)).matches() ? this.brws.substring(0, 3): "";
-		String s2 = Constants.SingleWordPattern.matcher(this.brws.substring(3)).matches() ? this.brws.substring(3): "";
-		if (s1.length() > 0 && s2.length() > 0)
-			logStr = String.format("==================%s %s",s1, s2);
-		else
-			logStr = "==================";
-		log.info(logStr);
+		// 20210702 MatsudairaSyuMe Log Forging
+		String s1 = StrUtil.convertValidLog(this.brws.substring(0, 3));
+		String s2 = StrUtil.convertValidLog(this.brws.substring(3));
+		log.info("=================={} {}",s1, s2);
 		this.statusfields = PrnSvr.statustbfields;
 		
 		ipAddrPars nodePars = new ipAddrPars();
@@ -1398,14 +1394,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				log.debug("pr_datalog=[{}]", pr_datalog);
 				//20200826
 				//20210204,20210428 MatsudairaSyuMe Log Forging
-				//20210628 MatsudairaSyuMe Log Forging
-				String logStr = "";
-				String chkpr_datalog = Constants.SingleWordPattern.matcher(pr_datalog).matches() ? pr_datalog: "";
-				if (pr_datalog.length() > 0)
-					logStr = String.format(": PbDataFormat() -- All Data=[%s]", chkpr_datalog);
-				else
-					logStr = String.format(": PbDataFormat() -- All Data=[...]");
-				atlog.info(logStr);
+				// 20210702 MatsudairaSyuMe Log Forging
+				String chkpr_datalog = StrUtil.convertValidLog(pr_datalog);
+				atlog.info(": PbDataFormat() -- All Data=[{}]",chkpr_datalog);
 				//----
 				//Print Data
 				//20200915

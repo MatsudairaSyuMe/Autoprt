@@ -22,6 +22,7 @@ import com.systex.sysgateii.gateway.autoPrtSvr.Server.PrnSvr;
 import com.systex.sysgateii.gateway.comm.Constants;
 import com.systex.sysgateii.gateway.conf.DynamicProps;
 import com.systex.sysgateii.gateway.dao.GwDao;
+import com.systex.sysgateii.gateway.util.StrUtil;
 
 import ch.qos.logback.classic.util.ContextInitializer;
 
@@ -161,15 +162,9 @@ public class Server {
 //				auid = dcf.getAuid();
 //				svrip = dcf.getSvrip();
 				//20201116 change to use given svrid, 20210204 MatsudairaSyuMe
-				// 20210628 MatsudairaSyuMe Log Forging
-				String logStr = "";
-				String chkauid = Constants.SingleWordPattern.matcher(auid).matches() ? auid : "";
-				String chksvrip = Constants.SingleWordPattern.matcher(svrip).matches() ? svrip : "";
-				if (chkauid.length() > 0 && chksvrip.length() > 0)
-					logStr = String.format("sysgateii server start complete! auid=[%s] svrip=[%s]", chkauid, chksvrip);
-				else
-					logStr = "sysgateii server start complete! auid svrip check dashbord";
-				log.info(logStr);
+				// 20210702 MatsudairaSyuMe Log Forging
+				String logStr = String.format("sysgateii server start complete! auid=[%s] svrip=[%s]", auid, svrip);
+				log.info(StrUtil.convertValidLog(logStr));
 				if (auid.trim().length() == 0 || auid.trim().length() == 0) {
 					auid = "0";
 					setIsShouldShutDown(true);

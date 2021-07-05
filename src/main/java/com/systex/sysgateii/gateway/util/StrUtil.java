@@ -1,8 +1,14 @@
 package com.systex.sysgateii.gateway.util;
 
+//20210702 MatsudairasyuMe import for Log Forging
+import java.text.Normalizer;
 import java.text.NumberFormat;
 import java.text.ParsePosition;
+//20210702 MatsudairasyuMe import for Log Forging
+import java.util.ArrayList;
 import java.util.Arrays;
+//20210702 MatsudairasyuMe import for Log Forging
+import java.util.List;
 
 public class StrUtil {
 	public static boolean isNotEmpty(String s) {
@@ -79,6 +85,21 @@ public class StrUtil {
 
 		return new String(newArr);
 	}
+
+	//20210702 MatsudairasyuMe function for Log Forging
+    public static String convertValidLog(String log){
+        List<String> list = new ArrayList<String>();
+        list.add("%0d");
+        list.add("\r");
+        list.add("%0a");
+        list.add("\n");
+
+        // normalize the log content
+        String encode = Normalizer.normalize(log, Normalizer.Form.NFKC);
+        for(String toReplaceStr : list)
+            encode = encode.replace(toReplaceStr, "");
+        return encode;
+    }
 
 	public static void main(String args[]) {
 		System.out.println(padSpace("12345678901", 10) + "*");

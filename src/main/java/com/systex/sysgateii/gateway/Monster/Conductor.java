@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import com.systex.sysgateii.gateway.comm.Constants;
 import com.systex.sysgateii.gateway.dao.GwDao;
 import com.systex.sysgateii.gateway.util.DateTimeUtil;
+import com.systex.sysgateii.gateway.util.StrUtil;
 
 public class Conductor implements Runnable {
 	private static Logger log = LoggerFactory.getLogger(Conductor.class);
@@ -194,14 +195,9 @@ public class Conductor implements Runnable {
 									if (Conductor.svridnodeMap != null && Conductor.svridnodeMap.size() > 0) {
 										if (Conductor.svridnodeMap.containsKey(cmdary[0])) {
 											//20210204,20210427 MatsudairaSyuMe Log Forging remove final
-											// 20210628 MatsudairaSyuMe Log Forging
-											String logStr = "";
-											String chkcmd = Constants.SingleWordPattern.matcher(cmdary[0]).matches() ? cmdary[0] : "";
-											if (chkcmd.length() == 0)
-												logStr = "!!! cmd object already in nodeMap please STOP this node before START !!! check dashbord";
-											else
-												logStr = String.format("!!! cmd object node=[%s] already in nodeMap please STOP this node before START !!!", chkcmd);
-											log.error(logStr);
+											// 20210702 MatsudairaSyuMe Log Forging
+											String chkcmd = StrUtil.convertValidLog(cmdary[0]);
+											log.error("!!! cmd object node=[{}] already in nodeMap please STOP this node before START !!!", chkcmd);
 											createNode = false;
 										} else {
 											//20210204 MatsudairaSyuMe
@@ -316,14 +312,9 @@ public class Conductor implements Runnable {
 								case Constants.STOP://20210426 MatsudairaSyuMe prevent Portability Flaw: Locale Dependent Comparison
 									if (!Conductor.svridnodeMap.containsKey(cmdary[0])) {
 										//20210204,20210427 MatsudairaSyuMe Log Forging remove final
-										// 20210628 MatsudairaSyuMe Log Forging
-										String logStr2 = "";
-										String chkcmd = Constants.SingleWordPattern.matcher(cmdary[0]).matches() ? cmdary[0] : "";
-										if (chkcmd.length() == 0)
-											logStr2 = "cmd object node current is not running in this server no need to STOP!! check dashbord";
-										else
-											logStr2 = String.format("cmd object node=[%s] current is not running in this server no need to STOP!!", chkcmd);
-										log.info(logStr2);
+										// 20210702 MatsudairaSyuMe Log Forging
+										String logStr2 = StrUtil.convertValidLog(cmdary[0]);
+										log.info("cmd object node=[{}] current is not running in this server no need to STOP!!", logStr2);
 										//---
 									} else {
 										//20210302 MatsudairaSyuMe
@@ -416,24 +407,14 @@ public class Conductor implements Runnable {
 							}
 						} else {
 							//20210204 ,20210427 MatsudairaSyuMe Log Forging
-							// 20210628 MatsudairaSyuMe Log Forging
-							String logStr = "";
-							String chks = Constants.SingleWordPattern.matcher(s).matches() ? s : "";
-							if (chks.length() == 0)
-								logStr = "!!!current row cmd error check dashboard";
-							else
-								logStr = String.format("!!!current row cmd error [%s]", chks);							
-							log.error(logStr);
+							// 20210702 MatsudairaSyuMe Log Forging
+							String chks = StrUtil.convertValidLog(s);
+							log.error("!!!current row cmd error [{}]", chks);
 							//---
 						}
 					} else {
-						//20210427 MatsudairaSyuMe Log Forging
-						// 20210628 MatsudairaSyuMe Log Forging
-						String chks = Constants.SingleWordPattern.matcher(s).matches() ? s : "";
-						if (chks.length() == 0)
-							log.warn("select raw command error drop it");
-						else
-							log.warn("select raw command data [{}] error drop it", chks);
+						// 20210702 MatsudairaSyuMe Log Forging
+						log.warn("select raw command data [{}] error drop it", StrUtil.convertValidLog(s));
 					}
 				}
 				//20210302----
